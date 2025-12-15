@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, List
-from ...Core.Entity.Notifications import Notifications
+from ...Core.Entity.Notifications import NotificationsEntity
 from ...Infrastructure.Supabase.db_connection import supabase
 
 logger = logging.getLogger(__name__)
@@ -11,19 +11,19 @@ class NotificationRepository:
         self._client = supabase
         self._table_name = "Notifications"
     
-    def dataToEntity(self, data: dict) -> Notifications:
+    def dataToEntity(self, data: dict) -> NotificationsEntity:
         try:
-            return Notifications(**data)
+            return NotificationsEntity(**data)
         except Exception as e:
             logger.error(f"Error converting data to Notifications: {e}")
             raise
 
-    def entityToData(self, entity: Notifications) -> dict:
+    def entityToData(self, entity: NotificationsEntity) -> dict:
         if hasattr(entity, "to_dict") and callable(entity.to_dict):
             return entity.to_dict()
         return entity.__dict__
 
-    def fetchNotificationsByUserId(self, user_id: int) -> List[Notifications]:
+    def fetchNotificationsByUserId(self, user_id: int) -> List[NotificationsEntity]:
         try:
             response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
@@ -31,7 +31,7 @@ class NotificationRepository:
             logger.error(f"Error fetching notifications for user {user_id}: {e}")
             raise
 
-    def fetchUnreadNotifications(self, user_id: int) -> List[Notifications]:
+    def fetchUnreadNotifications(self, user_id: int) -> List[NotificationsEntity]:
         try:
             response = self._client.table(self._table_name)\
                 .select("*")\
@@ -43,7 +43,17 @@ class NotificationRepository:
             logger.error(f"Error fetching unread notifications for user {user_id}: {e}")
             raise
 
-    def createNotification(self, notification: Notifications) -> Notifications:
+    def fetchNotificationById(self, notif_id: int) -> Optional[NotificationsEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("notifId", notif_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching notification {notif_id}: {e}")
+            raise
+
+    def createNotification(self, notification: NotificationsEntity) -> NotificationsEntity:
         try:
             data = self.entityToData(notification)
             response = self._client.table(self._table_name).insert(data).execute()
@@ -54,7 +64,7 @@ class NotificationRepository:
             logger.error(f"Error creating notification: {e}")
             raise
 
-    def markAsRead(self, notif_id: int) -> Notifications:
+    def markAsRead(self, notif_id: int) -> NotificationsEntity:
         try:
             response = self._client.table(self._table_name)\
                 .update({"isRead": True})\
