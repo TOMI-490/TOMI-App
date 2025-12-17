@@ -56,6 +56,16 @@ class LeaderboardRepository:
             logger.error(f"Error fetching top rankers for scope {scope}: {e}")
             raise
 
+    def fetchLeaderboardById(self, leaderboard_id: int) -> Optional[LeaderboardEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("leaderboardId", leaderboard_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching leaderboard entry {leaderboard_id}: {e}")
+            raise
+
     def createLeaderboardEntry(self, entry: LeaderboardEntity) -> LeaderboardEntity:
         try:
             data = self.entityToData(entry)
