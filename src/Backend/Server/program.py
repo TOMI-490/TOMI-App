@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up the Backend Server...")
     health = connection.health_check()
     logger.info(f"Supabase Health Check: {health}")
+    logger.info("API Documentation available at: http://127.0.0.1:8000/api/docs")
     yield
     
     # Shutdown actions
