@@ -336,7 +336,6 @@ This project is currently in active development. Please follow these guidelines:
 - `dev` - Development branch (default)
 - `feature/*` - Feature branches
 - `bugfix/*` - Bug fix branches
-- `18-backend-configure-db` - Current development branch for database configuration
 
 ## 📝 License
 
