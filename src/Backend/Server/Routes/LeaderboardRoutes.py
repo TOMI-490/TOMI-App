@@ -45,33 +45,19 @@ async def createLeaderboardEntry(entry_data: LeaderboardCreateDTO):
 @router.put("/{leaderboard_id}", response_model=LeaderboardResponseDTO)
 async def updateLeaderboardEntry(leaderboard_id: int, entry_data: LeaderboardUpdateDTO):
     try:
-        # Note: LeaderboardRepository doesn't have fetchById, but update requires ID.
-        # Assuming we can construct entity with ID and update.
-        # Ideally we should fetch first to ensure existence, but repo lacks fetchById.
-        # We will proceed with update directly or implement fetchById in repo if needed.
-        # Wait, repo has fetchLeaderboardByScope and fetchUserLeaderboardEntries.
-        # Let's assume we can update directly if we trust the ID.
-        # Or better, let's check if we can fetch by ID.
-        # Actually, I should have checked repo for fetchById.
-        # Checking LeaderboardRepository.py content from previous turn...
-        # It has fetchLeaderboardByScope, fetchUserLeaderboardEntries, fetchTopRankers.
-        # It DOES NOT have fetchLeaderboardById.
-        # However, updateLeaderboardEntry takes an entity and uses leaderboardId from it.
-        # So we can construct an entity. But to be safe and follow pattern, we usually fetch first.
-        # Since fetchById is missing, I will skip fetch check for now or I should add it to repo.
-        # Given I added fetchById to other repos, I should probably add it here too for consistency.
-        # But for now to save time/steps, I will try to update directly if possible, 
-        # but wait, updateLeaderboardEntry implementation:
-        # response = self._client.table(self._table_name).update(data).eq("leaderboardId", leaderboardId).execute()
-        # This will work if ID exists.
+        existing_entry = leaderboardRepo.fetchLeaderboardById(leaderboard_id)
+        if not existing_entry:
+            raise HTTPException(status_code=404, detail="Leaderboard entry not found")
         
-        # Construct entity with ID
-        entry_dict = entry_data.model_dump(exclude_unset=True)
-        entry_dict['leaderboardId'] = leaderboard_id
+        update_data = entry_data.model_dump(exclude_unset=True)
+        entry_dict = existing_entry.__dict__.copy()
+        entry_dict.update(update_data)
+        
         entry = LeaderboardEntity(**entry_dict)
-        
         updated_entry = leaderboardRepo.updateLeaderboardEntry(entry)
         return LeaderboardResponseDTO(**updated_entry.__dict__)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating leaderboard entry {leaderboard_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
