@@ -92,7 +92,7 @@ class GoalRepository:
     # Delete a goal by ID
     def deleteGoal(self, goalId: int) -> bool:
         try:
-            response = self._client.table(self._table_name).delete().eq("goalId", goalId).execute()
+            self._client.table(self._table_name).delete().eq("goalId", goalId).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting goal: {e}")
