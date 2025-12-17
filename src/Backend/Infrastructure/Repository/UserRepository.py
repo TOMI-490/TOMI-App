@@ -100,13 +100,6 @@ class UserRepository:
     # Delete a user by ID
     def deleteUser(self, user_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("userId", user_id).execute()
-            return True
-        except Exception as e:
-            logger.error(f"Error deleting user {user_id}: {e}")
-            raise
-    def deleteUser(self, user_id: int) -> bool:
-        try:
             response = self._client.table(self._table_name).delete().eq("userId", user_id).execute()
             return True
         except Exception as e:
