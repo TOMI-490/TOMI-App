@@ -64,6 +64,22 @@ class NotificationRepository:
             logger.error(f"Error creating notification: {e}")
             raise
 
+    def updateNotification(self, notification: NotificationsEntity) -> NotificationsEntity:
+        try:
+            data = self.entityToData(notification)
+            notifId = getattr(notification, "notifId", None)
+            
+            if not notifId:
+                raise ValueError("Notification ID is required for update")
+                
+            response = self._client.table(self._table_name).update(data).eq("notifId", notifId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update notification")
+        except Exception as e:
+            logger.error(f"Error updating notification: {e}")
+            raise
+
     def markAsRead(self, notif_id: int) -> NotificationsEntity:
         try:
             response = self._client.table(self._table_name)\

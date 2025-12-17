@@ -51,3 +51,27 @@ class FriendStatusRepository:
         except Exception as e:
             logger.error(f"Error creating friend status: {e}")
             raise
+
+    def updateStatus(self, status: FriendStatusEntity) -> FriendStatusEntity:
+        try:
+            data = self.entityToData(status)
+            statusId = getattr(status, "statusId", None)
+            
+            if not statusId:
+                raise ValueError("Status ID is required for update")
+                
+            response = self._client.table(self._table_name).update(data).eq("statusId", statusId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update friend status")
+        except Exception as e:
+            logger.error(f"Error updating friend status: {e}")
+            raise
+
+    def deleteStatus(self, status_id: int) -> bool:
+        try:
+            self._client.table(self._table_name).delete().eq("statusId", status_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting friend status {status_id}: {e}")
+            raise

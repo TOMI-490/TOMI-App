@@ -31,6 +31,15 @@ class UserAvatarRepository:
     #============================================================================================================
     # CRUD Operations
     
+    # Fetch all user avatars
+    def fetchAllUserAvatars(self) -> List[UserAvatarEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all user avatars: {e}")
+            raise
+
     # Fetch a user avatar by ID and return as UserAvatar object
     def fetchUserAvatarById(self, userAvatarId: int) -> Optional[UserAvatarEntity]:
         try:
@@ -40,6 +49,17 @@ class UserAvatarRepository:
             return None
         except Exception as e:
             logger.error(f"Error fetching user avatar by ID: {e}")
+            raise
+
+    # Fetch a user avatar by User ID
+    def fetchAvatarByUserId(self, userId: int) -> Optional[UserAvatarEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("userId", userId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user avatar by User ID: {e}")
             raise
         
     # Create a new user avatar
@@ -69,5 +89,14 @@ class UserAvatarRepository:
             raise Exception("Failed to update user avatar")
         except Exception as e:
             logger.error(f"Error updating user avatar: {e}")
+            raise
+
+    # Delete a user avatar by ID
+    def deleteUserAvatar(self, userAvatarId: int) -> bool:
+        try:
+            self._client.table(self._table_name).delete().eq("userAvatarId", userAvatarId).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user avatar: {e}")
             raise
             

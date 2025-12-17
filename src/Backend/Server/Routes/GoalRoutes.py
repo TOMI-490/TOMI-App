@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 goalRepo = GoalRepository()
 
+# Get all fitness goals
+@router.get("/", response_model=List[GoalResponseDTO])
+async def getAllGoals():
+    try:
+        goals = goalRepo.fetchAllGoals()
+        return [GoalResponseDTO(**goal.__dict__) for goal in goals]
+    except Exception as e:
+        logger.error(f"Error fetching all goals: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Get all fitness goals for a specific user
 @router.get("/user/{user_id}", response_model=List[GoalResponseDTO])
 async def getUserGoals(user_id: int):

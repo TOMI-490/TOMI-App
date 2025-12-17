@@ -67,3 +67,11 @@ class GoalTypeRepository:
         except Exception as e:
             logger.error(f"Error updating goal type: {e}")
             raise
+
+    def deleteGoalType(self, goal_type_id: int) -> bool:
+        try:
+            self._client.table(self._table_name).delete().eq("goalTypeId", goal_type_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting goal type {goal_type_id}: {e}")
+            raise

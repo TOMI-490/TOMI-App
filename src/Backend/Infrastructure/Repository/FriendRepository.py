@@ -43,6 +43,16 @@ class FriendRepository:
             logger.error(f"Error fetching friends by status for user {user_id}: {e}")
             raise
 
+    def fetchFriendshipById(self, friendship_id: int) -> Optional[FriendEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("id", friendship_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching friendship {friendship_id}: {e}")
+            raise
+
     def createFriendship(self, friendship: FriendEntity) -> FriendEntity:
         try:
             data = self.entityToData(friendship)

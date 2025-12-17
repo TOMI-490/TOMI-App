@@ -23,12 +23,30 @@ class UserBadgeRepository:
             return entity.to_dict()
         return entity.__dict__
 
+    def fetchAllBadges(self) -> List[UserBadgeEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all user badges: {e}")
+            raise
+
     def fetchBadgesByUserId(self, user_id: int) -> List[UserBadgeEntity]:
         try:
             response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching badges for user {user_id}: {e}")
+            raise
+
+    def fetchUserBadgeById(self, user_badge_id: int) -> Optional[UserBadgeEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("id", user_badge_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user badge {user_badge_id}: {e}")
             raise
 
     def awardBadge(self, user_badge: UserBadgeEntity) -> UserBadgeEntity:
@@ -40,6 +58,22 @@ class UserBadgeRepository:
             raise Exception("Failed to award badge")
         except Exception as e:
             logger.error(f"Error awarding badge: {e}")
+            raise
+
+    def updateBadge(self, user_badge: UserBadgeEntity) -> UserBadgeEntity:
+        try:
+            data = self.entityToData(user_badge)
+            userBadgeId = getattr(user_badge, "id", None)
+            
+            if not userBadgeId:
+                raise ValueError("User Badge ID is required for update")
+                
+            response = self._client.table(self._table_name).update(data).eq("id", userBadgeId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update user badge")
+        except Exception as e:
+            logger.error(f"Error updating user badge: {e}")
             raise
 
     def deleteBadge(self, user_badge_id: int) -> bool:

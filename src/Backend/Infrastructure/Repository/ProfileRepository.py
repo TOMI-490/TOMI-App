@@ -30,6 +30,15 @@ class ProfileRepository:
     #============================================================================================================
     # CRUD Operations
     
+    # Fetch all profiles
+    def fetchAllProfiles(self) -> List[ProfileEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all profiles: {e}")
+            raise
+
     # Fetch the profile by ID and return as Profile object    
     def fetchProfileById(self, profile_id: int) -> Optional[ProfileEntity]:
         try:
@@ -64,6 +73,15 @@ class ProfileRepository:
             raise Exception("Failed to update profile")
         except Exception as e:
             logger.error(f"Error updating profile: {e}")
+            raise
+        
+    # Delete a profile by ID
+    def deleteProfile(self, profile_id: int) -> bool:
+        try:
+            self._client.table(self._table_name).delete().eq("profileId", profile_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting profile {profile_id}: {e}")
             raise
         
         

@@ -3,7 +3,7 @@ from typing import List
 import logging
 
 from ...Core.Entity.FriendEntity import FriendEntity
-from ...Core.DTO.FriendDTO import FriendCreateDTO, FriendResponseDTO
+from ...Core.DTO.FriendDTO import FriendCreateDTO, FriendUpdateDTO, FriendResponseDTO
 from ...Infrastructure.Repository.FriendRepository import FriendRepository
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,27 @@ async def addFriend(friend_data: FriendCreateDTO):
         return FriendResponseDTO(**created_friend.__dict__)
     except Exception as e:
         logger.error(f"Error adding friend: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Update a friend connection
+@router.put("/{friendship_id}", response_model=FriendResponseDTO)
+async def updateFriendship(friendship_id: int, friend_data: FriendUpdateDTO):
+    try:
+        existing_friend = friendRepo.fetchFriendshipById(friendship_id)
+        if not existing_friend:
+            raise HTTPException(status_code=404, detail="Friendship not found")
+        
+        update_data = friend_data.model_dump(exclude_unset=True)
+        friend_dict = existing_friend.__dict__.copy()
+        friend_dict.update(update_data)
+        
+        friend = FriendEntity(**friend_dict)
+        updated_friend = friendRepo.updateFriendship(friend)
+        return FriendResponseDTO(**updated_friend.__dict__)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating friendship {friendship_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 # Remove a friend connection

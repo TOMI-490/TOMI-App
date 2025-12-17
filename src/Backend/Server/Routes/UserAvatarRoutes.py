@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from typing import List
 import logging
 
 from ...Core.Entity.UserAvatarEntity import UserAvatarEntity
@@ -8,6 +9,16 @@ from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarReposito
 logger = logging.getLogger(__name__)
 router = APIRouter()
 userAvatarRepo = UserAvatarRepository()
+
+# Get all user avatars
+@router.get("/", response_model=List[UserAvatarResponseDTO])
+async def getAllUserAvatars():
+    try:
+        avatars = userAvatarRepo.fetchAllUserAvatars()
+        return [UserAvatarResponseDTO(**avatar.__dict__) for avatar in avatars]
+    except Exception as e:
+        logger.error(f"Error fetching all user avatars: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Get the active avatar for a specific user
 @router.get("/user/{user_id}", response_model=UserAvatarResponseDTO)
@@ -55,3 +66,12 @@ async def updateUserAvatar(avatar_id: int, avatar_data: UserAvatarUpdateDTO):
     except Exception as e:
         logger.error(f"Error updating avatar {avatar_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# Delete a user avatar
+@router.delete("/{avatar_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deleteUserAvatar(avatar_id: int):
+    try:
+        userAvatarRepo.deleteUserAvatar(avatar_id)
+    except Exception as e:
+        logger.error(f"Error deleting user avatar {avatar_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

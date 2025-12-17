@@ -51,3 +51,27 @@ class GoalStatusRepository:
         except Exception as e:
             logger.error(f"Error creating goal status: {e}")
             raise
+
+    def updateStatus(self, status: GoalStatusEntity) -> GoalStatusEntity:
+        try:
+            data = self.entityToData(status)
+            statusId = getattr(status, "goalStatusId", None)
+            
+            if not statusId:
+                raise ValueError("Goal Status ID is required for update")
+                
+            response = self._client.table(self._table_name).update(data).eq("goalStatusId", statusId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update goal status")
+        except Exception as e:
+            logger.error(f"Error updating goal status: {e}")
+            raise
+
+    def deleteStatus(self, status_id: int) -> bool:
+        try:
+            self._client.table(self._table_name).delete().eq("goalStatusId", status_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting goal status {status_id}: {e}")
+            raise

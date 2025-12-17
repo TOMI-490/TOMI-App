@@ -23,6 +23,14 @@ class WatchDeviceRepository:
             return entity.to_dict()
         return entity.__dict__
 
+    def fetchAllDevices(self) -> List[WatchDeviceEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all devices: {e}")
+            raise
+
     def fetchDevicesByUserId(self, user_id: int) -> List[WatchDeviceEntity]:
         try:
             response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()

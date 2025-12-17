@@ -23,6 +23,24 @@ class StreakRepository:
             return entity.to_dict()
         return entity.__dict__
 
+    def fetchAllStreaks(self) -> List[StreakEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all streaks: {e}")
+            raise
+
+    def fetchStreakById(self, streak_id: int) -> Optional[StreakEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("StreakId", streak_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching streak {streak_id}: {e}")
+            raise
+
     def fetchStreaksByUserId(self, user_id: int) -> List[StreakEntity]:
         try:
             response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()

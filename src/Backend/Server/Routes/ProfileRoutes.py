@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from typing import List
 import logging
 
 from ...Core.Entity.ProfileEntity import ProfileEntity
@@ -8,6 +9,16 @@ from ...Infrastructure.Repository.ProfileRepository import ProfileRepository
 logger = logging.getLogger(__name__)
 router = APIRouter()
 profileRepo = ProfileRepository()
+
+# Get all profiles
+@router.get("/", response_model=List[ProfileResponseDTO])
+async def getAllProfiles():
+    try:
+        profiles = profileRepo.fetchAllProfiles()
+        return [ProfileResponseDTO(**profile.__dict__) for profile in profiles]
+    except Exception as e:
+        logger.error(f"Error fetching all profiles: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Get profile statistics for a specific user
 @router.get("/user/{user_id}", response_model=ProfileResponseDTO)
@@ -55,3 +66,12 @@ async def updateProfile(profile_id: int, profile_data: ProfileUpdateDTO):
     except Exception as e:
         logger.error(f"Error updating profile {profile_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# Delete a profile
+@router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deleteProfile(profile_id: int):
+    try:
+        profileRepo.deleteProfile(profile_id)
+    except Exception as e:
+        logger.error(f"Error deleting profile {profile_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -3,7 +3,7 @@ from typing import List
 import logging
 
 from ...Core.Entity.Notifications import NotificationsEntity
-from ...Core.DTO.NotificationDTO import NotificationCreateDTO, NotificationResponseDTO
+from ...Core.DTO.NotificationDTO import NotificationCreateDTO, NotificationUpdateDTO, NotificationResponseDTO
 from ...Infrastructure.Repository.NotificationRepository import NotificationRepository
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,27 @@ async def createNotification(notif_data: NotificationCreateDTO):
         return NotificationResponseDTO(**created_notif.__dict__)
     except Exception as e:
         logger.error(f"Error creating notification: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Update a notification
+@router.put("/{notif_id}", response_model=NotificationResponseDTO)
+async def updateNotification(notif_id: int, notif_data: NotificationUpdateDTO):
+    try:
+        existing_notif = notifRepo.fetchNotificationById(notif_id)
+        if not existing_notif:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        update_data = notif_data.model_dump(exclude_unset=True)
+        notif_dict = existing_notif.__dict__.copy()
+        notif_dict.update(update_data)
+        
+        notification = NotificationsEntity(**notif_dict)
+        updated_notif = notifRepo.updateNotification(notification)
+        return NotificationResponseDTO(**updated_notif.__dict__)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating notification {notif_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 # Mark a notification as read

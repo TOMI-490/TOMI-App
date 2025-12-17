@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 streakRepo = StreakRepository()
 
+# Get all streaks
+@router.get("/", response_model=List[StreakResponseDTO])
+async def getAllStreaks():
+    try:
+        streaks = streakRepo.fetchAllStreaks()
+        return [StreakResponseDTO(**streak.__dict__) for streak in streaks]
+    except Exception as e:
+        logger.error(f"Error fetching all streaks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Get all active streaks for a user
 @router.get("/user/{user_id}", response_model=List[StreakResponseDTO])
 async def getUserStreaks(user_id: int):

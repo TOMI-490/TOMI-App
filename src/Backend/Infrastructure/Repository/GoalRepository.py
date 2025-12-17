@@ -30,6 +30,26 @@ class GoalRepository:
     #============================================================================================================
     # CRUD Operations
     
+    # fetch all goals
+    def fetchAllGoals(self) -> List[GoalEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").execute()
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all goals: {e}")
+            raise
+
+    # fetch goal by ID
+    def fetchGoalById(self, goalId: int) -> Optional[GoalEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("goalId", goalId).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching goal by ID: {e}")
+            raise
+
     # fetch goals by user ID and return them as a list of Goal objects
     def fetchGoalsByUserId(self, userId: int) -> List[GoalEntity]:
         try:
