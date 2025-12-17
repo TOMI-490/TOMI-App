@@ -5,7 +5,6 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
 from contextlib import asynccontextmanager
-from typing import Optional
 from datetime import datetime
 import uvicorn
 import sys
