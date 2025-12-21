@@ -1,11 +1,16 @@
 export interface UserBadgeResponseDto {
-  userBadgeId: number;
+  id: number;
   userId: number;
   badgeId: number;
-  earnedAt: string;
+  awardedDate: string;
 }
 
-export interface UserBadgeAwardDto {
+export interface UserBadgeCreateDto {
   userId: number;
   badgeId: number;
+  awardedDate: string;
+}
+
+export interface UserBadgeUpdateDto {
+  awardedDate?: string;
 }
