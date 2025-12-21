@@ -1,23 +1,21 @@
 export interface WatchDeviceResponseDto {
   deviceId: number;
   userId: number;
-  deviceName: string;
-  deviceType: string;
-  isActive: boolean;
-  lastSyncedAt?: string;
+  serialNumber: string;
+  model: string;
+  nickname: string;
   createdAt: string;
 }
 
-export interface WatchDeviceRegisterDto {
+export interface WatchDeviceCreateDto {
   userId: number;
-  deviceName: string;
-  deviceType: string;
-  isActive?: boolean;
+  serialNumber: string;
+  model: string;
+  nickname: string;
 }
 
 export interface WatchDeviceUpdateDto {
-  deviceName?: string;
-  deviceType?: string;
-  isActive?: boolean;
-  lastSyncedAt?: string;
+  serialNumber?: string;
+  model?: string;
+  nickname?: string;
 }
