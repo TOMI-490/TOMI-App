@@ -1,5 +1,6 @@
 export interface UserResponseDto {
   userId: number;
+  authUid?: string;  // Supabase Auth UID
   name: string;
   email: string;
   country: string;
@@ -10,6 +11,7 @@ export interface UserResponseDto {
 }
 
 export interface UserCreateDto {
+  authUid: string;  // Supabase Auth UID
   name: string;
   email: string;
   country: string;
@@ -18,6 +20,7 @@ export interface UserCreateDto {
 }
 
 export interface UserUpdateDto {
+  authUid?: string;
   name?: string;
   email?: string;
   country?: string;

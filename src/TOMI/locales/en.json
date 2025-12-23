@@ -34,5 +34,25 @@
     "nameRequired": "Full name is required.",
     "confirmPasswordRequired": "Please confirm your password.",
     "passwordsDoNotMatch": "Passwords do not match."
+  },
+  "alerts": {
+    "verifyEmail": {
+      "title": "Verify Your Email",
+      "message": "Please check your email and click the verification link to activate your account.",
+      "button": "OK"
+    },
+    "registrationSuccess": {
+      "title": "Success!",
+      "message": "Your account has been created successfully.",
+      "button": "OK"
+    },
+    "registrationFailed": {
+      "title": "Registration Failed",
+      "messageDefault": "Unable to create account. Please try again."
+    },
+    "loginFailed": {
+      "title": "Login Failed",
+      "messageDefault": "Unable to sign in. Please check your credentials and try again."
+    }
   }
 }

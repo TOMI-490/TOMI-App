@@ -50,8 +50,8 @@ export default function LoginPage() {
         router.replace('/(tabs)');
       } catch (error: any) {
         Alert.alert(
-          'Login Failed',
-          error.message || 'Unable to sign in. Please check your credentials and try again.'
+          strings.alerts.loginFailed.title,
+          error.message || strings.alerts.loginFailed.messageDefault
         );
       } finally {
         setLoading(false);

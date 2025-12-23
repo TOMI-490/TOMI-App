@@ -3,6 +3,8 @@ import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import strings from '../locales/en.json';
 import { signUpWithEmail } from '../services/auth';
+import { userService } from '../services/api';
+import type { UserCreateDto } from '../models/dto/User.dto';
 import {
   AuthContainer,
   AuthCard,
@@ -35,6 +37,7 @@ export default function RegisterPage() {
   };
 
   const handleRegister = async () => {
+    console.log('[RegisterPage] Starting registration process...');
     const newErrors: ValidationErrors = {};
 
     // Validate name
@@ -69,26 +72,77 @@ export default function RegisterPage() {
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       try {
-        await signUpWithEmail(email, password);
-        // On success, show confirmation and navigate
-        Alert.alert(
-          'Success!',
-          'Your account has been created successfully. Please check your email to verify your account.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(tabs)'),
-            },
-          ]
-        );
+        console.log('[RegisterPage] Step 1: Creating Supabase Auth user...');
+        // Step 1: Create Supabase Auth user
+        const result = await signUpWithEmail(email, password, { name: name.trim() });
+        console.log('[RegisterPage] Supabase Auth user created:', result.user?.id);
+        
+        if (!result.user) {
+          throw new Error('Failed to create authentication account');
+        }
+
+        console.log('[RegisterPage] Step 2: Creating user record in database...');
+        // Step 2: Create user record in database
+        const userData: UserCreateDto = {
+          authUid: result.user.id,  // Link to Supabase Auth user
+          email: email.trim(),
+          name: name.trim(),
+          country: 'US', // Default value - should be updated with actual user input
+          unitSystem: 'metric', // Default value - should be updated with actual user input
+          language: 'en', // Default value - should be updated with actual user input
+        };
+        console.log('[RegisterPage] User data to be saved:', { ...userData, authUid: userData.authUid.substring(0, 8) + '...' });
+
+        const createdUser = await userService.create(userData);
+        console.log('[RegisterPage] User created in database:', createdUser.userId);
+        
+        // Check if email confirmation is required
+        if (result.user && !result.session) {
+          console.log('[RegisterPage] Email confirmation required');
+          // Email confirmation required
+          Alert.alert(
+            strings.alerts.verifyEmail.title,
+            strings.alerts.verifyEmail.message,
+            [{ text: strings.alerts.verifyEmail.button, onPress: () => router.back() }]
+          );
+        } else {
+          console.log('[RegisterPage] Registration successful, auto-signed in');
+          // Auto-signed in (confirmation disabled)
+          Alert.alert(
+            strings.alerts.registrationSuccess.title,
+            strings.alerts.registrationSuccess.message,
+            [{ text: strings.alerts.registrationSuccess.button, onPress: () => router.replace('/(tabs)') }]
+          );
+        }
       } catch (error: any) {
+        console.error('[RegisterPage] Registration failed:', error);
+        console.error('[RegisterPage] Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        let errorMessage = error.message || strings.alerts.registrationFailed.messageDefault;
+        
+        // Provide more specific error messages
+        if (error.message?.includes('Network Error') || error.code === 'ECONNREFUSED') {
+          errorMessage = 'Cannot connect to server. Please make sure the backend server is running.';
+        } else if (error.response?.status === 409) {
+          errorMessage = 'An account with this email already exists.';
+        } else if (error.response?.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        
         Alert.alert(
-          'Registration Failed',
-          error.message || 'Unable to create account. Please try again.'
+          strings.alerts.registrationFailed.title,
+          errorMessage
         );
       } finally {
         setLoading(false);
+        console.log('[RegisterPage] Registration process completed');
       }
+    } else {
+      console.log('[RegisterPage] Validation errors:', newErrors);
     }
   };
 
