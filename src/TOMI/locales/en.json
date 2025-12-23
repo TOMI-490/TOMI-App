@@ -1,0 +1,38 @@
+{
+  "login": {
+    "logoPlaceholder": "LOGO",
+    "title": "TOMI",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "primaryButton": "Log In",
+    "noAccount": "Don't have an account?",
+    "secondaryButton": "Create Account"
+  },
+  "register": {
+    "logoPlaceholder": "LOGO",
+    "title": "Create an account",
+    "subtitle": "Sign up to get started",
+    "nameLabel": "Full Name *",
+    "namePlaceholder": "John Doe",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@example.com",
+    "passwordLabel": "Password *",
+    "passwordPlaceholder": "At least 6 characters",
+    "confirmPasswordLabel": "Confirm Password *",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "primaryButton": "Sign Up",
+    "haveAccount": "Already have an account?",
+    "secondaryButton": "Log In"
+  },
+  "validation": {
+    "emailRequired": "Email is required.",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "nameRequired": "Full name is required.",
+    "confirmPasswordRequired": "Please confirm your password.",
+    "passwordsDoNotMatch": "Passwords do not match."
+  }
+}
