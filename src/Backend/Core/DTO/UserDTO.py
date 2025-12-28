@@ -10,6 +10,7 @@ class UserCreateDTO(BaseModel):
     country: str = Field(..., min_length=1, max_length=100)
     unitSystem: str = Field(..., min_length=1, max_length=50)
     language: str = Field(..., min_length=1, max_length=50)
+    onBoardingComplete: bool = False  # Defaults to false for new users
     
     class Config:
         populate_by_name = True
@@ -21,6 +22,7 @@ class UserUpdateDTO(BaseModel):
     country: Optional[str] = Field(None, min_length=1, max_length=100)
     unitSystem: Optional[str] = Field(None, min_length=1, max_length=50)
     language: Optional[str] = Field(None, min_length=1, max_length=50)
+    onBoardingComplete: Optional[bool] = None
 
 # DTO for responding with user data
 class UserResponseDTO(BaseModel):
@@ -31,6 +33,7 @@ class UserResponseDTO(BaseModel):
     country: str
     unitSystem: str
     language: str
+    onBoardingComplete: bool
     created_at: datetime = Field(alias="created_at")  # Matches DB column name
     
     class Config:

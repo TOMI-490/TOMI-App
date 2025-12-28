@@ -125,6 +125,7 @@ export default function RegisterPage() {
           country: country,
           unitSystem: unitSystem,
           language: language,
+          onBoardingComplete: false,  // New users haven't completed onboarding yet
         };
         console.log('[RegisterPage] User data to be saved:', { ...userData, authID: userData.authID.substring(0, 8) + '...' });
 

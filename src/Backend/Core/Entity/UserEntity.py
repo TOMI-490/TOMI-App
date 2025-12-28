@@ -11,6 +11,7 @@ class UserEntity(BaseModel):
     country: str 
     unitSystem: str 
     language: str
+    onBoardingComplete: bool = False  # Indicates whether the user has completed onboarding
     created_at: datetime = Field(alias="created_at")  # Database column name
     
     class Config:
