@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import strings from '../locales/en.json';
 import { signInWithEmail } from '../services/auth';
@@ -63,6 +63,10 @@ export default function LoginPage() {
     router.push('/(auth)/register');
   };
 
+  const handleForgotPassword = () => {
+    router.push('/(auth)/forgot-password');
+  };
+
   return (
     <AuthContainer>
       <AuthCard>
@@ -104,6 +108,15 @@ export default function LoginPage() {
             autoCorrect={false}
             editable={!loading}
           />
+
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            style={{ alignSelf: 'center', marginBottom: 16 }}
+          >
+            <Text style={{ color: '#666', fontSize: 14 }}>
+              {strings.login.forgotPassword}
+            </Text>
+          </TouchableOpacity>
 
           <PrimaryButton
             title={strings.login.primaryButton}

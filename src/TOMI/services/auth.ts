@@ -47,3 +47,25 @@ export const signUpWithEmail = async (
     return data;
 };
 
+export const resetPasswordForEmail = async (email: string) => {
+    const {data, error} = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'tomi://reset-password'
+    });
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
+export const updatePassword = async (newPassword: string) => {
+    const {data, error} = await supabase.auth.updateUser({
+        password: newPassword
+    });
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
+export { supabase };
+

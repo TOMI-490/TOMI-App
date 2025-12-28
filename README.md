@@ -129,14 +129,20 @@ TOMI-App/
     │
     └── TOMI/                       # React Native Frontend
         ├── app/                    # Expo Router app directory
-        │   ├── _layout.tsx
+        │   ├── _layout.tsx        # Root layout with deep link handling
         │   ├── (auth)/            # Authentication screens
+        │   │   ├── login.tsx
+        │   │   ├── register.tsx
+        │   │   ├── forgot-password.tsx
+        │   │   └── reset-password.tsx
         │   └── (tabs)/            # Tab navigation screens
         │
         ├── pages/                  # Main page components
         │   ├── HomePage.tsx
         │   ├── LoginPage.tsx
         │   ├── RegisterPage.tsx   # Registration with email pre-check
+        │   ├── ForgotPasswordPage.tsx  # Password reset request (⚠️ deep linking needs configuration)
+        │   ├── ResetPasswordPage.tsx   # Password reset form (⚠️ deep linking needs configuration)
         │   ├── WorkoutPage.tsx
         │   ├── CommunityPage.tsx
         │   ├── HistoryPage.tsx
@@ -172,12 +178,13 @@ TOMI-App/
         │   │   ├── progressBar.styles.ts
         │   │   └── logoPlaceholder.styles.ts
         │   ├── auth.styles.ts     # Shared auth styles
-        │   └── README.md          # Style organization documentation
-        │
-        ├── services/              # API and authentication services
-        │   ├── api.ts            # Main API service exports
-        │   ├── auth.ts           # Supabase authentication service
+        │   └── README.md          # Style organization documentati (login, register, password reset)
         │   ├── httpClient.ts     # Axios HTTP client configuration
+        │   ├── config/
+        │   │   └── api.config.ts # API configuration
+        │   ├── core/
+        │   │   ├── base.service.ts
+        │   │   └── supabase.ts   # Supabase client initialization Axios HTTP client configuration
         │   ├── config/
         │   │   └── api.config.ts # API configuration
         │   ├── core/
