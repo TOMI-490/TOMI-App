@@ -10,6 +10,9 @@ export const userService = {
   getById: (id: Id) =>
     httpClient.get<UserResponseDto>(`/api/v1/users/${id}`).then(r => r.data),
   
+  checkEmail: (email: string) =>
+    httpClient.get<{ exists: boolean; email: string }>(`/api/v1/users/check-email/${encodeURIComponent(email)}`).then(r => r.data),
+  
   create: (data: UserCreateDto) =>
     httpClient.post<UserResponseDto>('/api/v1/users', data).then(r => r.data),
   

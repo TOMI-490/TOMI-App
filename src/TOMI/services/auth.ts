@@ -26,14 +26,46 @@ export const signInWithEmail = async (email: string, password: string) => {
     return data;
 };
 
-export const signUpWithEmail = async (email: string, password: string) => {
+export const signUpWithEmail = async (
+    email: string, 
+    password: string,
+    metadata?: { name?: string; [key: string]: any }
+) => {
     const {data, error} = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+            // Add user metadata (like name)
+            data: metadata,
+            // Optional: customize email redirect URL for deep linking
+            // emailRedirectTo: 'your-app-scheme://auth/callback'
+        }
     });
     if (error) {
         throw error;
     }
     return data;
 };
+
+export const resetPasswordForEmail = async (email: string) => {
+    const {data, error} = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'tomi://reset-password'
+    });
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
+export const updatePassword = async (newPassword: string) => {
+    const {data, error} = await supabase.auth.updateUser({
+        password: newPassword
+    });
+    if (error) {
+        throw error;
+    }
+    return data;
+};
+
+export { supabase };
 

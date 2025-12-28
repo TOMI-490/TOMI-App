@@ -54,6 +54,16 @@ class UserRepository:
         except Exception as e:
             logger.error(f"Error fetching user by ID: {e}")
             raise
+    
+    # Check if a user exists by email
+    def emailExists(self, email: str) -> bool:
+        try:
+            response = self._client.table(self._table_name).select("userId").eq("email", email).execute()
+            return len(response.data) > 0
+        
+        except Exception as e:
+            logger.error(f"Error checking if email exists: {e}")
+            raise
         
     # Create a new user and return the created User object
     def createUser(self, user: UserEntity) -> UserEntity:
@@ -71,6 +81,23 @@ class UserRepository:
         
         except Exception as e:
             logger.error(f"Error creating user: {e}")
+            raise
+    
+    # Create a new user from DTO (without userId and created_at, let database generate them)
+    def createUserFromDTO(self, user_dto) -> UserEntity:
+        try:
+            # Convert DTO to dict, using aliases to match database column names
+            data = user_dto.model_dump(by_alias=True)
+            
+            # Insert into database - userId and created_at will be auto-generated
+            response = self._client.table(self._table_name).insert(data).execute()
+            
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to create user")
+        
+        except Exception as e:
+            logger.error(f"Error creating user from DTO: {e}")
             raise
         
     

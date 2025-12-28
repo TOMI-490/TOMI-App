@@ -179,7 +179,8 @@ async def generalExceptionHandler(request, exc: Exception):
 
 
 if __name__ == "__main__":
-    uvicorn.run("src.Backend.Server.program:app", host="127.0.0.1", port=8000, log_level="info", reload=True)
+    # Use 0.0.0.0 to allow connections from mobile devices on the same network
+    uvicorn.run("src.Backend.Server.program:app", host="0.0.0.0", port=8000, log_level="info", reload=True)
 
     
     

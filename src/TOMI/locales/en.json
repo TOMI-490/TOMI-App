@@ -1,0 +1,101 @@
+{
+  "login": {
+    "logoPlaceholder": "LOGO",
+    "title": "TOMI",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot Password?",
+    "primaryButton": "Log In",
+    "noAccount": "Don't have an account?",
+    "secondaryButton": "Create Account"
+  },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email to receive a password reset link",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@example.com",
+    "primaryButton": "Send Reset Link",
+    "backToLogin": "Back to Login"
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password",
+    "passwordLabel": "New Password *",
+    "passwordPlaceholder": "At least 6 characters",
+    "confirmPasswordLabel": "Confirm New Password *",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "primaryButton": "Reset Password",
+    "backToLogin": "Back to Login"
+  },
+  "register": {
+    "logoPlaceholder": "LOGO",
+    "title": "Create an account",
+    "subtitle": "Sign up to get started",
+    "nameLabel": "Full Name *",
+    "namePlaceholder": "John Doe",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@example.com",
+    "passwordLabel": "Password *",
+    "passwordPlaceholder": "At least 6 characters",
+    "confirmPasswordLabel": "Confirm Password *",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "countryLabel": "Country *",
+    "unitSystemLabel": "Unit System *",
+    "languageLabel": "Language *",
+    "primaryButton": "Sign Up",
+    "haveAccount": "Already have an account?",
+    "secondaryButton": "Log In"
+  },
+  "validation": {
+    "emailRequired": "Email is required.",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "nameRequired": "Full name is required.",
+    "confirmPasswordRequired": "Please confirm your password.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "countryRequired": "Country is required.",
+    "unitSystemRequired": "Unit system is required.",
+    "languageRequired": "Language is required."
+  },
+  "alerts": {
+    "verifyEmail": {
+      "title": "Verify Your Email",
+      "message": "Please check your email and click the verification link to activate your account.",
+      "button": "OK"
+    },
+    "registrationSuccess": {
+      "title": "Success!",
+      "message": "Your account has been created successfully.",
+      "button": "OK"
+    },
+    "registrationFailed": {
+      "title": "Registration Failed",
+      "messageDefault": "Unable to create account. Please try again."
+    },
+    "loginFailed": {
+      "title": "Login Failed",
+      "messageDefault": "Unable to sign in. Please check your credentials and try again."
+    },
+    "resetEmailSent": {
+      "title": "Email Sent",
+      "message": "Please check your email for a password reset link.",
+      "button": "OK"
+    },
+    "resetEmailFailed": {
+      "title": "Failed to Send Email",
+      "messageDefault": "Unable to send reset email. Please try again."
+    },
+    "passwordResetSuccess": {
+      "title": "Success!",
+      "message": "Your password has been reset successfully.",
+      "button": "OK"
+    },
+    "passwordResetFailed": {
+      "title": "Reset Failed",
+      "messageDefault": "Unable to reset password. Please try again."
+    }
+  }
+}
