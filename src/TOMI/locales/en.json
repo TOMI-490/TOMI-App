@@ -97,5 +97,31 @@
       "title": "Reset Failed",
       "messageDefault": "Unable to reset password. Please try again."
     }
+  },
+  "home": {
+    "loading": "Loading...",
+    "errorLoading": "Failed to load dashboard data. Please try again.",
+    "retry": "Retry",
+    "backButton": "Go back",
+    "menuButton": "Open menu",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening",
+    "levelStage": "Level {level} • {stage}",
+    "dayStreak": "{days} Day Streak",
+    "dailyGoal": "Daily Goal",
+    "startWorkout": "Start Workout",
+    "customize": "Customize",
+    "todaysProgress": "Today's Progress",
+    "workouts": "Workouts",
+    "minutes": "Minutes",
+    "xpEarned": "XP Earned"
+  },
+  "nav": {
+    "home": "Home",
+    "community": "Community",
+    "workout": "Workout",
+    "avatar": "Avatar",
+    "history": "History"
   }
 }
