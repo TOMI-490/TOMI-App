@@ -1,17 +1,17 @@
 export interface UserResponseDto {
   userId: number;
-  authUid?: string;  // Supabase Auth UID
+  authID?: string;  // Supabase Auth UID - matches database column name
   name: string;
   email: string;
   country: string;
   unitSystem: string;
   language: string;
-  createdAt: string;
+  created_at: string;  // Matches database column name
   updatedAt?: string;
 }
 
 export interface UserCreateDto {
-  authUid: string;  // Supabase Auth UID
+  authID: string;  // Supabase Auth UID - matches database column name
   name: string;
   email: string;
   country: string;
@@ -20,7 +20,7 @@ export interface UserCreateDto {
 }
 
 export interface UserUpdateDto {
-  authUid?: string;
+  authID?: string;
   name?: string;
   email?: string;
   country?: string;

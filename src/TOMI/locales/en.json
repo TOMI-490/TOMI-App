@@ -22,6 +22,9 @@
     "passwordPlaceholder": "At least 6 characters",
     "confirmPasswordLabel": "Confirm Password *",
     "confirmPasswordPlaceholder": "Re-enter your password",
+    "countryLabel": "Country *",
+    "unitSystemLabel": "Unit System *",
+    "languageLabel": "Language *",
     "primaryButton": "Sign Up",
     "haveAccount": "Already have an account?",
     "secondaryButton": "Log In"
@@ -33,7 +36,10 @@
     "passwordTooShort": "Password must be at least 6 characters.",
     "nameRequired": "Full name is required.",
     "confirmPasswordRequired": "Please confirm your password.",
-    "passwordsDoNotMatch": "Passwords do not match."
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "countryRequired": "Country is required.",
+    "unitSystemRequired": "Unit system is required.",
+    "languageRequired": "Language is required."
   },
   "alerts": {
     "verifyEmail": {

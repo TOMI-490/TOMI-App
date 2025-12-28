@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { ProgressBar } from './ProgressBar';
+import { passwordStrengthIndicatorStyles } from '../../styles/auth/passwordStrengthIndicator.styles';
 
 interface PasswordStrengthIndicatorProps {
   password: string;
@@ -57,21 +58,9 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
   }
 
   return (
-    <View style={styles.container}>
+    <View style={passwordStrengthIndicatorStyles.container}>
       <ProgressBar progress={strength} color={color} height={6} />
-      {label && <Text style={[styles.label, { color }]}>{label}</Text>}
+      {label && <Text style={[passwordStrengthIndicatorStyles.label, { color }]}>{label}</Text>}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-});

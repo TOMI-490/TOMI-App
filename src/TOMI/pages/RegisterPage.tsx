@@ -9,17 +9,22 @@ import {
   AuthContainer,
   AuthCard,
   FormInput,
+  PickerInput,
   PrimaryButton,
   SecondaryButton,
   PasswordStrengthIndicator,
 } from '../components/auth';
 import { authStyles } from '../styles/auth.styles';
+import { COUNTRY_OPTIONS, UNIT_SYSTEM_OPTIONS, LANGUAGE_OPTIONS } from '../constants/options';
 
 interface ValidationErrors {
   name?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
+  country?: string;
+  unitSystem?: string;
+  language?: string;
 }
 
 export default function RegisterPage() {
@@ -28,6 +33,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [country, setCountry] = useState('US');
+  const [unitSystem, setUnitSystem] = useState('metric');
+  const [language, setLanguage] = useState('en');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [loading, setLoading] = useState(false);
 
@@ -66,12 +74,37 @@ export default function RegisterPage() {
       newErrors.confirmPassword = strings.validation.passwordsDoNotMatch;
     }
 
+    // Validate country
+    if (!country) {
+      newErrors.country = strings.validation.countryRequired;
+    }
+
+    // Validate unit system
+    if (!unitSystem) {
+      newErrors.unitSystem = strings.validation.unitSystemRequired;
+    }
+
+    // Validate language
+    if (!language) {
+      newErrors.language = strings.validation.languageRequired;
+    }
+
     setErrors(newErrors);
 
     // If no errors, proceed with registration
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
+      let authUserId: string | null = null;
+      
       try {
+        console.log('[RegisterPage] Pre-check: Verifying email is not already registered...');
+        // PRE-CHECK: Verify email doesn't exist in database before creating Supabase Auth user
+        const emailCheck = await userService.checkEmail(email.trim());
+        if (emailCheck.exists) {
+          throw new Error('EMAIL_EXISTS');
+        }
+        console.log('[RegisterPage] Email is available');
+
         console.log('[RegisterPage] Step 1: Creating Supabase Auth user...');
         // Step 1: Create Supabase Auth user
         const result = await signUpWithEmail(email, password, { name: name.trim() });
@@ -81,17 +114,19 @@ export default function RegisterPage() {
           throw new Error('Failed to create authentication account');
         }
 
+        authUserId = result.user.id; // Store for potential rollback
+
         console.log('[RegisterPage] Step 2: Creating user record in database...');
         // Step 2: Create user record in database
         const userData: UserCreateDto = {
-          authUid: result.user.id,  // Link to Supabase Auth user
+          authID: result.user.id,  // Link to Supabase Auth user - matches database column
           email: email.trim(),
           name: name.trim(),
-          country: 'US', // Default value - should be updated with actual user input
-          unitSystem: 'metric', // Default value - should be updated with actual user input
-          language: 'en', // Default value - should be updated with actual user input
+          country: country,
+          unitSystem: unitSystem,
+          language: language,
         };
-        console.log('[RegisterPage] User data to be saved:', { ...userData, authUid: userData.authUid.substring(0, 8) + '...' });
+        console.log('[RegisterPage] User data to be saved:', { ...userData, authID: userData.authID.substring(0, 8) + '...' });
 
         const createdUser = await userService.create(userData);
         console.log('[RegisterPage] User created in database:', createdUser.userId);
@@ -122,13 +157,39 @@ export default function RegisterPage() {
           status: error.response?.status
         });
         
+        // ROLLBACK: If we created a Supabase Auth user but database creation failed, delete the auth user
+        if (authUserId) {
+          try {
+            console.log('[RegisterPage] Rolling back: Deleting Supabase Auth user...');
+            const { supabase } = await import('../services/auth');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.id === authUserId) {
+              // If we're logged in as this user, sign out first
+              await supabase.auth.signOut();
+            }
+            // Note: Supabase Auth user deletion requires admin privileges
+            // The orphaned auth user will need to be cleaned up manually or via backend
+            console.log('[RegisterPage] Auth user rollback attempted. Manual cleanup may be required.');
+          } catch (rollbackError) {
+            console.error('[RegisterPage] Rollback failed:', rollbackError);
+          }
+        }
+        
         let errorMessage = error.message || strings.alerts.registrationFailed.messageDefault;
         
         // Provide more specific error messages
-        if (error.message?.includes('Network Error') || error.code === 'ECONNREFUSED') {
+        if (error.message === 'EMAIL_EXISTS') {
+          errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+        } else if (error.message?.includes('Network Error') || error.code === 'ECONNREFUSED') {
           errorMessage = 'Cannot connect to server. Please make sure the backend server is running.';
-        } else if (error.response?.status === 409) {
-          errorMessage = 'An account with this email already exists.';
+        } else if (error.response?.status === 409 || error.response?.status === 400) {
+          // Check if it's a duplicate key/email error
+          const responseMessage = error.response?.data?.message || '';
+          if (responseMessage.includes('duplicate key') || responseMessage.includes('already exists') || responseMessage.includes('User_email_key')) {
+            errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+          } else {
+            errorMessage = error.response?.data?.message || 'Invalid request. Please check your information.';
+          }
         } else if (error.response?.status >= 500) {
           errorMessage = 'Server error. Please try again later.';
         }
@@ -225,6 +286,48 @@ export default function RegisterPage() {
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
+          />
+
+          <PickerInput
+            label={strings.register.countryLabel}
+            value={country}
+            onValueChange={(value) => {
+              setCountry(value);
+              if (errors.country) {
+                setErrors({ ...errors, country: undefined });
+              }
+            }}
+            items={COUNTRY_OPTIONS}
+            error={errors.country}
+            disabled={loading}
+          />
+
+          <PickerInput
+            label={strings.register.unitSystemLabel}
+            value={unitSystem}
+            onValueChange={(value) => {
+              setUnitSystem(value);
+              if (errors.unitSystem) {
+                setErrors({ ...errors, unitSystem: undefined });
+              }
+            }}
+            items={UNIT_SYSTEM_OPTIONS}
+            error={errors.unitSystem}
+            disabled={loading}
+          />
+
+          <PickerInput
+            label={strings.register.languageLabel}
+            value={language}
+            onValueChange={(value) => {
+              setLanguage(value);
+              if (errors.language) {
+                setErrors({ ...errors, language: undefined });
+              }
+            }}
+            items={LANGUAGE_OPTIONS}
+            error={errors.language}
+            disabled={loading}
           />
 
           <PrimaryButton

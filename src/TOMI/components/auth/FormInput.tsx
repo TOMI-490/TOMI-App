@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, TextInputProps, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TextInputProps } from 'react-native';
+import { formInputStyles } from '../../styles/auth/formInput.styles';
 
 interface FormInputProps extends TextInputProps {
   label: string;
@@ -8,44 +9,14 @@ interface FormInputProps extends TextInputProps {
 
 export function FormInput({ label, error, style, ...props }: FormInputProps) {
   return (
-    <View style={styles.inputGroup}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={formInputStyles.inputGroup}>
+      <Text style={formInputStyles.label}>{label}</Text>
       <TextInput
-        style={[styles.input, error && styles.inputError, style]}
+        style={[formInputStyles.input, error && formInputStyles.inputError, style]}
         placeholderTextColor="#999"
         {...props}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={formInputStyles.errorText}>{error}</Text>}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    height: 48,
-    backgroundColor: '#F9F9F9',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#333',
-  },
-  inputError: {
-    borderColor: '#FF4444',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#FF4444',
-    marginTop: 4,
-  },
-});

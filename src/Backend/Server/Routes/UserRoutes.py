@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 userRepo = UserRepository()
 
+# Check if email already exists in the system (called before registration)
+@router.get("/check-email/{email}", response_model=dict)
+async def checkEmailExists(email: str):
+    try:
+        exists = userRepo.emailExists(email)
+        return {"exists": exists, "email": email}
+    except Exception as e:
+        logger.error(f"Error checking email existence: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Get all users from the database
 @router.get("/", response_model=List[UserResponseDTO])
 async def getAllUsers():
@@ -38,8 +48,8 @@ async def getUser(user_id: int):
 @router.post("/", response_model=UserResponseDTO, status_code=status.HTTP_201_CREATED)
 async def createUser(user_data: UserCreateDTO):
     try:
-        user = UserEntity(**user_data.model_dump())
-        created_user = userRepo.createUser(user)
+        # Pass the DTO directly to the repository - let the database generate userId and createdAt
+        created_user = userRepo.createUserFromDTO(user_data)
         return UserResponseDTO(**created_user.__dict__)
     except Exception as e:
         logger.error(f"Error creating user: {e}")

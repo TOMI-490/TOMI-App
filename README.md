@@ -67,6 +67,8 @@ TOMI-App/
 ├── .venv/                          # Python virtual environment
 └── src/
     ├── Backend/
+    │   ├── README.md
+    │   ├── start_server.sh
     │   ├── Core/
     │   │   ├── DTO/                # Data Transfer Objects
     │   │   │   ├── UserDTO.py
@@ -75,19 +77,38 @@ TOMI-App/
     │   │   │   ├── ProfileDTO.py
     │   │   │   ├── BadgeDTO.py
     │   │   │   ├── AvatarDTO.py
-    │   │   │   └── ... (more DTOs)
+    │   │   │   ├── FriendDTO.py
+    │   │   │   ├── StreakDTO.py
+    │   │   │   ├── LeaderboardDTO.py
+    │   │   │   ├── NotificationDTO.py
+    │   │   │   └── WatchDeviceDTO.py
     │   │   └── Entity/             # Database Entities
     │   │       ├── UserEntity.py
     │   │       ├── WorkoutEntity.py
     │   │       ├── GoalEntity.py
-    │   │       └── ... (more Entities)
+    │   │       ├── ProfileEntity.py
+    │   │       ├── BadgeEntity.py
+    │   │       ├── AvatarEntity.py
+    │   │       ├── FriendEntity.py
+    │   │       ├── StreakEntity.py
+    │   │       ├── LeaderboardEntity.py
+    │   │       ├── Notifications.py
+    │   │       └── WatchDeviceEntity.py
     │   │
     │   ├── Infrastructure/
     │   │   ├── Repository/         # Data Access Layer
+    │   │   │   ├── __init__.py
     │   │   │   ├── UserRepository.py
     │   │   │   ├── WorkoutRepository.py
     │   │   │   ├── GoalRepository.py
-    │   │   │   └── ... (more Repositories)
+    │   │   │   ├── ProfileRepository.py
+    │   │   │   ├── BadgeRepository.py
+    │   │   │   ├── AvatarRepository.py
+    │   │   │   ├── FriendRepository.py
+    │   │   │   ├── StreakRepository.py
+    │   │   │   ├── LeaderboardRepository.py
+    │   │   │   ├── NotificationRepository.py
+    │   │   │   └── WatchDeviceRepository.py
     │   │   └── Supabase/
     │   │       └── db_connection.py # Database connection management
     │   │
@@ -100,7 +121,11 @@ TOMI-App/
     │           ├── AvatarRoutes.py
     │           ├── BadgeRoutes.py
     │           ├── FriendRoutes.py
-    │           └── ... (more Routes)
+    │           ├── ProfileRoutes.py
+    │           ├── StreakRoutes.py
+    │           ├── LeaderboardRoutes.py
+    │           ├── NotificationRoutes.py
+    │           └── WatchDeviceRoutes.py
     │
     └── TOMI/                       # React Native Frontend
         ├── app/                    # Expo Router app directory
@@ -111,34 +136,76 @@ TOMI-App/
         ├── pages/                  # Main page components
         │   ├── HomePage.tsx
         │   ├── LoginPage.tsx
-        │   ├── RegisterPage.tsx
+        │   ├── RegisterPage.tsx   # Registration with email pre-check
         │   ├── WorkoutPage.tsx
         │   ├── CommunityPage.tsx
         │   ├── HistoryPage.tsx
         │   └── AvatarPage.tsx
         │
         ├── components/             # Reusable UI components
+        │   ├── auth/              # Authentication components
+        │   │   ├── index.ts
+        │   │   ├── AuthCard.tsx
+        │   │   ├── AuthContainer.tsx
+        │   │   ├── FormInput.tsx
+        │   │   ├── PickerInput.tsx       # Custom modal picker
+        │   │   ├── PrimaryButton.tsx
+        │   │   ├── SecondaryButton.tsx
+        │   │   ├── PasswordStrengthIndicator.tsx
+        │   │   ├── ProgressBar.tsx
+        │   │   └── LogoPlaceholder.tsx
         │   ├── ui/
+        │   ├── haptic-tab.tsx
         │   ├── ScreenWrapper.tsx
         │   ├── themed-text.tsx
         │   └── themed-view.tsx
         │
+        ├── styles/                # Centralized styles
+        │   ├── auth/              # Authentication screen styles
+        │   │   ├── authCard.styles.ts
+        │   │   ├── authContainer.styles.ts
+        │   │   ├── formInput.styles.ts
+        │   │   ├── pickerInput.styles.ts
+        │   │   ├── primaryButton.styles.ts
+        │   │   ├── secondaryButton.styles.ts
+        │   │   ├── passwordStrengthIndicator.styles.ts
+        │   │   ├── progressBar.styles.ts
+        │   │   └── logoPlaceholder.styles.ts
+        │   ├── auth.styles.ts     # Shared auth styles
+        │   └── README.md          # Style organization documentation
+        │
         ├── services/              # API and authentication services
-        │   ├── api.ts
-        │   ├── auth.ts
+        │   ├── api.ts            # Main API service exports
+        │   ├── auth.ts           # Supabase authentication service
+        │   ├── httpClient.ts     # Axios HTTP client configuration
         │   ├── config/
-        │   └── core/
+        │   │   └── api.config.ts # API configuration
+        │   ├── core/
+        │   │   └── base.service.ts
+        │   └── resources/
+        │       └── user.service.ts    # User API service with email check
         │
         ├── models/                # TypeScript models and DTOs
         │   ├── index.ts
         │   └── dto/
+        │       └── User.dto.ts    # User DTOs (authID, created_at)
+        │
+        ├── constants/             # Application constants
+        │   └── options.ts         # Country, unit system, language options
+        │
+        ├── locales/               # Internationalization
+        │   ├── en.json           # English translations
+        │   └── fr.json           # French translations
         │
         ├── hooks/                 # Custom React hooks
         │   └── use-color-scheme.ts
         │
+        ├── app.json
+        ├── eslint.config.js
+        ├── expo-env.d.ts
         ├── package.json
         ├── tsconfig.json
-        └── app.json
+        └── README.md
 ```
 
 ## 🚀 Getting Started

@@ -3,8 +3,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
 } from 'react-native';
+import { authContainerStyles } from '../../styles/auth/authContainer.styles';
 
 interface AuthContainerProps {
   children: React.ReactNode;
@@ -13,11 +13,11 @@ interface AuthContainerProps {
 export function AuthContainer({ children }: AuthContainerProps) {
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={authContainerStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={authContainerStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         {children}
@@ -25,17 +25,3 @@ export function AuthContainer({ children }: AuthContainerProps) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-});

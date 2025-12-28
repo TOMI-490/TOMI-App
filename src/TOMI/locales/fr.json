@@ -1,0 +1,60 @@
+{
+  "login": {
+    "logoPlaceholder": "LOGO",
+    "title": "TOMI",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@exemple.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "primaryButton": "Se connecter",
+    "noAccount": "Vous n'avez pas de compte?",
+    "secondaryButton": "Créer un compte"
+  },
+  "register": {
+    "logoPlaceholder": "LOGO",
+    "title": "Créer un compte",
+    "subtitle": "Inscrivez-vous pour commencer",
+    "nameLabel": "Nom complet *",
+    "namePlaceholder": "Jean Dupont",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@exemple.com",
+    "passwordLabel": "Mot de passe *",
+    "passwordPlaceholder": "Au moins 6 caractères",
+    "confirmPasswordLabel": "Confirmer le mot de passe *",
+    "confirmPasswordPlaceholder": "Ressaisissez votre mot de passe",
+    "countryLabel": "Pays *",
+    "unitSystemLabel": "Système d'unités *",
+    "languageLabel": "Langue *",
+    "primaryButton": "S'inscrire",
+    "haveAccount": "Vous avez déjà un compte?",
+    "secondaryButton": "Se connecter"
+  },
+  "validation": {
+    "emailRequired": "L'email est requis.",
+    "emailInvalid": "Veuillez entrer une adresse email valide.",
+    "passwordRequired": "Le mot de passe est requis.",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
+    "nameRequired": "Le nom complet est requis.",
+    "confirmPasswordRequired": "Veuillez confirmer votre mot de passe.",
+    "passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
+    "countryRequired": "Le pays est requis.",
+    "unitSystemRequired": "Le système d'unités est requis.",
+    "languageRequired": "La langue est requise."
+  },
+  "alerts": {
+    "verifyEmail": {
+      "title": "Vérifiez votre email",
+      "message": "Veuillez vérifier votre email et cliquer sur le lien de vérification pour activer votre compte.",
+      "button": "OK"
+    },
+    "registrationSuccess": {
+      "title": "Succès!",
+      "message": "Votre compte a été créé avec succès.",
+      "button": "OK"
+    },
+    "registrationFailed": {
+      "title": "Échec de l'inscription",
+      "messageDefault": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  }
+}

@@ -2,6 +2,7 @@ export { AuthCard } from './AuthCard';
 export { AuthContainer } from './AuthContainer';
 export { LogoPlaceholder } from './LogoPlaceholder';
 export { FormInput } from './FormInput';
+export { PickerInput } from './PickerInput';
 export { PrimaryButton } from './PrimaryButton';
 export { SecondaryButton } from './SecondaryButton';
 export { ProgressBar } from './ProgressBar';
