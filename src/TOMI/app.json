@@ -38,13 +38,14 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "react-native-ble-plx"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra":{
+    "extra": {
       "TOMI_API_BASE_URL": "http://192.168.2.27:8000",
       "SUPABASE_URL": "https://rvtrwomwwrrwqelpgxmr.supabase.co",
       "SUPABASE_KEY": "sb_secret_m_36iOuEbBObuJ-_HByjXw_Iuhb62hc"

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "expo": "^54.0.30",
+    "react-native-ble-plx": "^3.5.0"
+  }
+}
