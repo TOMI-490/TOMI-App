@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class GoalStatusEntity(BaseModel):
-    goalStatusId: int 
+    goal_status_id: int 
     name: str 
     
     

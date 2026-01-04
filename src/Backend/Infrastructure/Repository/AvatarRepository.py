@@ -9,7 +9,7 @@ class AvatarRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Avatar"
+        self._table_name = "avatar"
     
     def dataToEntity(self, data: dict) -> AvatarEntity:
         try:
@@ -33,7 +33,7 @@ class AvatarRepository:
 
     def fetchAvatarById(self, avatar_id: int) -> Optional[AvatarEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("avatarId", avatar_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("avatar_id", avatar_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -63,12 +63,12 @@ class AvatarRepository:
     def updateAvatar(self, avatar: AvatarEntity) -> AvatarEntity:
         try:
             data = self.entityToData(avatar)
-            avatarId = getattr(avatar, "avatarId", None)
+            avatar_id = getattr(avatar, "avatar_id", None)
             
-            if not avatarId:
+            if not avatar_id:
                 raise ValueError("Avatar ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("avatarId", avatarId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("avatar_id", avatar_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update avatar")
@@ -78,7 +78,7 @@ class AvatarRepository:
 
     def deleteAvatar(self, avatar_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("avatarId", avatar_id).execute()
+            self._client.table(self._table_name).delete().eq("avatar_id", avatar_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting avatar {avatar_id}: {e}")

@@ -80,6 +80,7 @@ export const homePageStyles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: '#8E8E93',
     marginBottom: 16,
+    overflow: 'hidden',
   },
   needs: {
     flexDirection: 'row',
@@ -224,5 +225,70 @@ export const homePageStyles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     textAlign: 'center',
+  },
+  // New styles for backend integration
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  notificationBadge: {
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  notificationText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  needWarning: {
+    backgroundColor: '#FF9500',
+  },
+  xpText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  goalProgress: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  recentSection: {
+    marginTop: 20,
+  },
+  workoutItem: {
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  workoutType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  workoutDate: {
+    fontSize: 14,
+    color: '#666',
+    marginHorizontal: 8,
+  },
+  workoutDuration: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });

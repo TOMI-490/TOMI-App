@@ -1,94 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../components/ScreenWrapper';
-import strings from '../locales/en.json';
+import { useAuth } from '../contexts/AuthContext';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useLanguage } from '../hooks/useLanguage';
+import { useDashboard } from '../hooks/useDashboardData';
+import { useGamification } from '../hooks/useGamification';
+import { useTomiEffects } from '../hooks/useTomiEffects';
+import { useTranslation } from '../locales/i18n';
+import { GoalResponseDto } from '../models/dto/Goal.dto';
+import { StreakResponseDto } from '../models/dto/Streak.dto';
+import { WorkoutResponseDto } from '../models/dto/Workout.dto';
+import { NotificationResponseDto } from '../models/dto/Notification.dto';
 import { homePageStyles as styles } from '../styles/home/homePage.styles';
+import {
+  ProgressRings,
+  BadgesCard,
+  LeaderboardPreviewCard,
+  XpToast,
+  LevelUpModal
+} from '../components/gamification';
 
-// TODO: Replace with actual backend API when ready
-const USE_MOCK_DATA = true;
-
-const mockData = {
-  name: 'Noodle',
-  level: 5,
-  stage: 'Baby',
-  xpCurrent: 120,
-  xpNext: 200,
-  needs: [
-    { icon: '🏃', label: 'Activity', status: 'good', value: 85 },
-    { icon: '🍽️', label: 'Nutrition', status: 'warning', value: 60 },
-    { icon: '❤️', label: 'Health', status: 'good', value: 90 },
-    { icon: '🌙', label: 'Rest', status: 'good', value: 95 },
-  ],
-  streak: 7,
-  dailyGoal: { current: 45, target: 60, unit: 'min' },
-  today: {
-    workouts: 2,
-    minutes: 45,
-    xpEarned: 120,
-  },
-};
-
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return strings.home.goodMorning;
-  if (hour < 18) return strings.home.goodAfternoon;
-  return strings.home.goodEvening;
-};
+interface TomiNeed {
+  icon: string;
+  label: string;
+  status: 'good' | 'warning';
+  value: number;
+}
 
 export default function HomePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState(mockData);
+  const { authId } = useAuth();
+  const { user } = useCurrentUser(authId || undefined);
+  useLanguage(user); // Apply user's language automatically
+  const { data, loading, error, refresh } = useDashboard(user);
+  const { data: gamificationData, loading: gamificationLoading } = useGamification(user?.userId);
+  const { t } = useTranslation(); // Get translation function
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // TOMI effects for XP and level up animations
+  const tomiEffects = useTomiEffects(data?.tomi);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (USE_MOCK_DATA) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setData(mockData);
-      } else {
-        // TODO: Fetch from backend API
-        throw new Error('Backend not implemented');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.home.errorLoading);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (!user || loading) {
     return (
       <ScreenWrapper style={styles.container}>
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>{t('home.loading')}</Text>
         </View>
       </ScreenWrapper>
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <ScreenWrapper style={styles.container}>
         <View style={styles.error}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.button} onPress={loadData}>
-            <Text style={styles.buttonText}>{strings.home.retry}</Text>
+          <Text style={styles.errorText}>{error?.message || t('home.errorLoading')}</Text>
+          <TouchableOpacity style={styles.button} onPress={refresh}>
+            <Text style={styles.buttonText}>{t('home.retry')}</Text>
           </TouchableOpacity>
         </View>
       </ScreenWrapper>
     );
   }
 
-  const progress = (data.xpCurrent / data.xpNext) * 100;
-  const dailyGoalProgress = (data.dailyGoal.current / data.dailyGoal.target) * 100;
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('home.goodMorning');
+    if (hour < 18) return t('home.goodAfternoon');
+    return t('home.goodEvening');
+  };
+
+  // Extract data from dashboard response
+  const tomiData = data.tomi || null;
+  
+  // Log data for debugging
+  console.log('[HomePage] 🏠 Dashboard data loaded:');
+  console.log('[HomePage]   - TOMI:', tomiData ? `${tomiData.nickname} Lv.${tomiData.level}` : 'none');
+  console.log('[HomePage]   - Streaks:', data.streaks?.length || 0);
+  console.log('[HomePage]   - Recent workouts:', data.recentWorkouts?.length || 0);
+  console.log('[HomePage] 🎮 Gamification data:');
+  console.log('[HomePage]   - Loading:', gamificationLoading);
+  console.log('[HomePage]   - Earned badges:', gamificationData?.badgesEarned?.length || 0);
+  console.log('[HomePage]   - Upcoming badges:', gamificationData?.badgesUpcoming?.length || 0);
+  console.log('[HomePage]   - Progress rings:', gamificationData?.progressRings?.length || 0);
+  console.log('[HomePage]   - Leaderboards:', gamificationData?.leaderboards?.length || 0);
+  
+  // Use actual dashboard data
+  const streaks: StreakResponseDto[] = data.streaks || [];
+  const recentWorkouts: WorkoutResponseDto[] = data.recentWorkouts || [];
+  const notifications: NotificationResponseDto[] = [];
+  
+  // TODO: Implement activeGoal when goal endpoint includes nested goalStatus and goalType
+  const activeGoal: GoalResponseDto | null = null;
+  const workoutStreak = streaks.find((s) => s.metric === 'workout');
+  const todayWorkouts = recentWorkouts.filter((w) => {
+    const today = new Date().toDateString();
+    const workoutDate = new Date(w.start).toDateString();
+    return today === workoutDate;
+  });
+
+  // Calculate daily goal progress
+  const dailyGoalProgress = 0; // TODO: Calculate when activeGoal is available
+
+  // Calculate XP progress to next level (100 XP per level)
+  const currentLevelXp = tomiData ? (tomiData.level - 1) * 100 : 0;
+  const nextLevelXp = tomiData ? tomiData.level * 100 : 100;
+  const xpProgress = tomiData 
+    ? ((tomiData.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100 
+    : 0;
+
+  // TOMI needs status - show defaults if no data
+  const tomiNeeds: TomiNeed[] = tomiData ? [
+    { icon: '🏃', label: 'Activity', status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
+    { icon: '🍽️', label: 'Nutrition', status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
+    { icon: '❤️', label: 'Health', status: 'good', value: tomiData.happinessLevel || 0 },
+    { icon: '🌙', label: 'Rest', status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
+  ] : [
+    { icon: '🏃', label: 'Activity', status: 'good', value: 50 },
+    { icon: '🍽️', label: 'Nutrition', status: 'good', value: 50 },
+    { icon: '❤️', label: 'Health', status: 'good', value: 50 },
+    { icon: '🌙', label: 'Rest', status: 'good', value: 50 },
+  ];
+
+  const handleNeedPress = (need: TomiNeed, index: number) => {
+    if (!tomiData) return;
+    
+    // Show interaction options for each need
+    Alert.alert(
+      `${need.label} Care`,
+      `Take care of your TOMI's ${need.label.toLowerCase()} needs?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes', 
+          onPress: async () => {
+            // TODO: Implement TOMI interaction logic when backend endpoints are available
+            console.log('TOMI interaction:', need.label);
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -96,53 +150,121 @@ export default function HomePage() {
         {/* Greeting */}
         <Text style={styles.greeting}>{getGreeting()}</Text>
 
+        {/* User Info */}
+        <Text style={styles.subtitle}>{t('home.welcomeBack').replace('{name}', user.name)}!</Text>
+
+        {/* Notifications Badge */}
+        {notifications.length > 0 && (
+          <TouchableOpacity 
+            style={styles.notificationBadge}
+            onPress={() => console.log('Navigate to notifications')}
+          >
+            <Text style={styles.notificationText}>
+              {notifications.length} new notification{notifications.length > 1 ? 's' : ''}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* TOMI Card */}
-        <View style={styles.card}>
+        <View style={[
+          styles.card,
+          tomiData?.themeColor && { borderColor: tomiData.themeColor, borderWidth: 2 }
+        ]}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            <View style={[
+              styles.progressFill, 
+              { 
+                width: `${Math.min(xpProgress, 100)}%`,
+                backgroundColor: tomiData?.themeColor || '#007AFF'
+              }
+            ]} />
           </View>
-          <View style={styles.avatar} />
+          
+          {/* Avatar Image - Always show with placeholder */}
+          <View style={[
+            styles.avatar,
+            { 
+              backgroundColor: tomiData?.themeColor || '#8E8E93'
+            }
+          ]}>
+            {tomiData?.imageUrl && !tomiData.imageUrl.includes('example.com') ? (
+              <Image 
+                source={{ uri: tomiData.imageUrl }} 
+                style={{ width: '100%', height: '100%', borderRadius: 50 }}
+                resizeMode="cover"
+                onError={() => {
+                  console.log('Avatar image failed to load - using placeholder. URL was:', tomiData.imageUrl);
+                }}
+              />
+            ) : null}
+          </View>
           
           {/* Needs Row */}
           <View style={styles.needs}>
-            {data.needs.map((need, index) => (
-              <TouchableOpacity key={index} style={styles.need}>
+            {tomiNeeds.map((need, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={[
+                  styles.need,
+                  need.status === 'warning' && styles.needWarning
+                ]}
+                onPress={() => handleNeedPress(need, index)}
+              >
                 <Text style={styles.needIcon}>{need.icon}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Identity */}
-        <View style={styles.identity}>
-          <Text style={styles.name}>{data.name}</Text>
-          <Text style={styles.subtitle}>
-            {strings.home.levelStage
-              .replace('{level}', data.level.toString())
-              .replace('{stage}', data.stage)}
-          </Text>
-        </View>
-
-        {/* Streak Badge */}
-        <View style={styles.badge}>
-          <Text style={styles.badgeIcon}>🔥</Text>
-          <Text style={styles.badgeText}>
-            {strings.home.dayStreak.replace('{days}', data.streak.toString())}
-          </Text>
-        </View>
-
-        {/* Daily Goal */}
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <Text style={styles.goalTitle}>{strings.home.dailyGoal}</Text>
-            <Text style={styles.goalValue}>
-              {data.dailyGoal.current}/{data.dailyGoal.target} {data.dailyGoal.unit}
+        {/* TOMI Identity */}
+        {tomiData ? (
+          <View style={styles.identity}>
+            <Text style={styles.name}>{tomiData.nickname}</Text>
+            <Text style={styles.subtitle}>
+              {t('home.levelStage')
+                .replace('{level}', tomiData.level.toString())
+                .replace('{stage}', tomiData.ageDays < 30 ? t('home.stageBaby') : tomiData.ageDays < 100 ? t('home.stageTeen') : t('home.stageAdult'))}
+            </Text>
+            <Text style={styles.xpText}>
+              {t('home.xpProgress').replace('{current}', tomiData.xp.toString()).replace('{total}', nextLevelXp.toString())}
             </Text>
           </View>
-          <View style={styles.goalBar}>
-            <View style={[styles.goalFill, { width: `${Math.min(dailyGoalProgress, 100)}%` }]} />
+        ) : (
+          <View style={styles.identity}>
+            <Text style={styles.name}>Your TOMI</Text>
+            <Text style={styles.subtitle}>Start your journey!</Text>
           </View>
-        </View>
+        )}
+
+        {/* Streak Badge */}
+        {workoutStreak && workoutStreak.current && workoutStreak.current > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeIcon}>🔥</Text>
+            <Text style={styles.badgeText}>
+              {t('home.dayStreak').replace('{days}', workoutStreak.current.toString())}
+            </Text>
+          </View>
+        )}
+
+        {/* Daily Goal - Hidden until goal endpoint is available */}
+        {activeGoal && false && (
+          <View style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <Text style={styles.goalTitle}>
+                Daily Goal
+              </Text>
+              <Text style={styles.goalValue}>
+                0/0
+              </Text>
+            </View>
+            <View style={styles.goalBar}>
+              <View style={[styles.goalFill, { width: `${Math.min(dailyGoalProgress, 100)}%` }]} />
+            </View>
+            <Text style={styles.goalProgress}>
+              {Math.round(dailyGoalProgress)}% complete
+            </Text>
+          </View>
+        )}
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -151,7 +273,7 @@ export default function HomePage() {
             onPress={() => router.push('/(tabs)/workout')}
           >
             <Text style={styles.buttonIcon}>🏃</Text>
-            <Text style={styles.buttonText}>{strings.home.startWorkout}</Text>
+            <Text style={styles.buttonText}>{t('home.startWorkout')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.buttonSecondary]}
@@ -159,30 +281,91 @@ export default function HomePage() {
           >
             <Text style={styles.buttonIcon}>✨</Text>
             <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
-              {strings.home.customize}
+              {t('home.customize')}
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* ===== GAMIFICATION FEATURES ===== */}
+        
+        {/* Progress Rings */}
+        {gamificationData?.progressRings && gamificationData.progressRings.length > 0 && (
+          <ProgressRings rings={gamificationData.progressRings} />
+        )}
+
+        {/* Badges (Earned + Upcoming) */}
+        {gamificationData && (gamificationData.badgesEarned.length > 0 || gamificationData.badgesUpcoming.length > 0) && (
+          <BadgesCard 
+            earned={gamificationData.badgesEarned} 
+            upcoming={gamificationData.badgesUpcoming}
+          />
+        )}
+
+        {/* Leaderboard Preview */}
+        {gamificationData?.leaderboards && gamificationData.leaderboards.length > 0 && (
+          <LeaderboardPreviewCard leaderboards={gamificationData.leaderboards} />
+        )}
+
         {/* Today's Progress */}
         <View style={styles.progressSection}>
-          <Text style={styles.sectionTitle}>{strings.home.todaysProgress}</Text>
+          <Text style={styles.sectionTitle}>{t('home.todaysProgress')}</Text>
           <View style={styles.stats}>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.today.workouts}</Text>
-              <Text style={styles.statLabel}>{strings.home.workouts}</Text>
+              <Text style={styles.statValue}>{todayWorkouts.length}</Text>
+              <Text style={styles.statLabel}>{t('home.workouts')}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.today.minutes}</Text>
-              <Text style={styles.statLabel}>{strings.home.minutes}</Text>
+              <Text style={styles.statValue}>
+                {todayWorkouts.reduce((total: number, workout: WorkoutResponseDto) => {
+                  const duration = (new Date(workout.end).getTime() - new Date(workout.start).getTime()) / 60000;
+                  return total + duration;
+                }, 0).toFixed(0)}
+              </Text>
+              <Text style={styles.statLabel}>{t('home.minutes')}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.today.xpEarned}</Text>
-              <Text style={styles.statLabel}>{strings.home.xpEarned}</Text>
+              <Text style={styles.statValue}>{tomiData?.xp || 0}</Text>
+              <Text style={styles.statLabel}>{t('home.totalXP')}</Text>
             </View>
           </View>
         </View>
+
+        {/* Recent Activity */}
+        {recentWorkouts.length > 0 && (
+          <View style={styles.recentSection}>
+            <Text style={styles.sectionTitle}>{t('home.recentWorkouts')}</Text>
+            {recentWorkouts.slice(0, 3).map((workout: WorkoutResponseDto) => (
+              <View key={workout.workoutId} style={styles.workoutItem}>
+                <Text style={styles.workoutType}>Workout #{workout.workoutTypeId}</Text>
+                <Text style={styles.workoutDate}>
+                  {new Date(workout.start).toLocaleDateString()}
+                </Text>
+                <Text style={styles.workoutDuration}>
+                  {Math.round((new Date(workout.end).getTime() - new Date(workout.start).getTime()) / 60000)} min
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
+
+      {/* ===== TOMI EFFECTS ===== */}
+      
+      {/* XP Toast - shows when XP increases */}
+      {tomiEffects.showXpToast && tomiEffects.xpDelta && (
+        <XpToast 
+          xpDelta={tomiEffects.xpDelta}
+          visible={tomiEffects.showXpToast}
+          onDismiss={tomiEffects.dismissXpToast}
+        />
+      )}
+
+      {/* Level Up Modal - shows when level increases */}
+      <LevelUpModal
+        visible={tomiEffects.showLevelUpModal}
+        level={tomiEffects.newLevel}
+        onDismiss={tomiEffects.dismissLevelUpModal}
+      />
     </ScreenWrapper>
   );
 }

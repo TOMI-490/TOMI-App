@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 class StreakEntity(BaseModel):
-    streakId: int 
-    userId: int 
+    streak_id: int 
+    user_id: int 
     metric: str 
     current: int 
     longest: int

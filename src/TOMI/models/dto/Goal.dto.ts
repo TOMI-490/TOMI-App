@@ -1,31 +1,33 @@
 export interface GoalResponseDto {
   goalId: number;
   userId: number;
-  goalTypeId: number;
   goalStatusId: number;
+  goalTypeId: number;
   targetValue: number;
-  currentValue: number;
+  period: string;
+  progressValue: number;
   startDate: string;
-  endDate?: string;
-  createdAt: string;
-  updatedAt?: string;
+  endDate: string;
+  lastUpdated: string;
 }
 
 export interface GoalCreateDto {
   userId: number;
-  goalTypeId: number;
   goalStatusId: number;
+  goalTypeId: number;
   targetValue: number;
-  currentValue?: number;
+  period: string;
+  progressValue?: number;
   startDate: string;
-  endDate?: string;
+  endDate: string;
 }
 
 export interface GoalUpdateDto {
-  goalTypeId?: number;
   goalStatusId?: number;
+  goalTypeId?: number;
   targetValue?: number;
-  currentValue?: number;
+  period?: string;
+  progressValue?: number;
   startDate?: string;
   endDate?: string;
 }

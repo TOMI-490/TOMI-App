@@ -9,7 +9,7 @@ class StreakRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Streak"
+        self._table_name = "streak"
     
     def dataToEntity(self, data: dict) -> StreakEntity:
         try:
@@ -33,7 +33,7 @@ class StreakRepository:
 
     def fetchStreakById(self, streak_id: int) -> Optional[StreakEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("StreakId", streak_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("streak_id", streak_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -43,7 +43,7 @@ class StreakRepository:
 
     def fetchStreaksByUserId(self, user_id: int) -> List[StreakEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching streaks for user {user_id}: {e}")
@@ -53,7 +53,7 @@ class StreakRepository:
         try:
             response = self._client.table(self._table_name)\
                 .select("*")\
-                .eq("userId", user_id)\
+                .eq("user_id", user_id)\
                 .eq("metric", metric)\
                 .execute()
             if response.data:
@@ -77,12 +77,12 @@ class StreakRepository:
     def updateStreak(self, streak: StreakEntity) -> StreakEntity:
         try:
             data = self.entityToData(streak)
-            streakId = getattr(streak, "StreakId", None)
+            streak_id = getattr(streak, "streak_id", None)
             
-            if not streakId:
+            if not streak_id:
                 raise ValueError("Streak ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("StreakId", streakId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("streak_id", streak_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update streak")
@@ -92,7 +92,7 @@ class StreakRepository:
 
     def deleteStreak(self, streak_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("StreakId", streak_id).execute()
+            self._client.table(self._table_name).delete().eq("streak_id", streak_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting streak {streak_id}: {e}")

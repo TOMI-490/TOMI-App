@@ -9,7 +9,7 @@ class UserRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "User"
+        self._table_name = "user"
         
     
     # Helpers to convert database data to UserEntity
@@ -46,7 +46,7 @@ class UserRepository:
     # Fetch a user by ID and return as User object
     def fetchUserById(self, user_id: int) -> Optional[UserEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -58,7 +58,7 @@ class UserRepository:
     # Check if a user exists by email
     def emailExists(self, email: str) -> bool:
         try:
-            response = self._client.table(self._table_name).select("userId").eq("email", email).execute()
+            response = self._client.table(self._table_name).select("user_id").eq("email", email).execute()
             return len(response.data) > 0
         
         except Exception as e:
@@ -83,13 +83,13 @@ class UserRepository:
             logger.error(f"Error creating user: {e}")
             raise
     
-    # Create a new user from DTO (without userId and created_at, let database generate them)
+    # Create a new user from DTO (without user_id and created_at, let database generate them)
     def createUserFromDTO(self, user_dto) -> UserEntity:
         try:
-            # Convert DTO to dict, using aliases to match database column names
-            data = user_dto.model_dump(by_alias=True)
+            # Convert DTO to dict - do NOT use by_alias, keep field names as snake_case for database
+            data = user_dto.model_dump(by_alias=False, exclude_none=True)
             
-            # Insert into database - userId and created_at will be auto-generated
+            # Insert into database - user_id and created_at will be auto-generated
             response = self._client.table(self._table_name).insert(data).execute()
             
             if response.data:
@@ -107,13 +107,13 @@ class UserRepository:
             # Convert UserEntity to dict for update
             data = self.entityToData(user)
             
-            # We need the userId to identify which record to update
-            userId = getattr(user,"userId", None)
+            # We need the user_id to identify which record to update
+            user_id = getattr(user,"user_id", None)
             
-            if not userId:
+            if not user_id:
                 raise ValueError("User ID is required for update")
             
-            response = self._client.table(self._table_name).update(data).eq("userId", userId).execute()
+            response = self._client.table(self._table_name).update(data).eq("user_id", user_id).execute()
             
             if response.data: 
                 return self.dataToEntity(response.data[0])
@@ -127,8 +127,41 @@ class UserRepository:
     # Delete a user by ID
     def deleteUser(self, user_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("userId", user_id).execute()
+            self._client.table(self._table_name).delete().eq("user_id", user_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting user {user_id}: {e}")
+            raise
+    
+    # Fetch a user by auth_id
+    def fetchUserByAuthId(self, auth_id: str) -> Optional[UserEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("auth_id", auth_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user by auth_id: {e}")
+            raise
+    
+    # Fetch a user by email
+    def fetchUserByEmail(self, email: str) -> Optional[UserEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("email", email).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user by email: {e}")
+            raise
+    
+    # Update user's language
+    def updateUserLanguage(self, user_id: int, language: str) -> UserEntity:
+        try:
+            response = self._client.table(self._table_name).update({"language": language}).eq("user_id", user_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update user language")
+        except Exception as e:
+            logger.error(f"Error updating user language: {e}")
             raise

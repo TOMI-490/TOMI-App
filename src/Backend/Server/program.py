@@ -18,8 +18,10 @@ sys.path.insert(0, str(projectRoot))
 #Import routers 
 from .Routes.AvatarRoutes import router as AvatarRouter
 from .Routes.BadgeRoutes import router as BadgeRouter
+from .Routes.DashboardRoutes import router as DashboardRouter
 from .Routes.FriendRoutes import router as FriendRouter
 from .Routes.FriendStatusRoutes import router as FriendStatusRouter
+from .Routes.GamificationRoutes import router as GamificationRouter
 from .Routes.GoalRoutes import router as GoalRouter
 from .Routes.GoalStatusRoutes import router as GoalStatusRouter
 from .Routes.GoalTypeRoutes import router as GoalTypeRouter
@@ -144,8 +146,10 @@ async def apiVersion():
 # Registers routers with the app
 app.include_router(AvatarRouter, prefix="/api/v1/avatars", tags=["Avatars"])
 app.include_router(BadgeRouter, prefix="/api/v1/badges", tags=["Badges"])
+app.include_router(DashboardRouter, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(FriendRouter, prefix="/api/v1/friends", tags=["Friends"])
 app.include_router(FriendStatusRouter, prefix="/api/v1/friendStatus", tags=["Friend Status"])
+app.include_router(GamificationRouter, prefix="/api/v1/gamification", tags=["Gamification"])
 app.include_router(GoalRouter, prefix="/api/v1/goals", tags=["Goals"])
 app.include_router(GoalStatusRouter, prefix="/api/v1/goalStatus", tags=["Goal Status"])
 app.include_router(GoalTypeRouter, prefix="/api/v1/goalTypes", tags=["Goal Types"])

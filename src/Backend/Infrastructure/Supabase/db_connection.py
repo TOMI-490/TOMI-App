@@ -92,7 +92,7 @@ class SupabaseConnection:
         # Test database connection by executing a simple query
         try:
             # Try to access a system table (works even with empty database)
-            response = self._client.schema('public').table('User').select("userId").limit(1).execute()
+            response = self._client.schema('public').table('user').select("user_id").limit(1).execute()
             logger.info("✓ Database connection test successful")
         except Exception as e:
             # Connection exists but table might not - that's okay
@@ -110,7 +110,7 @@ class SupabaseConnection:
         # Perform health check on the Supabase connection
         try:
             # Attempt a simple query
-            self._client.schema('public').table('User').select("userId").limit(1).execute()
+            self._client.schema('public').table('user').select("user_id").limit(1).execute()
             return {
                 "status": "healthy",
                 "connected": True,

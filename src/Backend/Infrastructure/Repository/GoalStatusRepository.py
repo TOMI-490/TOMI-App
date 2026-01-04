@@ -9,7 +9,7 @@ class GoalStatusRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "GoalStatus"
+        self._table_name = "goal_status"
     
     def dataToEntity(self, data: dict) -> GoalStatusEntity:
         try:
@@ -33,7 +33,7 @@ class GoalStatusRepository:
 
     def fetchStatusById(self, status_id: int) -> Optional[GoalStatusEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("goalStatusId", status_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("goal_status_id", status_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -55,12 +55,12 @@ class GoalStatusRepository:
     def updateStatus(self, status: GoalStatusEntity) -> GoalStatusEntity:
         try:
             data = self.entityToData(status)
-            statusId = getattr(status, "goalStatusId", None)
+            status_id = getattr(status, "goal_status_id", None)
             
-            if not statusId:
+            if not status_id:
                 raise ValueError("Goal Status ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("goalStatusId", statusId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("goal_status_id", status_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update goal status")
@@ -70,7 +70,7 @@ class GoalStatusRepository:
 
     def deleteStatus(self, status_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("goalStatusId", status_id).execute()
+            self._client.table(self._table_name).delete().eq("goal_status_id", status_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting goal status {status_id}: {e}")

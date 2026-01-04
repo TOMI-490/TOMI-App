@@ -3,9 +3,9 @@ from datetime import datetime
 
 
 class WatchDeviceEntity(BaseModel):
-    deviceId: int 
-    userId: int 
-    serialNumber: str 
+    device_id: int 
+    user_id: int 
+    serial_no: str 
     model: str 
     nickname: str 
-    createdAt: datetime
+    created_at: datetime

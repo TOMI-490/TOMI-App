@@ -1,7 +1,7 @@
 import logging 
 from typing import Optional, List
 from ...Core.Entity.ProfileEntity import ProfileEntity 
-from ...Infrastructure.Supabase.db_connection import SupabaseConnection
+from ...Infrastructure.Supabase.db_connection import supabase
 
 
 logger = logging.getLogger(__name__)
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class ProfileRepository: 
     
     def __init__(self):
-        self._client = SupabaseConnection
-        self._table_name = "Profile"
+        self._client = supabase
+        self._table_name = "profile"
         
     
     # Helpers to convert database data to ProfileEntity
@@ -42,7 +42,7 @@ class ProfileRepository:
     # Fetch the profile by ID and return as Profile object    
     def fetchProfileById(self, profile_id: int) -> Optional[ProfileEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("profileId", profile_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("profile_id", profile_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -67,7 +67,7 @@ class ProfileRepository:
     def updateProfile(self, profile: ProfileEntity) -> ProfileEntity:
         try: 
             data = self.entityToData(profile)
-            response = self._client.table(self._table_name).update(data).eq("profileId", profile.profileId).execute()
+            response = self._client.table(self._table_name).update(data).eq("profile_id", profile.profile_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update profile")
@@ -78,7 +78,7 @@ class ProfileRepository:
     # Delete a profile by ID
     def deleteProfile(self, profile_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("profileId", profile_id).execute()
+            self._client.table(self._table_name).delete().eq("profile_id", profile_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting profile {profile_id}: {e}")

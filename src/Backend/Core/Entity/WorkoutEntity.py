@@ -2,11 +2,11 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class WorkoutEntity(BaseModel):
-    workoutId: int 
-    userId: int 
-    workoutTypeId: int 
+    workout_id: int 
+    user_id: int 
+    workout_type_id: int 
     start: datetime 
     end: datetime
-    deviceId: int 
+    device_id: int 
     
     

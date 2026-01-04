@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
-import { supabase } from '../services/auth';
+import { supabase } from '../services/core/supabase';
+import { AuthProvider } from '../contexts/AuthContext';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -56,9 +57,11 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </AuthProvider>
   );
 }

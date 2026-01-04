@@ -9,7 +9,7 @@ class BadgeRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Badge"
+        self._table_name = "badge"
     
     def dataToEntity(self, data: dict) -> BadgeEntity:
         try:
@@ -33,7 +33,7 @@ class BadgeRepository:
 
     def fetchBadgeById(self, badge_id: int) -> Optional[BadgeEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("badgeId", badge_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("badge_id", badge_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -55,12 +55,12 @@ class BadgeRepository:
     def updateBadge(self, badge: BadgeEntity) -> BadgeEntity:
         try:
             data = self.entityToData(badge)
-            badgeId = getattr(badge, "badgeId", None)
+            badge_id = getattr(badge, "badge_id", None)
             
-            if not badgeId:
+            if not badge_id:
                 raise ValueError("Badge ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("badgeId", badgeId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("badge_id", badge_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update badge")
@@ -70,7 +70,7 @@ class BadgeRepository:
 
     def deleteBadge(self, badge_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("badgeId", badge_id).execute()
+            self._client.table(self._table_name).delete().eq("badge_id", badge_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting badge {badge_id}: {e}")

@@ -4,45 +4,83 @@ from pydantic import BaseModel, Field
 
 # DTO for creating a new user avatar
 class UserAvatarCreateDTO(BaseModel):
-    userId: int = Field(..., gt=0)
-    avatarId: int = Field(..., gt=0)
+    user_id: int = Field(..., gt=0, alias="userId")
+    avatar_id: int = Field(..., gt=0, alias="avatarId")
     nickname: str = Field(..., min_length=1, max_length=255)
     level: int = Field(default=1, ge=1)
     xp: int = Field(default=0, ge=0)
-    ageDays: int = Field(default=0, ge=0)
-    hungerLevel: int = Field(default=50, ge=0, le=100)
-    sleepinessLevel: int = Field(default=50, ge=0, le=100)
-    boredomeLevel: int = Field(default=50, ge=0, le=100)
-    happinessLevel: int = Field(default=50, ge=0, le=100)
-    isActive: bool = True
+    age_days: int = Field(default=0, ge=0, alias="ageDays")
+    hunger_level: int = Field(default=50, ge=0, le=100, alias="hungerLevel")
+    sleepiness_level: int = Field(default=50, ge=0, le=100, alias="sleepinessLevel")
+    boredome_level: int = Field(default=50, ge=0, le=100, alias="boredomeLevel")
+    happines_level: int = Field(default=50, ge=0, le=100, alias="happinessLevel")
+    is_active: bool = Field(default=True, alias="isActive")
+    
+    class Config:
+        populate_by_name = True
 
 # DTO for updating a user avatar
 class UserAvatarUpdateDTO(BaseModel):
     nickname: Optional[str] = Field(None, min_length=1, max_length=255)
     level: Optional[int] = Field(None, ge=1)
     xp: Optional[int] = Field(None, ge=0)
-    ageDays: Optional[int] = Field(None, ge=0)
-    hungerLevel: Optional[int] = Field(None, ge=0, le=100)
-    sleepinessLevel: Optional[int] = Field(None, ge=0, le=100)
-    boredomeLevel: Optional[int] = Field(None, ge=0, le=100)
-    happinessLevel: Optional[int] = Field(None, ge=0, le=100)
-    isActive: Optional[bool] = None
+    age_days: Optional[int] = Field(None, ge=0, alias="ageDays")
+    hunger_level: Optional[int] = Field(None, ge=0, le=100, alias="hungerLevel")
+    sleepiness_level: Optional[int] = Field(None, ge=0, le=100, alias="sleepinessLevel")
+    boredome_level: Optional[int] = Field(None, ge=0, le=100, alias="boredomeLevel")
+    happines_level: Optional[int] = Field(None, ge=0, le=100, alias="happinessLevel")
+    is_active: Optional[bool] = Field(None, alias="isActive")
+    
+    class Config:
+        populate_by_name = True
 
 # DTO for responding with user avatar data
 class UserAvatarResponseDTO(BaseModel):
-    userAvatarId: int
-    userId: int
-    avatarId: int
+    user_avatar_id: int = Field(..., alias="userAvatarId")
+    user_id: int = Field(..., alias="userId")
+    avatar_id: int = Field(..., alias="avatarId")
     nickname: str
     level: int
     xp: int
-    ageDays: int
-    hungerLevel: int
-    sleepinessLevel: int
-    boredomeLevel: int
-    happinessLevel: int
-    isActive: bool
-    createdAt: datetime
-    lastUpdated: datetime
+    age_days: int = Field(..., alias="ageDays")
+    hunger_level: int = Field(..., alias="hungerLevel")
+    sleepiness_level: int = Field(..., alias="sleepinessLevel")
+    boredome_level: int = Field(..., alias="boredomeLevel")
+    happines_level: int = Field(..., alias="happinessLevel")
+    is_active: bool = Field(..., alias="isActive")
+    last_updated: Optional[datetime] = Field(None, alias="lastUpdated")
+    created_at: Optional[datetime] = Field(None, alias="createdAt")
     
+    class Config:
+        populate_by_name = True
+        by_alias = True
 
+# DTO for responding with user avatar data including avatar details
+class UserAvatarWithDetailsResponseDTO(BaseModel):
+    user_avatar_id: int = Field(..., alias="userAvatarId")
+    user_id: int = Field(..., alias="userId")
+    avatar_id: int = Field(..., alias="avatarId")
+    nickname: str
+    level: int
+    xp: int
+    age_days: int = Field(..., alias="ageDays")
+    hunger_level: int = Field(..., alias="hungerLevel")
+    sleepiness_level: int = Field(..., alias="sleepinessLevel")
+    boredome_level: int = Field(..., alias="boredomeLevel")
+    happines_level: int = Field(..., alias="happinessLevel")
+    is_active: bool = Field(..., alias="isActive")
+    last_updated: Optional[datetime] = Field(None, alias="lastUpdated")
+    created_at: Optional[datetime] = Field(None, alias="createdAt")
+    # Avatar details
+    avatar_name: Optional[str] = Field(None, alias="avatarName")
+    image_url: Optional[str] = Field(None, alias="imageUrl")
+    animation_url: Optional[str] = Field(None, alias="animationUrl")
+    theme_color: Optional[str] = Field(None, alias="themeColor")
+    
+    class Config:
+        populate_by_name = True
+        by_alias = True
+    
+    class Config:
+        populate_by_name = True
+        by_alias = True

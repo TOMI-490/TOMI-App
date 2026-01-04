@@ -3,6 +3,6 @@ from datetime import datetime
 
 class UserBadgeEntity(BaseModel):
     id: int 
-    userId: int
-    badgeId: int 
-    awardedDate: datetime
+    user_id: int
+    badge_id: int 
+    awarded_date: datetime
