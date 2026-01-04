@@ -9,7 +9,7 @@ class WatchDeviceRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "WatchDevice"
+        self._table_name = "watch_device"
     
     def dataToEntity(self, data: dict) -> WatchDeviceEntity:
         try:
@@ -33,7 +33,7 @@ class WatchDeviceRepository:
 
     def fetchDevicesByUserId(self, user_id: int) -> List[WatchDeviceEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching devices for user {user_id}: {e}")
@@ -41,7 +41,7 @@ class WatchDeviceRepository:
 
     def fetchDeviceById(self, device_id: int) -> Optional[WatchDeviceEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("DeviceId", device_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("device_id", device_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -63,12 +63,12 @@ class WatchDeviceRepository:
     def updateDevice(self, device: WatchDeviceEntity) -> WatchDeviceEntity:
         try:
             data = self.entityToData(device)
-            deviceId = getattr(device, "DeviceId", None)
+            device_id = getattr(device, "device_id", None)
             
-            if not deviceId:
+            if not device_id:
                 raise ValueError("Device ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("DeviceId", deviceId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("device_id", device_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update device")
@@ -78,7 +78,7 @@ class WatchDeviceRepository:
 
     def deleteDevice(self, device_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("DeviceId", device_id).execute()
+            self._client.table(self._table_name).delete().eq("device_id", device_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting device {device_id}: {e}")

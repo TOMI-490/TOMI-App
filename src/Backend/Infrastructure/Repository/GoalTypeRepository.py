@@ -9,7 +9,7 @@ class GoalTypeRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "GoalType"
+        self._table_name = "goal_type"
     
     def dataToEntity(self, data: dict) -> GoalTypeEntity:
         try:
@@ -33,7 +33,7 @@ class GoalTypeRepository:
 
     def fetchGoalTypeById(self, goal_type_id: int) -> Optional[GoalTypeEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("goalTypeId", goal_type_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("goal_type_id", goal_type_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -55,12 +55,12 @@ class GoalTypeRepository:
     def updateGoalType(self, goal_type: GoalTypeEntity) -> GoalTypeEntity:
         try:
             data = self.entityToData(goal_type)
-            goalTypeId = getattr(goal_type, "goalTypeId", None)
+            goal_type_id = getattr(goal_type, "goal_type_id", None)
             
-            if not goalTypeId:
+            if not goal_type_id:
                 raise ValueError("Goal Type ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("goalTypeId", goalTypeId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("goal_type_id", goal_type_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update goal type")
@@ -70,7 +70,7 @@ class GoalTypeRepository:
 
     def deleteGoalType(self, goal_type_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("goalTypeId", goal_type_id).execute()
+            self._client.table(self._table_name).delete().eq("goal_type_id", goal_type_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting goal type {goal_type_id}: {e}")

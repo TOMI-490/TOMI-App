@@ -1,7 +1,7 @@
 import logging 
 from typing import Optional, List
 from ...Core.Entity.UserAvatarEntity import UserAvatarEntity
-from ...Infrastructure.Supabase.db_connection import SupabaseConnection
+from ...Infrastructure.Supabase.db_connection import supabase
 
 logger = logging.getLogger(__name__)
 
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class UserAvatarRepository: 
     
     def __init__(self):
-        self._client = SupabaseConnection
-        self._table_name = "UserAvatar"
+        self._client = supabase
+        self._table_name = "user_avatar"
         
     
     # Helpers to convert database data to UserAvatarEntity
@@ -41,9 +41,9 @@ class UserAvatarRepository:
             raise
 
     # Fetch a user avatar by ID and return as UserAvatar object
-    def fetchUserAvatarById(self, userAvatarId: int) -> Optional[UserAvatarEntity]:
+    def fetchUserAvatarById(self, user_avatar_id: int) -> Optional[UserAvatarEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userAvatarId", userAvatarId).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_avatar_id", user_avatar_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -52,9 +52,9 @@ class UserAvatarRepository:
             raise
 
     # Fetch a user avatar by User ID
-    def fetchAvatarByUserId(self, userId: int) -> Optional[UserAvatarEntity]:
+    def fetchAvatarByUserId(self, user_id: int) -> Optional[UserAvatarEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", userId).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -78,12 +78,12 @@ class UserAvatarRepository:
     def updateUserAvatar(self, userAvatar: UserAvatarEntity) -> UserAvatarEntity:
         try: 
             data = self.entityToData(userAvatar)
-            userAvatarId = getattr(userAvatar, "userAvatarId", None)
+            user_avatar_id = getattr(userAvatar, "user_avatar_id", None)
             
-            if userAvatarId is None:
-                raise ValueError("userAvatarId is required for update")
+            if user_avatar_id is None:
+                raise ValueError("user_avatar_id is required for update")
             
-            response = self._client.table(self._table_name).update(data).eq("userAvatarId", userAvatarId).execute()
+            response = self._client.table(self._table_name).update(data).eq("user_avatar_id", user_avatar_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update user avatar")
@@ -92,9 +92,9 @@ class UserAvatarRepository:
             raise
 
     # Delete a user avatar by ID
-    def deleteUserAvatar(self, userAvatarId: int) -> bool:
+    def deleteUserAvatar(self, user_avatar_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("userAvatarId", userAvatarId).execute()
+            self._client.table(self._table_name).delete().eq("user_avatar_id", user_avatar_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting user avatar: {e}")

@@ -9,7 +9,7 @@ class FriendStatusRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "FriendStatus"
+        self._table_name = "friend_status"
     
     def dataToEntity(self, data: dict) -> FriendStatusEntity:
         try:
@@ -55,12 +55,12 @@ class FriendStatusRepository:
     def updateStatus(self, status: FriendStatusEntity) -> FriendStatusEntity:
         try:
             data = self.entityToData(status)
-            statusId = getattr(status, "statusId", None)
+            status_id_val = getattr(status, "statusId", None)
             
-            if not statusId:
+            if not status_id_val:
                 raise ValueError("Status ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("statusId", statusId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("statusId", status_id_val).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update friend status")

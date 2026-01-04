@@ -9,7 +9,7 @@ class LeaderboardRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Leaderboard"
+        self._table_name = "leaderboard"
     
     def dataToEntity(self, data: dict) -> LeaderboardEntity:
         try:
@@ -37,7 +37,7 @@ class LeaderboardRepository:
 
     def fetchUserLeaderboardEntries(self, user_id: int) -> List[LeaderboardEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching leaderboard entries for user {user_id}: {e}")
@@ -58,7 +58,7 @@ class LeaderboardRepository:
 
     def fetchLeaderboardById(self, leaderboard_id: int) -> Optional[LeaderboardEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("leaderboardId", leaderboard_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("leaderboard_id", leaderboard_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -80,12 +80,12 @@ class LeaderboardRepository:
     def updateLeaderboardEntry(self, entry: LeaderboardEntity) -> LeaderboardEntity:
         try:
             data = self.entityToData(entry)
-            leaderboardId = getattr(entry, "leaderboardId", None)
+            leaderboard_id = getattr(entry, "leaderboard_id", None)
             
-            if not leaderboardId:
+            if not leaderboard_id:
                 raise ValueError("Leaderboard ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("leaderboardId", leaderboardId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("leaderboard_id", leaderboard_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update leaderboard entry")
@@ -95,7 +95,7 @@ class LeaderboardRepository:
 
     def deleteLeaderboardEntry(self, leaderboard_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("leaderboardId", leaderboard_id).execute()
+            self._client.table(self._table_name).delete().eq("leaderboard_id", leaderboard_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting leaderboard entry {leaderboard_id}: {e}")

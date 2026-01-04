@@ -32,4 +32,21 @@ class GoalResponseDTO(BaseModel):
     startDate: datetime
     endDate: datetime
     lastUpdated: datetime
+
+
+# DTO for responding with goal data including related entities
+class GoalWithDetailsResponseDTO(BaseModel):
+    goalId: int
+    userId: int
+    goalStatusId: int
+    goalStatusName: str
+    goalTypeId: int
+    goalTypeName: str
+    goalTypeUnit: str
+    targetValue: int
+    progressValue: int = 0  # Current progress toward goal
+    period: str
+    startDate: datetime
+    endDate: datetime
+    lastUpdated: datetime
     

@@ -2,19 +2,19 @@ from pydantic import BaseModel
 from datetime import datetime 
 
 class UserAvatarEntity(BaseModel):
-    userAvatarId: int 
-    userId: int 
-    avatarId: int 
+    user_avatar_id: int 
+    user_id: int 
+    avatar_id: int 
     nickname: str 
     level: int 
     xp: int 
-    ageDays: int 
-    hungerLevel: int 
-    sleepinessLevel: int 
-    boredomeLevel: int 
-    happinessLevel: int
-    isActive: bool
-    createdAt: datetime 
-    lastUpdated: datetime
+    age_days: int 
+    hunger_level: int 
+    sleepiness_level: int 
+    boredome_level: int 
+    happines_level: int
+    is_active: bool
+    created_at: datetime 
+    last_updated: datetime
     
     

@@ -36,16 +36,17 @@ export const createHttpClient = (): AxiosInstance =>{
     // Add response interceptor for logging
     client.interceptors.response.use(
         (response) => {
-            console.log('[HTTP Client] Response:', response.status, response.config.url);
+            console.log('[HTTP Client] ✓ Response:', response.status, response.config.url);
+            console.log('[HTTP Client] Data preview:', JSON.stringify(response.data).substring(0, 200) + '...');
             return response;
         },
         (error) => {
             if (error.response) {
-                console.error('[HTTP Client] Response error:', error.response.status, error.response.data);
+                console.error('[HTTP Client] ✗ Response error:', error.response.status, error.response.data);
             } else if (error.request) {
-                console.error('[HTTP Client] Network error - no response received:', error.message);
+                console.error('[HTTP Client] ✗ Network error - no response received:', error.message);
             } else {
-                console.error('[HTTP Client] Request setup error:', error.message);
+                console.error('[HTTP Client] ✗ Request setup error:', error.message);
             }
             return Promise.reject(error);
         }
