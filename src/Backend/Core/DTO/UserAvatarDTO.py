@@ -76,10 +76,10 @@ class UserAvatarWithDetailsResponseDTO(BaseModel):
     image_url: Optional[str] = Field(None, alias="imageUrl")
     animation_url: Optional[str] = Field(None, alias="animationUrl")
     theme_color: Optional[str] = Field(None, alias="themeColor")
-    
-    class Config:
-        populate_by_name = True
-        by_alias = True
+    # XP progression (calculated on backend)
+    current_level_xp: int = Field(0, alias="currentLevelXp")
+    next_level_xp: int = Field(100, alias="nextLevelXp")
+    xp_progress: float = Field(0.0, alias="xpProgress")  # Percentage 0-100
     
     class Config:
         populate_by_name = True

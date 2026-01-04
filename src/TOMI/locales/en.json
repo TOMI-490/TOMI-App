@@ -122,7 +122,12 @@
     "minutes": "Minutes",
     "totalXP": "Total XP",
     "xpEarned": "XP Earned",
-    "recentWorkouts": "Recent Workouts"
+    "recentWorkouts": "Recent Workouts",
+    "pastWorkouts": "Past Workouts",
+    "viewAll": "View All",
+    "noWorkouts": "No workouts yet. Start your fitness journey!",
+    "ago": "ago",
+    "min": "min"
   },
   "dashboard": {
     "title": "Dashboard",

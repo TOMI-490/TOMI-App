@@ -8,12 +8,14 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useDashboard } from '../hooks/useDashboardData';
 import { useGamification } from '../hooks/useGamification';
 import { useTomiEffects } from '../hooks/useTomiEffects';
+import { usePastWorkouts } from '../hooks/usePastWorkouts';
 import { useTranslation } from '../locales/i18n';
 import { GoalResponseDto } from '../models/dto/Goal.dto';
 import { StreakResponseDto } from '../models/dto/Streak.dto';
 import { WorkoutResponseDto } from '../models/dto/Workout.dto';
 import { NotificationResponseDto } from '../models/dto/Notification.dto';
 import { homePageStyles as styles } from '../styles/home/homePage.styles';
+import { getRelativeTime, getGreeting } from '../utils/timeFormat';
 import {
   ProgressRings,
   BadgesCard,
@@ -36,6 +38,7 @@ export default function HomePage() {
   useLanguage(user); // Apply user's language automatically
   const { data, loading, error, refresh } = useDashboard(user);
   const { data: gamificationData, loading: gamificationLoading } = useGamification(user?.userId);
+  const { workouts: pastWorkouts, loading: workoutsLoading } = usePastWorkouts(user?.userId, 5);
   const { t } = useTranslation(); // Get translation function
 
   // TOMI effects for XP and level up animations
@@ -63,13 +66,6 @@ export default function HomePage() {
       </ScreenWrapper>
     );
   }
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('home.goodMorning');
-    if (hour < 18) return t('home.goodAfternoon');
-    return t('home.goodEvening');
-  };
 
   // Extract data from dashboard response
   const tomiData = data.tomi || null;
@@ -100,15 +96,12 @@ export default function HomePage() {
     return today === workoutDate;
   });
 
-  // Calculate daily goal progress
+  // Daily goal progress
   const dailyGoalProgress = 0; // TODO: Calculate when activeGoal is available
 
-  // Calculate XP progress to next level (100 XP per level)
-  const currentLevelXp = tomiData ? (tomiData.level - 1) * 100 : 0;
-  const nextLevelXp = tomiData ? tomiData.level * 100 : 100;
-  const xpProgress = tomiData 
-    ? ((tomiData.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100 
-    : 0;
+  // XP progress comes from backend
+  const xpProgress = tomiData?.xpProgress ?? 0;
+  const nextLevelXp = tomiData?.nextLevelXp ?? 100;
 
   // TOMI needs status - show defaults if no data
   const tomiNeeds: TomiNeed[] = tomiData ? [
@@ -147,7 +140,7 @@ export default function HomePage() {
     <ScreenWrapper style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         {/* Greeting */}
-        <Text style={styles.greeting}>{getGreeting()}</Text>
+        <Text style={styles.greeting}>{getGreeting(t)}</Text>
 
         {/* User Info */}
         <Text style={styles.subtitle}>{t('home.welcomeBack').replace('{name}', user?.name || 'User')}!</Text>
@@ -346,6 +339,51 @@ export default function HomePage() {
             ))}
           </View>
         )}
+
+        {/* Past Workouts Section */}
+        <View style={styles.pastWorkoutsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.pastWorkouts')}</Text>
+            {pastWorkouts.length > 0 && (
+              <TouchableOpacity onPress={() => router.push('/(tabs)/history')}>
+                <Text style={styles.viewAllText}>{t('home.viewAll')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {workoutsLoading ? (
+            <View style={styles.workoutsLoadingContainer}>
+              <Text style={styles.workoutsLoadingText}>{t('home.loading')}</Text>
+            </View>
+          ) : pastWorkouts.length === 0 ? (
+            <View style={styles.noWorkoutsContainer}>
+              <Text style={styles.noWorkoutsText}>{t('home.noWorkouts')}</Text>
+            </View>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.workoutCarousel}
+              contentContainerStyle={styles.workoutCarouselContent}
+              nestedScrollEnabled={true}
+            >
+              {pastWorkouts.map((workout) => (
+                <View key={workout.workoutId} style={styles.pastWorkoutCard}>
+                  <View style={styles.workoutDetails}>
+                    <Text style={styles.workoutName}>{workout.workoutTypeName}</Text>
+                    <Text style={styles.workoutTime}>{getRelativeTime(workout.start, t)}</Text>
+                  </View>
+                  
+                  <View style={styles.workoutStats}>
+                    <Text style={styles.workoutDurationBadge}>
+                      {workout.durationMinutes} {t('home.min')}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
       </ScrollView>
 
       {/* ===== TOMI EFFECTS ===== */}

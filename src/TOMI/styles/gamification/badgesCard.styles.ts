@@ -6,6 +6,7 @@ export const badgesCardStyles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    overflow: 'visible',
   },
   sectionTitle: {
     fontSize: 18,
@@ -14,12 +15,16 @@ export const badgesCardStyles = StyleSheet.create({
     color: '#000',
   },
   badgeScroll: {
-    marginBottom: 8,
+    flexGrow: 0,
+  },
+  scrollContent: {
+    paddingRight: 16,
   },
   earnedBadge: {
     alignItems: 'center',
     marginRight: 16,
     width: 80,
+    minHeight: 100,
   },
   badgeIcon: {
     width: 60,
@@ -38,6 +43,7 @@ export const badgesCardStyles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     color: '#000',
+    numberOfLines: 1,
   },
   badgeDate: {
     fontSize: 10,
@@ -48,7 +54,8 @@ export const badgesCardStyles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginRight: 12,
+    width: 220,
     flexDirection: 'column',
   },
   badgeInfo: {

@@ -18,6 +18,10 @@ export interface UserAvatarResponseDto {
   imageUrl?: string;
   animationUrl?: string;
   themeColor?: string;
+  // XP progression (calculated on backend)
+  currentLevelXp?: number;
+  nextLevelXp?: number;
+  xpProgress?: number; // Percentage 0-100
 }
 
 export interface UserAvatarCreateDto {

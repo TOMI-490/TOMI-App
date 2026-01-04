@@ -23,7 +23,13 @@ export const BadgesCard: React.FC<BadgesCardProps> = ({ earned, upcoming }) => {
       {earned && earned.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🏆 {t('gamification.recentBadges')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.badgeScroll}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.badgeScroll}
+            nestedScrollEnabled={true}
+            contentContainerStyle={styles.scrollContent}
+          >
             {earned.slice(0, 6).map((badge) => {
               const translationKey = getBadgeNameTranslation(badge);
               const badgeName = translationKey.startsWith('gamification.badges.') 
@@ -50,37 +56,45 @@ export const BadgesCard: React.FC<BadgesCardProps> = ({ earned, upcoming }) => {
       {upcoming && upcoming.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🎯 {t('gamification.nextMilestones')}</Text>
-          {upcoming.slice(0, 4).map((badge) => {
-            const translationKey = getBadgeNameTranslation(badge);
-            const badgeName = translationKey.startsWith('gamification.badges.') 
-              ? t(translationKey)
-              : badge.name;
-            
-            const unitTranslationKey = getUnitTranslation(badge.unit);
-            const unit = unitTranslationKey.startsWith('gamification.units.')
-              ? t(unitTranslationKey)
-              : badge.unit;
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.badgeScroll}
+            nestedScrollEnabled={true}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {upcoming.slice(0, 6).map((badge) => {
+              const translationKey = getBadgeNameTranslation(badge);
+              const badgeName = translationKey.startsWith('gamification.badges.') 
+                ? t(translationKey)
+                : badge.name;
+              
+              const unitTranslationKey = getUnitTranslation(badge.unit);
+              const unit = unitTranslationKey.startsWith('gamification.units.')
+                ? t(unitTranslationKey)
+                : badge.unit;
 
-            return (
-              <View key={badge.id} style={styles.upcomingBadge}>
-                <View style={styles.badgeInfo}>
-                  <Text style={styles.badgeName}>{badgeName}</Text>
-                  <Text style={styles.badgeProgress}>
-                    {badge.current} / {badge.target} {unit}
-                  </Text>
+              return (
+                <View key={badge.id} style={styles.upcomingBadge}>
+                  <View style={styles.badgeInfo}>
+                    <Text style={styles.badgeName}>{badgeName}</Text>
+                    <Text style={styles.badgeProgress}>
+                      {badge.current} / {badge.target} {unit}
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarContainer}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        { width: `${Math.min(badge.progress, 100)}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.progressPercent}>{Math.round(badge.progress)}%</Text>
                 </View>
-                <View style={styles.progressBarContainer}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${Math.min(badge.progress, 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.progressPercent}>{Math.round(badge.progress)}%</Text>
-              </View>
-            );
-          })}
+              );
+            })}
+          </ScrollView>
         </View>
       )}
     </View>

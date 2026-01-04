@@ -291,4 +291,93 @@ export const homePageStyles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
   },
+  // Past Workouts Section
+  pastWorkoutsSection: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  workoutCarousel: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  workoutCarouselContent: {
+    paddingRight: 16,
+  },
+  pastWorkoutCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginRight: 12,
+    width: 200,
+    minHeight: 100,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  workoutDetails: {
+    flex: 1,
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  workoutName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  workoutTime: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  workoutStats: {
+    alignItems: 'flex-start',
+  },
+  workoutDurationBadge: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+    backgroundColor: '#E5F1FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  workoutsLoadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  workoutsLoadingText: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  noWorkoutsContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  noWorkoutsText: {
+    fontSize: 15,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
 });

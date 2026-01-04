@@ -8,6 +8,7 @@ from ...Core.DTO.UserAvatarDTO import UserAvatarWithDetailsResponseDTO
 from ...Core.DTO.StreakDTO import StreakResponseDTO
 from ...Core.DTO.WorkoutDTO import WorkoutResponseDTO
 from ...Core.DTO.GoalDTO import GoalWithDetailsResponseDTO
+from ...Core.Utils.xp_calculator import calculate_xp_progression
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.ProfileRepository import ProfileRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
@@ -68,27 +69,20 @@ async def getDashboardData(user_id: int):
                 # Fetch avatar details
                 avatar_entity = avatarRepo.fetchAvatarById(user_avatar.avatar_id)
                 
-                # Create enhanced DTO with avatar details
-                tomi_dto = UserAvatarWithDetailsResponseDTO(
-                    user_avatar_id=user_avatar.user_avatar_id,
-                    user_id=user_avatar.user_id,
-                    avatar_id=user_avatar.avatar_id,
-                    nickname=user_avatar.nickname,
-                    level=user_avatar.level,
-                    xp=user_avatar.xp,
-                    age_days=user_avatar.age_days,
-                    hunger_level=user_avatar.hunger_level,
-                    sleepiness_level=user_avatar.sleepiness_level,
-                    boredome_level=user_avatar.boredome_level,
-                    happines_level=user_avatar.happines_level,
-                    is_active=user_avatar.is_active,
-                    last_updated=user_avatar.last_updated,
-                    created_at=user_avatar.created_at,
-                    avatar_name=avatar_entity.name if avatar_entity else None,
-                    image_url=avatar_entity.image_url if avatar_entity else None,
-                    animation_url=avatar_entity.animation_url if avatar_entity else None,
-                    theme_color=avatar_entity.theme_color if avatar_entity else None
-                )
+                # Calculate XP progression using utility function
+                xp_metrics = calculate_xp_progression(user_avatar.level, user_avatar.xp)
+                
+                # Use entity data and add calculated/joined fields
+                entity_dict = user_avatar.model_dump()
+                entity_dict.update({
+                    'avatar_name': avatar_entity.name if avatar_entity else None,
+                    'image_url': avatar_entity.image_url if avatar_entity else None,
+                    'animation_url': avatar_entity.animation_url if avatar_entity else None,
+                    'theme_color': avatar_entity.theme_color if avatar_entity else None,
+                    **xp_metrics  # Unpack XP calculation results
+                })
+                
+                tomi_dto = UserAvatarWithDetailsResponseDTO(**entity_dict)
                 logger.info(f"[DASHBOARD] TOMI avatar found in Supabase: {user_avatar.nickname}, level={user_avatar.level}")
         except Exception as e:
             logger.warning(f"[DASHBOARD] Could not fetch active avatar for user {user_id}: {e}")

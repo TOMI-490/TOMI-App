@@ -163,7 +163,12 @@
     "minutes": "Minutes",
     "totalXP": "XP Total",
     "xpEarned": "XP Gagné",
-    "recentWorkouts": "Entraînements récents"
+    "recentWorkouts": "Entraînements récents",
+    "pastWorkouts": "Entraînements passés",
+    "viewAll": "Voir tout",
+    "noWorkouts": "Aucun entraînement pour le moment. Commencez votre parcours fitness!",
+    "ago": "il y a",
+    "min": "min"
   },
   "nav": {
     "home": "Accueil",
