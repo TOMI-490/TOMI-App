@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,7 +45,6 @@ export default function HomePage() {
     return (
       <ScreenWrapper style={styles.container}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>{t('home.loading')}</Text>
         </View>
       </ScreenWrapper>
@@ -151,7 +150,7 @@ export default function HomePage() {
         <Text style={styles.greeting}>{getGreeting()}</Text>
 
         {/* User Info */}
-        <Text style={styles.subtitle}>{t('home.welcomeBack').replace('{name}', user.name)}!</Text>
+        <Text style={styles.subtitle}>{t('home.welcomeBack').replace('{name}', user?.name || 'User')}!</Text>
 
         {/* Notifications Badge */}
         {notifications.length > 0 && (
