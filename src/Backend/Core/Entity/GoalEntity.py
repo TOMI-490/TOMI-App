@@ -2,12 +2,13 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class GoalEntity(BaseModel):
-    goalId: int 
-    userId: int
-    goalStatusId: int 
-    goalTypeId: int
-    targetValue: int 
+    goal_id: int 
+    user_id: int
+    goal_status_id: int 
+    goal_type_id: int
+    target_value: int 
     period: str 
-    startDate: datetime
-    endDate: datetime
-    lastUpdated: datetime
+    progress_value: int
+    start_date: datetime
+    end_date: datetime
+    last_updated: datetime

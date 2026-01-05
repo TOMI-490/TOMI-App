@@ -1,18 +1,18 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
 
 class UserEntity(BaseModel):
-    userId: int 
-    authID: Optional[str] = Field(None, alias="authID")  # Supabase Auth UID - database column name
+    user_id: int 
+    auth_id: Optional[str] = None  # Supabase Auth UID
     email: str 
     name: str
     country: str 
-    unitSystem: str 
+    unit_system: str 
     language: str
-    onBoardingComplete: bool = False  # Indicates whether the user has completed onboarding
-    created_at: datetime = Field(alias="created_at")  # Database column name
+    on_boarding_complete: bool = False
+    created_at: datetime
     
     class Config:
-        populate_by_name = True  # Allow using both field name and alias
+        from_attributes = True  # Allow creating from ORM-like objects

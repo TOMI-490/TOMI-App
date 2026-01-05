@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 class GoalTypeEntity(BaseModel):
-    goalTypeId: int 
+    goal_type_id: int 
     name: str 
     description: str
-    defaultUnit: str
+    default_unit: str
     
     

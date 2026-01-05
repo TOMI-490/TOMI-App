@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 # Entity representing a Badge
 class BadgeEntity(BaseModel):
-    badgeId: int
+    badge_id: int
     achievement: str
     name: str 
     description: str 

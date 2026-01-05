@@ -15,7 +15,11 @@ workoutTypeRepo = WorkoutTypeRepository()
 async def getAllWorkoutTypes():
     try:
         workoutTypes = workoutTypeRepo.fetchAllWorkoutTypes()
-        return [WorkoutTypeResponseDTO(**wt.__dict__) for wt in workoutTypes]
+        return [WorkoutTypeResponseDTO(
+            workoutTypeId=wt.workout_type_id,
+            name=wt.name,
+            description=wt.description
+        ) for wt in workoutTypes]
     except Exception as e:
         logger.error(f"Error fetching workout types: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -27,7 +31,11 @@ async def getWorkoutType(workout_type_id: int):
         workoutType = workoutTypeRepo.fetchWorkoutTypeById(workout_type_id)
         if not workoutType:
             raise HTTPException(status_code=404, detail="Workout type not found")
-        return WorkoutTypeResponseDTO(**workoutType.__dict__)
+        return WorkoutTypeResponseDTO(
+            workoutTypeId=workoutType.workout_type_id,
+            name=workoutType.name,
+            description=workoutType.description
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -40,7 +48,11 @@ async def createWorkoutType(workout_type_data: WorkoutTypeCreateDTO):
     try:
         workout_type = WorkoutTypeEntity(**workout_type_data.model_dump())
         created_workout_type = workoutTypeRepo.createWorkoutType(workout_type)
-        return WorkoutTypeResponseDTO(**created_workout_type.__dict__)
+        return WorkoutTypeResponseDTO(
+            workoutTypeId=created_workout_type.workout_type_id,
+            name=created_workout_type.name,
+            description=created_workout_type.description
+        )
     except Exception as e:
         logger.error(f"Error creating workout type: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -59,7 +71,11 @@ async def updateWorkoutType(workout_type_id: int, workout_type_data: WorkoutType
         
         workout_type = WorkoutTypeEntity(**workout_type_dict)
         updated_workout_type = workoutTypeRepo.updateWorkoutType(workout_type)
-        return WorkoutTypeResponseDTO(**updated_workout_type.__dict__)
+        return WorkoutTypeResponseDTO(
+            workoutTypeId=updated_workout_type.workout_type_id,
+            name=updated_workout_type.name,
+            description=updated_workout_type.description
+        )
     except HTTPException:
         raise
     except Exception as e:

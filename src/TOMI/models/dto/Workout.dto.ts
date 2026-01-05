@@ -2,32 +2,22 @@ export interface WorkoutResponseDto {
   workoutId: number;
   userId: number;
   workoutTypeId: number;
-  duration: number;
-  caloriesBurned: number;
-  distance?: number;
-  averageHeartRate?: number;
-  date: string;
-  notes?: string;
-  createdAt: string;
+  start: string;
+  end: string;
+  deviceId: number;
 }
 
 export interface WorkoutCreateDto {
   userId: number;
   workoutTypeId: number;
-  duration: number;
-  caloriesBurned: number;
-  distance?: number;
-  averageHeartRate?: number;
-  date: string;
-  notes?: string;
+  start: string;
+  end: string;
+  deviceId: number;
 }
 
 export interface WorkoutUpdateDto {
   workoutTypeId?: number;
-  duration?: number;
-  caloriesBurned?: number;
-  distance?: number;
-  averageHeartRate?: number;
-  date?: string;
-  notes?: string;
+  start?: string;
+  end?: string;
+  deviceId?: number;
 }

@@ -9,7 +9,7 @@ class FriendRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Friend"
+        self._table_name = "friend"
     
     def dataToEntity(self, data: dict) -> FriendEntity:
         try:
@@ -25,7 +25,7 @@ class FriendRepository:
 
     def fetchFriendsByUserId(self, user_id: int) -> List[FriendEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching friends for user {user_id}: {e}")
@@ -35,8 +35,8 @@ class FriendRepository:
         try:
             response = self._client.table(self._table_name)\
                 .select("*")\
-                .eq("userId", user_id)\
-                .eq("statusId", status_id)\
+                .eq("user_id", user_id)\
+                .eq("status_id", status_id)\
                 .execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:

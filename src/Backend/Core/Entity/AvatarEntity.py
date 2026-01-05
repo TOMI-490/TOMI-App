@@ -4,12 +4,13 @@ from pydantic import BaseModel
 
 # Entity representing an Avatar
 class AvatarEntity (BaseModel):
-    avatarId: Optional[int]
+    avatar_id: Optional[int]
     name: str
-    imageURL: str
-    animationURL: str 
-    themeColor: str
-    isDefault: bool
-    createdAt: Optional[datetime]
+    image_url: str
+    animation_url: str 
+    theme_color: str
+    is_default: bool
+    created_by: str
+    created_at: Optional[datetime]
     
     

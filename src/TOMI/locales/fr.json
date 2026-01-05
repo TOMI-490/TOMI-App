@@ -6,9 +6,28 @@
     "emailPlaceholder": "email@exemple.com",
     "passwordLabel": "Mot de passe",
     "passwordPlaceholder": "Entrez votre mot de passe",
+    "forgotPassword": "Mot de passe oublié?",
     "primaryButton": "Se connecter",
     "noAccount": "Vous n'avez pas de compte?",
     "secondaryButton": "Créer un compte"
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié",
+    "subtitle": "Entrez votre email pour recevoir un lien de réinitialisation",
+    "emailLabel": "Email *",
+    "emailPlaceholder": "email@exemple.com",
+    "primaryButton": "Envoyer le lien",
+    "backToLogin": "Retour à la connexion"
+  },
+  "resetPassword": {
+    "title": "Réinitialiser le mot de passe",
+    "subtitle": "Entrez votre nouveau mot de passe",
+    "passwordLabel": "Nouveau mot de passe *",
+    "passwordPlaceholder": "Au moins 6 caractères",
+    "confirmPasswordLabel": "Confirmer le nouveau mot de passe *",
+    "confirmPasswordPlaceholder": "Ressaisissez votre mot de passe",
+    "primaryButton": "Réinitialiser le mot de passe",
+    "backToLogin": "Retour à la connexion"
   },
   "register": {
     "logoPlaceholder": "LOGO",
@@ -55,6 +74,161 @@
     "registrationFailed": {
       "title": "Échec de l'inscription",
       "messageDefault": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "loginFailed": {
+      "title": "Échec de la connexion",
+      "messageDefault": "Impossible de se connecter. Veuillez vérifier vos identifiants et réessayer."
+    },
+    "resetEmailSent": {
+      "title": "Email envoyé",
+      "message": "Veuillez vérifier votre email pour le lien de réinitialisation du mot de passe.",
+      "button": "OK"
+    },
+    "resetEmailFailed": {
+      "title": "Échec de l'envoi de l'email",
+      "messageDefault": "Impossible d'envoyer l'email de réinitialisation. Veuillez réessayer."
+    },
+    "passwordResetSuccess": {
+      "title": "Succès!",
+      "message": "Votre mot de passe a été réinitialisé avec succès.",
+      "button": "OK"
+    },
+    "passwordResetFailed": {
+      "title": "Échec de la réinitialisation",
+      "messageDefault": "Impossible de réinitialiser le mot de passe. Veuillez réessayer."
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "userInfo": "Informations utilisateur",
+    "language": "Langue",
+    "name": "Nom",
+    "email": "Email",
+    "country": "Pays",
+    "unitSystem": "Système d'unités",
+    "profile": "Profil",
+    "bio": "Biographie",
+    "stats": "Statistiques",
+    "totalExercises": "Total d'exercices",
+    "totalDistance": "Distance totale",
+    "totalSteps": "Total de pas",
+    "longestStreak": "Plus longue série",
+    "tomi": "Avatar TOMI",
+    "level": "Niveau",
+    "xp": "XP",
+    "age": "Âge (jours)",
+    "hunger": "Faim",
+    "sleepiness": "Somnolence",
+    "boredom": "Ennui",
+    "happiness": "Bonheur",
+    "nickname": "Surnom",
+    "active": "Actif"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "empty": "Aucune donnée disponible",
+    "error": "Une erreur s'est produite",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "home": {
+    "loading": "Chargement...",
+    "errorLoading": "Échec du chargement. Veuillez réessayer.",
+    "retry": "Réessayer"
+  },
+  "home": {
+    "loading": "Chargement...",
+    "errorLoading": "Échec du chargement des données. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "backButton": "Retour",
+    "menuButton": "Ouvrir le menu",
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "welcomeBack": "Bon retour, {name}",
+    "levelStage": "Niveau {level} • {stage}",
+    "stageBaby": "Bébé",
+    "stageTeen": "Ado",
+    "stageAdult": "Adulte",
+    "xpProgress": "XP: {current} / {total}",
+    "dayStreak": "Série de {days} jours",
+    "dailyGoal": "Objectif quotidien",
+    "startWorkout": "Commencer l'entraînement",
+    "customize": "Personnaliser",
+    "todaysProgress": "Progrès d'aujourd'hui",
+    "workouts": "Entraînements",
+    "minutes": "Minutes",
+    "totalXP": "XP Total",
+    "xpEarned": "XP Gagné",
+    "recentWorkouts": "Entraînements récents",
+    "pastWorkouts": "Entraînements passés",
+    "viewAll": "Voir tout",
+    "noWorkouts": "Aucun entraînement pour le moment. Commencez votre parcours fitness!",
+    "ago": "il y a",
+    "min": "min"
+  },
+  "nav": {
+    "home": "Accueil",
+    "community": "Communauté",
+    "workout": "Entraînement",
+    "avatar": "Avatar",
+    "history": "Historique"
+  },
+  "gamification": {
+    "todaysGoals": "Objectifs du jour",
+    "recentBadges": "Badges récents",
+    "nextMilestones": "Prochains jalons",
+    "progressRings": "Anneaux de progrès",
+    "leaderboard": "Classement",
+    "yourRank": "Votre rang",
+    "topPlayers": "Meilleurs joueurs",
+    "scopeFriends": "Amis",
+    "scopeGlobal": "Global",
+    "you": "Vous",
+    "badges": {
+      "firstSteps": "Premiers pas",
+      "firstStepsDesc": "Complétez votre premier entraînement",
+      "stepCounter": "Compteur de pas",
+      "stepCounterDesc": "Complétez 10 entraînements",
+      "weekWarrior": "Guerrier de la semaine",
+      "weekWarriorDesc": "Maintenez une série de 7 jours",
+      "monthMaster": "Maître du mois",
+      "monthMasterDesc": "Maintenez une série de 30 jours",
+      "centuryClub": "Club du siècle",
+      "centuryClubDesc": "Complétez 100 entraînements",
+      "marathonDistance": "Distance marathon",
+      "marathonDistanceDesc": "Atteignez 42,2 km de distance totale",
+      "level10Tomi": "TOMI niveau 10",
+      "level10TomiDesc": "Atteignez le niveau 10 avec votre TOMI",
+      "workout10": "10 entraînements",
+      "workout10Desc": "Complétez 10 entraînements",
+      "workout50": "50 entraînements",
+      "workout50Desc": "Complétez 50 entraînements",
+      "workout100": "100 entraînements",
+      "workout100Desc": "Complétez 100 entraînements",
+      "streak7": "Série de 7 jours",
+      "streak7Desc": "Maintenez une série de 7 jours d'entraînement",
+      "streak30": "Série de 30 jours",
+      "streak30Desc": "Maintenez une série de 30 jours d'entraînement",
+      "streak100": "Série de 100 jours",
+      "streak100Desc": "Maintenez une série de 100 jours d'entraînement"
+    },
+    "units": {
+      "workouts": "entraînements",
+      "days": "jours",
+      "level": "niveau",
+      "km": "km",
+      "steps": "pas",
+      "minutes": "minutes"
+    },
+    "goals": {
+      "dailySteps": "Pas quotidiens",
+      "weeklyWorkouts": "Entraînements hebdomadaires",
+      "monthlyDistance": "Distance mensuelle",
+      "done": "Terminé"
     }
   }
 }

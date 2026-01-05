@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 class WorkoutTypeEntity(BaseModel):
-    workoutTypeId: int 
+    workout_type_id: int 
     name: str 
     description: str

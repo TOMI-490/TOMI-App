@@ -15,7 +15,14 @@ workoutRepo = WorkoutRepository()
 async def getAllWorkouts():
     try:
         workouts = workoutRepo.fetchAllWorkouts()
-        return [WorkoutResponseDTO(**workout.__dict__) for workout in workouts]
+        return [WorkoutResponseDTO(
+            workoutId=w.workout_id,
+            userId=w.user_id,
+            workoutTypeId=w.workout_type_id,
+            start=w.start,
+            end=w.end,
+            deviceId=w.device_id
+        ) for w in workouts]
     except Exception as e:
         logger.error(f"Error fetching all workouts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -25,7 +32,14 @@ async def getAllWorkouts():
 async def getUserWorkouts(user_id: int):
     try:
         workouts = workoutRepo.fetchWorkoutsByUserId(user_id)
-        return [WorkoutResponseDTO(**workout.__dict__) for workout in workouts]
+        return [WorkoutResponseDTO(
+            workoutId=w.workout_id,
+            userId=w.user_id,
+            workoutTypeId=w.workout_type_id,
+            start=w.start,
+            end=w.end,
+            deviceId=w.device_id
+        ) for w in workouts]
     except Exception as e:
         logger.error(f"Error fetching workouts for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -37,7 +51,14 @@ async def getWorkout(workout_id: int):
         workout = workoutRepo.fetchWorkoutById(workout_id)
         if not workout:
             raise HTTPException(status_code=404, detail="Workout not found")
-        return WorkoutResponseDTO(**workout.__dict__)
+        return WorkoutResponseDTO(
+            workoutId=workout.workout_id,
+            userId=workout.user_id,
+            workoutTypeId=workout.workout_type_id,
+            start=workout.start,
+            end=workout.end,
+            deviceId=workout.device_id
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -50,7 +71,14 @@ async def createWorkout(workout_data: WorkoutCreateDTO):
     try:
         workout = WorkoutEntity(**workout_data.model_dump())
         created_workout = workoutRepo.createWorkout(workout)
-        return WorkoutResponseDTO(**created_workout.__dict__)
+        return WorkoutResponseDTO(
+            workoutId=created_workout.workout_id,
+            userId=created_workout.user_id,
+            workoutTypeId=created_workout.workout_type_id,
+            start=created_workout.start,
+            end=created_workout.end,
+            deviceId=created_workout.device_id
+        )
     except Exception as e:
         logger.error(f"Error creating workout: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -69,7 +97,14 @@ async def updateWorkout(workout_id: int, workout_data: WorkoutUpdateDTO):
         
         workout = WorkoutEntity(**workout_dict)
         updated_workout = workoutRepo.updateWorkout(workout)
-        return WorkoutResponseDTO(**updated_workout.__dict__)
+        return WorkoutResponseDTO(
+            workoutId=updated_workout.workout_id,
+            userId=updated_workout.user_id,
+            workoutTypeId=updated_workout.workout_type_id,
+            start=updated_workout.start,
+            end=updated_workout.end,
+            deviceId=updated_workout.device_id
+        )
     except HTTPException:
         raise
     except Exception as e:

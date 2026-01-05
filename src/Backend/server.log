@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/thomasmejia/Documents/GITHUB DOCUMENTS/TOMI-App/src/Backend/Server/program.py", line 19, in <module>
+    from .Routes.AvatarRoutes import router as AvatarRouter
+ImportError: attempted relative import with no known parent package

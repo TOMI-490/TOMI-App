@@ -9,7 +9,7 @@ class NotificationRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "Notifications"
+        self._table_name = "notifications"
     
     def dataToEntity(self, data: dict) -> NotificationsEntity:
         try:
@@ -25,7 +25,7 @@ class NotificationRepository:
 
     def fetchNotificationsByUserId(self, user_id: int) -> List[NotificationsEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("userId", user_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
             return [self.dataToEntity(record) for record in response.data]
         except Exception as e:
             logger.error(f"Error fetching notifications for user {user_id}: {e}")
@@ -35,7 +35,7 @@ class NotificationRepository:
         try:
             response = self._client.table(self._table_name)\
                 .select("*")\
-                .eq("userId", user_id)\
+                .eq("user_id", user_id)\
                 .eq("isRead", False)\
                 .execute()
             return [self.dataToEntity(record) for record in response.data]
@@ -45,7 +45,7 @@ class NotificationRepository:
 
     def fetchNotificationById(self, notif_id: int) -> Optional[NotificationsEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("notifId", notif_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("notif_id", notif_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -67,12 +67,12 @@ class NotificationRepository:
     def updateNotification(self, notification: NotificationsEntity) -> NotificationsEntity:
         try:
             data = self.entityToData(notification)
-            notifId = getattr(notification, "notifId", None)
+            notif_id_val = getattr(notification, "notif_id", None)
             
-            if not notifId:
+            if not notif_id_val:
                 raise ValueError("Notification ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("notifId", notifId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("notif_id", notif_id_val).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update notification")
@@ -84,7 +84,7 @@ class NotificationRepository:
         try:
             response = self._client.table(self._table_name)\
                 .update({"isRead": True})\
-                .eq("notifId", notif_id)\
+                .eq("notif_id", notif_id)\
                 .execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
@@ -95,7 +95,7 @@ class NotificationRepository:
 
     def deleteNotification(self, notif_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("notifId", notif_id).execute()
+            self._client.table(self._table_name).delete().eq("notif_id", notif_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting notification {notif_id}: {e}")

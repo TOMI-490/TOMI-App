@@ -1,21 +1,20 @@
 export interface NotificationResponseDto {
-  notificationId: number;
+  notifId: number;
   userId: number;
-  type: string;
-  title: string;
-  message: string;
+  notifType: string;
+  description: string;
   isRead: boolean;
-  createdAt: string;
 }
 
 export interface NotificationCreateDto {
   userId: number;
-  type: string;
-  title: string;
-  message: string;
+  notifType: string;
+  description: string;
   isRead?: boolean;
 }
 
 export interface NotificationUpdateDto {
+  notifType?: string;
+  description?: string;
   isRead?: boolean;
 }

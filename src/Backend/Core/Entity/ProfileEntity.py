@@ -2,11 +2,11 @@
 from pydantic import BaseModel
 
 class ProfileEntity(BaseModel):
-    profileId: int 
-    userId: int 
-    userAvatarId: int 
+    profile_id: int 
+    user_id: int 
+    user_avatar_id: int 
     bio: str
-    totalExercice: int 
-    totalDistance: float 
-    totalSteps: int 
-    longestStreak: int 
+    total_exercices: float 
+    total_distance: float 
+    total_steps: int 
+    longest_streak: int 

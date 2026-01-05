@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 
 class NotificationsEntity(BaseModel):
-    notifId: int 
-    userId: int 
-    notifType: str
+    notif_id: int 
+    user_id: int 
+    notif_type: str
     description: str
-    isRead: bool
+    is_read: bool

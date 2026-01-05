@@ -2,26 +2,50 @@ export interface UserAvatarResponseDto {
   userAvatarId: number;
   userId: number;
   avatarId: number;
-  currentLevel: number;
-  currentXP: number;
-  mood: string;
-  customizations?: Record<string, any>;
-  createdAt: string;
-  updatedAt?: string;
+  nickname: string;
+  level: number;
+  xp: number;
+  ageDays: number;
+  hungerLevel: number;
+  sleepinessLevel: number;
+  boredomeLevel: number;
+  happinessLevel: number;
+  isActive: boolean;
+  lastUpdated?: string;
+  createdAt?: string;
+  // Avatar details (when fetched with avatar join)
+  avatarName?: string;
+  imageUrl?: string;
+  animationUrl?: string;
+  themeColor?: string;
+  // XP progression (calculated on backend)
+  currentLevelXp?: number;
+  nextLevelXp?: number;
+  xpProgress?: number; // Percentage 0-100
 }
 
 export interface UserAvatarCreateDto {
   userId: number;
   avatarId: number;
-  currentLevel?: number;
-  currentXP?: number;
-  mood?: string;
-  customizations?: Record<string, any>;
+  nickname: string;
+  level?: number;
+  xp?: number;
+  ageDays?: number;
+  hungerLevel?: number;
+  sleepinessLevel?: number;
+  boredomeLevel?: number;
+  happinessLevel?: number;
+  isActive?: boolean;
 }
 
 export interface UserAvatarUpdateDto {
-  currentLevel?: number;
-  currentXP?: number;
-  mood?: string;
-  customizations?: Record<string, any>;
+  nickname?: string;
+  level?: number;
+  xp?: number;
+  ageDays?: number;
+  hungerLevel?: number;
+  sleepinessLevel?: number;
+  boredomeLevel?: number;
+  happinessLevel?: number;
+  isActive?: boolean;
 }

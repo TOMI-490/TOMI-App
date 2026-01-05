@@ -9,7 +9,7 @@ class WorkoutTypeRepository:
     
     def __init__(self):
         self._client = supabase
-        self._table_name = "WorkoutType"
+        self._table_name = "workout_type"
     
     def dataToEntity(self, data: dict) -> WorkoutTypeEntity:
         try:
@@ -33,7 +33,7 @@ class WorkoutTypeRepository:
 
     def fetchWorkoutTypeById(self, workout_type_id: int) -> Optional[WorkoutTypeEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("workoutTypeId", workout_type_id).execute()
+            response = self._client.table(self._table_name).select("*").eq("workout_type_id", workout_type_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             return None
@@ -55,12 +55,12 @@ class WorkoutTypeRepository:
     def updateWorkoutType(self, workout_type: WorkoutTypeEntity) -> WorkoutTypeEntity:
         try:
             data = self.entityToData(workout_type)
-            workoutTypeId = getattr(workout_type, "workoutTypeId", None)
+            workout_type_id = getattr(workout_type, "workout_type_id", None)
             
-            if not workoutTypeId:
+            if not workout_type_id:
                 raise ValueError("Workout Type ID is required for update")
-                
-            response = self._client.table(self._table_name).update(data).eq("workoutTypeId", workoutTypeId).execute()
+            
+            response = self._client.table(self._table_name).update(data).eq("workout_type_id", workout_type_id).execute()
             if response.data:
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update workout type")
@@ -70,7 +70,7 @@ class WorkoutTypeRepository:
 
     def deleteWorkoutType(self, workout_type_id: int) -> bool:
         try:
-            self._client.table(self._table_name).delete().eq("workoutTypeId", workout_type_id).execute()
+            self._client.table(self._table_name).delete().eq("workout_type_id", workout_type_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error deleting workout type {workout_type_id}: {e}")
