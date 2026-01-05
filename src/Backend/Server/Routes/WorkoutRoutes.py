@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 from typing import List
 import logging
+from datetime import datetime
 
 from ...Core.Entity.WorkoutEntity import WorkoutEntity
-from ...Core.DTO.WorkoutDTO import WorkoutCreateDTO, WorkoutUpdateDTO, WorkoutResponseDTO
+from ...Core.DTO.WorkoutDTO import WorkoutCreateDTO, WorkoutUpdateDTO, WorkoutResponseDTO, WorkoutStartDTO, WorkoutEndDTO
 from ...Infrastructure.Repository.WorkoutRepository import WorkoutRepository
 
 logger = logging.getLogger(__name__)
@@ -119,3 +120,59 @@ async def deleteWorkout(workout_id: int):
     except Exception as e:
         logger.error(f"Error deleting workout {workout_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Start a new workout (creates workout with end=null)
+@router.post("/start", response_model=WorkoutResponseDTO, status_code=status.HTTP_201_CREATED)
+async def startWorkout(workout_data: WorkoutStartDTO):
+    try:
+        # Create workout with start=now() and end=null
+        workout = WorkoutEntity(
+            user_id=workout_data.userId,
+            workout_type_id=workout_data.workoutTypeId,
+            device_id=workout_data.deviceId,
+            start=datetime.now(),
+            end=None
+        )
+        created_workout = workoutRepo.createWorkout(workout)
+        return WorkoutResponseDTO(
+            workoutId=created_workout.workout_id,
+            userId=created_workout.user_id,
+            workoutTypeId=created_workout.workout_type_id,
+            start=created_workout.start,
+            end=created_workout.end,
+            deviceId=created_workout.device_id
+        )
+    except Exception as e:
+        logger.error(f"Error starting workout: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# End an active workout (updates end timestamp)
+@router.put("/{workout_id}/end", response_model=WorkoutResponseDTO)
+async def endWorkout(workout_id: int):
+    try:
+        existing_workout = workoutRepo.fetchWorkoutById(workout_id)
+        if not existing_workout:
+            raise HTTPException(status_code=404, detail="Workout not found")
+        
+        if existing_workout.end is not None:
+            raise HTTPException(status_code=400, detail="Workout already ended")
+        
+        # Update workout with end=now()
+        workout_dict = existing_workout.__dict__.copy()
+        workout_dict['end'] = datetime.now()
+        
+        workout = WorkoutEntity(**workout_dict)
+        updated_workout = workoutRepo.updateWorkout(workout)
+        return WorkoutResponseDTO(
+            workoutId=updated_workout.workout_id,
+            userId=updated_workout.user_id,
+            workoutTypeId=updated_workout.workout_type_id,
+            start=updated_workout.start,
+            end=updated_workout.end,
+            deviceId=updated_workout.device_id
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error ending workout {workout_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))

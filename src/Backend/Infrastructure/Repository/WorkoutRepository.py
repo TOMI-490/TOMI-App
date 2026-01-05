@@ -22,9 +22,16 @@ class WorkoutRepository:
         
     # Helpers to convert WorkoutEntity to database data
     def entityToData(self, workout: WorkoutEntity) -> dict:
-        if hasattr(workout, "to_dict") and callable(workout.to_dict):
-            return workout.to_dict()
-        return workout.__dict__
+        data = workout.model_dump(exclude_none=False)
+        # Convert datetime objects to ISO format strings for JSON serialization
+        if 'start' in data and data['start'] is not None:
+            data['start'] = data['start'].isoformat() if hasattr(data['start'], 'isoformat') else data['start']
+        if 'end' in data and data['end'] is not None:
+            data['end'] = data['end'].isoformat() if hasattr(data['end'], 'isoformat') else data['end']
+        # Remove workout_id if it's None (for inserts)
+        if 'workout_id' in data and data['workout_id'] is None:
+            del data['workout_id']
+        return data
     
     
     #============================================================================================================

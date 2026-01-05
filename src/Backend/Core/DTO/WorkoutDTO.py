@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # DTO for creating a new workout
 class WorkoutCreateDTO(BaseModel):
@@ -9,6 +9,16 @@ class WorkoutCreateDTO(BaseModel):
     start: datetime
     end: datetime
     deviceId: int = Field(..., gt=0)
+
+# DTO for starting a workout (end is null initially)
+class WorkoutStartDTO(BaseModel):
+    userId: int = Field(..., gt=0)
+    workoutTypeId: int = Field(..., gt=0)
+    deviceId: int = Field(..., gt=0)
+
+# DTO for ending a workout (just updates end timestamp)
+class WorkoutEndDTO(BaseModel):
+    pass  # No body needed, end time will be set to now()
 
 # DTO for updating a workout
 class WorkoutUpdateDTO(BaseModel):
@@ -19,12 +29,11 @@ class WorkoutUpdateDTO(BaseModel):
 
 # DTO for responding with workout data
 class WorkoutResponseDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     workoutId: int
     userId: int
     workoutTypeId: int
     start: datetime
-    end: datetime
+    end: Optional[datetime]
     deviceId: int
-    
-    class Config:
-        from_attributes = True

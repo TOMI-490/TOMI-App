@@ -6,41 +6,61 @@ module.exports = {
     slug: "TOMI",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    // icon: "./assets/images/icon.png",
     scheme: "tomi",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
-      supportsTablet: true
+      bundleIdentifier: "com.tomi.workout",
+      supportsTablet: true,
+      config: {
+        googleMapsApiKey: process.env.MAP_API_KEY
+      }
     },
     android: {
-      adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png"
-      },
+      package: "com.tomi.workout",
+      // adaptiveIcon: {
+      //   backgroundColor: "#E6F4FE",
+      //   foregroundImage: "./assets/images/android-icon-foreground.png",
+      //   backgroundImage: "./assets/images/android-icon-background.png",
+      //   monochromeImage: "./assets/images/android-icon-monochrome.png"
+      // },
       edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false
+      predictiveBackGestureEnabled: false,
+      config: {
+        googleMaps: {
+          apiKey: process.env.MAP_API_KEY
+        }
+      },
+      permissions: [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     web: {
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      // favicon: "./assets/images/favicon.png"
     },
     plugins: [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-location",
         {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: {
-            backgroundColor: "#000000"
-          }
+          "locationAlwaysAndWhenInUsePermission": "Allow TOMI to use your location for workout tracking."
         }
       ]
+      // [
+      //   "expo-splash-screen",
+      //   {
+      //     image: "./assets/images/splash-icon.png",
+      //     imageWidth: 200,
+      //     resizeMode: "contain",
+      //     backgroundColor: "#ffffff",
+      //     dark: {
+      //       backgroundColor: "#000000"
+      //     }
+      //   }
+      // ]
     ],
     experiments: {
       typedRoutes: true,
