@@ -8,6 +8,7 @@ class WorkoutEntity(BaseModel):
     workout_type_id: int 
     start: datetime 
     end: Optional[datetime] = None
-    device_id: int 
+    device_id: int
+    xp_awarded: Optional[int] = None 
     
     

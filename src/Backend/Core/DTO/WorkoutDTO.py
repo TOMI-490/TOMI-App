@@ -15,6 +15,7 @@ class WorkoutStartDTO(BaseModel):
     userId: int = Field(..., gt=0)
     workoutTypeId: int = Field(..., gt=0)
     deviceId: int = Field(..., gt=0)
+    xpAwarded: Optional[int] = Field(None, ge=5, le=49)  # Optional XP from frontend (5-49)
 
 # DTO for ending a workout (just updates end timestamp)
 class WorkoutEndDTO(BaseModel):
@@ -37,3 +38,16 @@ class WorkoutResponseDTO(BaseModel):
     start: datetime
     end: Optional[datetime]
     deviceId: int
+    xpAwarded: Optional[int] = Field(default=None, alias="xpAwarded")
+
+# DTO for responding with workout end data (includes XP awarded)
+class WorkoutEndResponseDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    workoutId: int
+    userId: int
+    workoutTypeId: int
+    start: datetime
+    end: Optional[datetime]
+    deviceId: int
+    xpAwarded: int = Field(default=0, description="Experience points awarded for this workout")

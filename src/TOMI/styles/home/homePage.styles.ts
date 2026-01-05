@@ -345,12 +345,23 @@ export const homePageStyles = StyleSheet.create({
   },
   workoutStats: {
     alignItems: 'flex-start',
+    gap: 8,
   },
   workoutDurationBadge: {
     fontSize: 14,
     fontWeight: '600',
     color: '#007AFF',
     backgroundColor: '#E5F1FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  workoutXpBadge: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34C759',
+    backgroundColor: '#E8F8EC',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,

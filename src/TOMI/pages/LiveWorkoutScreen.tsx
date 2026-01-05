@@ -23,6 +23,7 @@ const LiveWorkoutScreen: React.FC = () => {
   const workoutTypeId = Number(params.workoutTypeId);
 
   const [workoutType, setWorkoutType] = useState<WorkoutTypeResponseDto | null>(null);
+  const [workoutXp, setWorkoutXp] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [heartRate] = useState(72); // Mock for now
@@ -38,11 +39,16 @@ const LiveWorkoutScreen: React.FC = () => {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
+    console.log('[LiveWorkout] 🏃 Component mounted');
+    console.log('[LiveWorkout]   - Workout ID:', workoutId);
+    console.log('[LiveWorkout]   - Workout Type ID:', workoutTypeId);
     loadWorkoutType();
+    loadWorkoutXp();
     requestLocationPermission();
     startTimer();
 
     return () => {
+      console.log('[LiveWorkout] 🛑 Component unmounting, cleaning up...');
       stopTimer();
       stopLocationTracking();
     };
@@ -61,10 +67,23 @@ const LiveWorkoutScreen: React.FC = () => {
 
   const loadWorkoutType = async () => {
     try {
+      console.log('[LiveWorkout] 📋 Loading workout type...');
       const type = await workoutTypeService.getById(workoutTypeId);
+      console.log('[LiveWorkout] ✓ Workout type loaded:', type.name);
       setWorkoutType(type);
     } catch (error) {
-      console.error('Error loading workout type:', error);
+      console.error('[LiveWorkout] ❌ Error loading workout type:', error);
+    }
+  };
+
+  const loadWorkoutXp = async () => {
+    try {
+      console.log('[LiveWorkout] 🎯 Loading workout XP...');
+      const workout = await workoutService.getWorkoutById(workoutId);
+      console.log('[LiveWorkout] ✓ Workout XP loaded:', workout.xpAwarded);
+      setWorkoutXp(workout.xpAwarded || null);
+    } catch (error) {
+      console.error('[LiveWorkout] ❌ Error loading workout XP:', error);
     }
   };
 
@@ -197,13 +216,28 @@ const LiveWorkoutScreen: React.FC = () => {
               stopTimer();
               stopLocationTracking();
 
-              // End workout via backend API
-              await workoutService.endWorkout(workoutId);
+              console.log('[LiveWorkout] 🏁 Ending workout...');
+              console.log('[LiveWorkout]   - Workout ID:', workoutId);
+              console.log('[LiveWorkout]   - Duration:', elapsedSeconds, 'seconds');
+              console.log('[LiveWorkout]   - Distance:', distance.toFixed(2), 'km');
 
-              console.log('Workout ended:', workoutId);
+              // End workout via backend API (backend handles XP awarding)
+              const { workout: endedWorkout, xpAwarded } = await workoutService.endWorkout(workoutId);
+              console.log('[LiveWorkout] ✓ Workout ended successfully');
+              console.log('[LiveWorkout]   - Start:', endedWorkout.start);
+              console.log('[LiveWorkout]   - End:', endedWorkout.end);
+              console.log('[LiveWorkout]   - XP Awarded:', xpAwarded);
 
-              // Navigate to summary screen
-              router.replace(`/(tabs)/workout/summary?workoutId=${workoutId}&distance=${distance.toFixed(2)}`);
+              // Navigate to summary screen with replace to prevent back navigation
+              console.log('[LiveWorkout] 📱 Navigating to summary screen...');
+              router.replace({
+                pathname: '/workout-summary',
+                params: {
+                  workoutId: workoutId.toString(),
+                  distance: distance.toFixed(2),
+                  xpAwarded: xpAwarded.toString(),
+                },
+              });
             } catch (error) {
               console.error('Error ending workout:', error);
               Alert.alert(

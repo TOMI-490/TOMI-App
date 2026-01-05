@@ -58,6 +58,28 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
   },
+  xpRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#FFB74D',
+  },
+  xpLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F57C00',
+  },
+  xpValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#E65100',
+  },
   statusRow: {
     alignItems: 'center',
     marginTop: 20,

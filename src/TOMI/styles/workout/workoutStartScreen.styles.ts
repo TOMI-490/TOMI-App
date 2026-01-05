@@ -99,9 +99,16 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   xpBadge: {
-    fontSize: 12,
-    color: '#4A90E2',
+    backgroundColor: '#E8F8EC',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     marginBottom: 12,
+  },
+  xpBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#34C759',
   },
   startButton: {
     backgroundColor: '#2C3E50',

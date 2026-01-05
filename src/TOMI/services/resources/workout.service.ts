@@ -12,6 +12,9 @@ export const workoutService = {
   getById: (id: Id) =>
     httpClient.get<WorkoutResponseDto>(`/api/v1/workouts/${id}`).then(r => r.data),
   
+  getWorkoutById: (id: Id) =>
+    httpClient.get<WorkoutResponseDto>(`/api/v1/workouts/${id}`).then(r => r.data),
+  
   create: (data: WorkoutCreateDto) =>
     httpClient.post<WorkoutResponseDto>('/api/v1/workouts', data).then(r => r.data),
   
@@ -27,10 +30,20 @@ export const workoutService = {
     return response.data;
   },
 
-  // End an active workout (updates end timestamp)
-  endWorkout: async (workoutId: Id): Promise<WorkoutResponseDto> => {
-    const response = await httpClient.put<WorkoutResponseDto>(`/api/v1/workouts/${workoutId}/end`);
-    return response.data;
+  // End an active workout (updates end timestamp and awards XP on backend)
+  endWorkout: async (workoutId: Id): Promise<{ workout: WorkoutResponseDto; xpAwarded: number }> => {
+    console.log('[WorkoutService] 🏁 Ending workout...', workoutId);
+    
+    // End the workout - backend handles XP awarding
+    const response = await httpClient.put<WorkoutResponseDto & { xpAwarded: number }>(`/api/v1/workouts/${workoutId}/end`);
+    const { xpAwarded, ...workout } = response.data;
+    
+    console.log('[WorkoutService] ✓ Workout ended (backend processed)');
+    console.log('[WorkoutService]   - Start:', workout.start);
+    console.log('[WorkoutService]   - End:', workout.end);
+    console.log('[WorkoutService]   - XP Awarded:', xpAwarded);
+    
+    return { workout, xpAwarded };
   },
 
   // Get workout summary with computed fields

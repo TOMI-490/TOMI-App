@@ -10,11 +10,16 @@ const WorkoutSummaryScreen: React.FC = () => {
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const trackedDistance = params.distance ? Number(params.distance) : undefined;
+  const xpAwarded = params.xpAwarded ? Number(params.xpAwarded) : undefined;
 
   const [summary, setSummary] = useState<WorkoutSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[WorkoutSummary] 📊 Component mounted');
+    console.log('[WorkoutSummary]   - Workout ID:', workoutId);
+    console.log('[WorkoutSummary]   - Tracked Distance:', trackedDistance);
+    console.log('[WorkoutSummary]   - XP Awarded:', xpAwarded);
     loadWorkoutSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -22,16 +27,30 @@ const WorkoutSummaryScreen: React.FC = () => {
   const loadWorkoutSummary = async () => {
     try {
       setLoading(true);
+      console.log('[WorkoutSummary] 🔄 Loading workout summary...');
+      
       const data = await workoutService.getWorkoutSummary(workoutId);
+      console.log('[WorkoutSummary] ✓ Summary loaded');
+      console.log('[WorkoutSummary]   - Duration:', data.duration, 'seconds');
+      console.log('[WorkoutSummary]   - Calories:', data.calories);
+      console.log('[WorkoutSummary]   - XP (calculated):', data.xp);
+      console.log('[WorkoutSummary]   - Distance:', data.distance);
       
       // If distance was tracked during workout, use that value
       if (trackedDistance !== undefined) {
+        console.log('[WorkoutSummary] 📍 Using tracked distance:', trackedDistance, 'km');
         data.distance = trackedDistance;
+      }
+      
+      // If XP was awarded during workout end, use that value
+      if (xpAwarded !== undefined) {
+        console.log('[WorkoutSummary] 🎯 Using awarded XP:', xpAwarded);
+        data.xp = xpAwarded;
       }
       
       setSummary(data);
     } catch (error) {
-      console.error('Error loading workout summary:', error);
+      console.error('[WorkoutSummary] ❌ Error loading workout summary:', error);
     } finally {
       setLoading(false);
     }
@@ -69,9 +88,18 @@ const WorkoutSummaryScreen: React.FC = () => {
     });
   };
 
-  const handleDone = () => {
-    // Navigate back to workout start screen
-    router.replace('/(tabs)/workout');
+  const handleDone = async () => {
+    console.log('[WorkoutSummary] ✅ Done button pressed');
+    console.log('[WorkoutSummary] 📱 Navigating to home page...');
+    console.log('[WorkoutSummary]   - XP earned:', summary?.xp || 0);
+    
+    // Small delay to ensure backend updates are committed
+    console.log('[WorkoutSummary] ⏳ Waiting for database updates to complete...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('[WorkoutSummary] ✓ Ready to navigate');
+    
+    // Navigate to main/home page and reset navigation stack
+    router.replace('/(tabs)');
   };
 
   if (loading) {

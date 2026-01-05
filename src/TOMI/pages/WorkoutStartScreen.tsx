@@ -16,6 +16,7 @@ const WorkoutStartScreen: React.FC = () => {
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
 
   useEffect(() => {
     loadWorkoutTypes();
@@ -26,6 +27,13 @@ const WorkoutStartScreen: React.FC = () => {
       setLoading(true);
       const types = await workoutTypeService.getAll();
       setWorkoutTypes(types);
+      
+      // Generate random XP values for each workout type (5-49 XP)
+      const xpValues: { [key: number]: number } = {};
+      types.forEach(type => {
+        xpValues[type.workoutTypeId] = Math.floor(Math.random() * 45) + 5; // 5-49
+      });
+      setWorkoutXpValues(xpValues);
     } catch (error) {
       console.error('Error loading workout types:', error);
       Alert.alert('Error', 'Failed to load workout types');
@@ -45,19 +53,23 @@ const WorkoutStartScreen: React.FC = () => {
       
       // Default device ID (you can make this dynamic if needed)
       const deviceId = 1;
+      
+      // Get the pre-generated XP for this workout type
+      const xpAwarded = workoutXpValues[workoutTypeId];
 
-      // Start workout via backend API
+      // Start workout via backend API with XP value
       const workout = await workoutService.startWorkout({
         userId: user.userId,
         workoutTypeId,
         deviceId,
+        xpAwarded, // Send XP to backend
       });
 
       console.log('Workout started:', workout);
 
       // Navigate to live workout screen
       router.push({
-        pathname: '/(tabs)/workout/live',
+        pathname: '/workout-live',
         params: {
           workoutId: workout.workoutId.toString(),
           workoutTypeId: workout.workoutTypeId.toString(),
@@ -124,7 +136,9 @@ const WorkoutStartScreen: React.FC = () => {
                 <Text style={styles.iconText}>🏃</Text>
               </View>
               <Text style={styles.workoutName}>{type.name}</Text>
-              <Text style={styles.xpBadge}>+30 XP</Text>
+              <View style={styles.xpBadge}>
+                <Text style={styles.xpBadgeText}>+{workoutXpValues[type.workoutTypeId] || 0} XP</Text>
+              </View>
               <TouchableOpacity
                 style={styles.startButton}
                 onPress={() => handleStartWorkout(type.workoutTypeId)}

@@ -15,17 +15,35 @@ class UserAvatarRepository:
     
     # Helpers to convert database data to UserAvatarEntity
     def dataToEntity(self, data: dict) -> UserAvatarEntity:
-        try: 
+        try:
+            # Convert ISO string timestamps back to datetime objects if needed
+            from datetime import datetime
+            if 'created_at' in data and isinstance(data['created_at'], str):
+                data['created_at'] = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
+            if 'last_updated' in data and isinstance(data['last_updated'], str):
+                data['last_updated'] = datetime.fromisoformat(data['last_updated'].replace('Z', '+00:00'))
+            
             return UserAvatarEntity(**data)
         except Exception as e:
             logger.error(f"Error converting data to UserAvatarEntity: {e}")
+            logger.error(f"Data: {data}")
             raise
         
     # Helpers to convert UserAvatarEntity to database data
     def entityToData(self, entity: UserAvatarEntity) -> dict:
         if hasattr(entity, "to_dict") and callable(entity.to_dict):
             return entity.to_dict()
-        return entity.__dict__
+        
+        # Convert entity to dict and handle datetime serialization
+        data = entity.__dict__.copy()
+        
+        # Convert datetime objects to ISO format strings for Supabase
+        from datetime import datetime
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+        
+        return data
     
     
     #============================================================================================================
@@ -54,9 +72,12 @@ class UserAvatarRepository:
     # Fetch a user avatar by User ID
     def fetchAvatarByUserId(self, user_id: int) -> Optional[UserAvatarEntity]:
         try:
-            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
+            # Fetch the active avatar for the user
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).eq("is_active", True).execute()
             if response.data:
+                logger.info(f"[UserAvatarRepo] Found active avatar for user {user_id}: user_avatar_id={response.data[0].get('user_avatar_id')}, nickname={response.data[0].get('nickname')}")
                 return self.dataToEntity(response.data[0])
+            logger.warning(f"[UserAvatarRepo] No active avatar found for user {user_id}")
             return None
         except Exception as e:
             logger.error(f"Error fetching user avatar by User ID: {e}")
@@ -83,12 +104,43 @@ class UserAvatarRepository:
             if user_avatar_id is None:
                 raise ValueError("user_avatar_id is required for update")
             
+            logger.info(f"[UserAvatarRepo] Updating user_avatar_id={user_avatar_id}")
+            logger.info(f"[UserAvatarRepo]   - XP: {data.get('xp')}")
+            logger.info(f"[UserAvatarRepo]   - Level: {data.get('level')}")
+            
             response = self._client.table(self._table_name).update(data).eq("user_avatar_id", user_avatar_id).execute()
+            
             if response.data:
+                logger.info(f"[UserAvatarRepo] ✓ Update successful, returned XP: {response.data[0].get('xp')}, Level: {response.data[0].get('level')}")
                 return self.dataToEntity(response.data[0])
             raise Exception("Failed to update user avatar")
         except Exception as e:
             logger.error(f"Error updating user avatar: {e}")
+            raise
+    
+    # Update only specific fields of a user avatar (partial update)
+    def updateUserAvatarFields(self, user_avatar_id: int, fields: dict) -> UserAvatarEntity:
+        try:
+            # Convert datetime objects to ISO strings
+            from datetime import datetime
+            update_data = {}
+            for key, value in fields.items():
+                if isinstance(value, datetime):
+                    update_data[key] = value.isoformat()
+                else:
+                    update_data[key] = value
+            
+            logger.info(f"[UserAvatarRepo] Partial update for user_avatar_id={user_avatar_id}")
+            logger.info(f"[UserAvatarRepo]   - Fields: {list(update_data.keys())}")
+            
+            response = self._client.table(self._table_name).update(update_data).eq("user_avatar_id", user_avatar_id).execute()
+            
+            if response.data:
+                logger.info(f"[UserAvatarRepo] ✓ Partial update successful")
+                return self.dataToEntity(response.data[0])
+            raise Exception("Failed to update user avatar fields")
+        except Exception as e:
+            logger.error(f"Error updating user avatar fields: {e}")
             raise
 
     # Delete a user avatar by ID

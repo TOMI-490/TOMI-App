@@ -46,12 +46,16 @@ export function useDashboard(user: UserResponseDto | null): UseDashboardResult {
       setLoading(true);
       setError(null);
 
+      console.log('[useDashboard] 📊 Fetching fresh dashboard data...');
       const dashboardData = await userService.getDashboard(user.userId);
+      console.log('[useDashboard] ✓ Dashboard data received');
+      console.log('[useDashboard]   - TOMI XP:', dashboardData.tomi?.xp || 'N/A');
+      console.log('[useDashboard]   - TOMI Level:', dashboardData.tomi?.level || 'N/A');
       setData(dashboardData);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch dashboard data');
       setError(error);
-      console.error('Error fetching dashboard:', error);
+      console.error('[useDashboard] ❌ Error fetching dashboard:', error);
     } finally {
       setLoading(false);
     }

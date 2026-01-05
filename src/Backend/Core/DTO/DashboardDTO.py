@@ -7,6 +7,16 @@ from .StreakDTO import StreakResponseDTO
 from .WorkoutDTO import WorkoutResponseDTO
 from .GoalDTO import GoalWithDetailsResponseDTO
 
+# DTO for today's progress summary
+class TodayProgressDTO(BaseModel):
+    workouts_count: int = Field(default=0, alias="workoutsCount")
+    minutes: int = Field(default=0)
+    xp_earned: int = Field(default=0, alias="xpEarned")
+    
+    class Config:
+        populate_by_name = True
+        by_alias = True
+
 # DTO for dashboard aggregated data
 class DashboardDTO(BaseModel):
     user: UserResponseDTO
@@ -15,6 +25,7 @@ class DashboardDTO(BaseModel):
     streaks: List[StreakResponseDTO] = []
     recent_workouts: List[WorkoutResponseDTO] = Field(default=[], alias="recentWorkouts")
     goals: List[GoalWithDetailsResponseDTO] = []
+    today_progress: TodayProgressDTO = Field(default_factory=lambda: TodayProgressDTO(), alias="todayProgress")
     
     class Config:
         populate_by_name = True
