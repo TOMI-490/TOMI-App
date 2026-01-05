@@ -178,6 +178,13 @@ export interface UserBadgeWithDetails extends UserBadge {
   badge: Badge;
 }
 
+// Today's Progress DTO
+export interface TodayProgressDTO {
+  workoutsCount: number;
+  minutes: number;
+  xpEarned: number;
+}
+
 // Main Dashboard DTO
 export interface DashboardDTO {
   user: User;
@@ -190,6 +197,7 @@ export interface DashboardDTO {
   leaderboard: Leaderboard[];
   friends: FriendWithStatus[];
   badges: UserBadgeWithDetails[];
+  todayProgress: TodayProgressDTO;
 }
 
 // Action payloads

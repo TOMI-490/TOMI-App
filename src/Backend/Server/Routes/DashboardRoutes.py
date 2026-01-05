@@ -1,14 +1,15 @@
 from fastapi import APIRouter, HTTPException
 import logging
+from datetime import datetime, date
 
-from ...Core.DTO.DashboardDTO import DashboardDTO
+from ...Core.DTO.DashboardDTO import DashboardDTO, TodayProgressDTO
 from ...Core.DTO.UserDTO import UserResponseDTO
 from ...Core.DTO.ProfileDTO import ProfileResponseDTO
 from ...Core.DTO.UserAvatarDTO import UserAvatarWithDetailsResponseDTO
 from ...Core.DTO.StreakDTO import StreakResponseDTO
 from ...Core.DTO.WorkoutDTO import WorkoutResponseDTO
 from ...Core.DTO.GoalDTO import GoalWithDetailsResponseDTO
-from ...Core.Utils.xp_calculator import calculate_xp_progression
+from ...Core.Utils.xp_service import calculate_xp_progression, calculate_today_progress
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.ProfileRepository import ProfileRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
@@ -65,7 +66,11 @@ async def getDashboardData(user_id: int):
         tomi_dto = None
         try:
             user_avatar = userAvatarRepo.fetchAvatarByUserId(user_id)
+            logger.info(f"[DASHBOARD] User avatar query returned: {user_avatar is not None}")
+            if user_avatar:
+                logger.info(f"[DASHBOARD] User avatar details: is_active={user_avatar.is_active}, nickname={user_avatar.nickname}")
             if user_avatar and user_avatar.is_active:
+                logger.info(f"[DASHBOARD] User avatar is active, fetching avatar details...")
                 # Fetch avatar details
                 avatar_entity = avatarRepo.fetchAvatarById(user_avatar.avatar_id)
                 
@@ -83,7 +88,7 @@ async def getDashboardData(user_id: int):
                 })
                 
                 tomi_dto = UserAvatarWithDetailsResponseDTO(**entity_dict)
-                logger.info(f"[DASHBOARD] TOMI avatar found in Supabase: {user_avatar.nickname}, level={user_avatar.level}")
+                logger.info(f"[DASHBOARD] TOMI avatar found in Supabase: {user_avatar.nickname}, level={user_avatar.level}, xp={user_avatar.xp}")
         except Exception as e:
             logger.warning(f"[DASHBOARD] Could not fetch active avatar for user {user_id}: {e}")
         
@@ -114,7 +119,17 @@ async def getDashboardData(user_id: int):
             if all_workouts:
                 # Sort by start time descending and take last 10
                 sorted_workouts = sorted(all_workouts, key=lambda w: w.start, reverse=True)[:10]
-                workouts_dtos = [WorkoutResponseDTO.model_validate(w, from_attributes=True) for w in sorted_workouts]
+                workouts_dtos = [
+                    WorkoutResponseDTO(
+                        workoutId=w.workout_id,
+                        userId=w.user_id,
+                        workoutTypeId=w.workout_type_id,
+                        start=w.start,
+                        end=w.end,
+                        deviceId=w.device_id,
+                        xpAwarded=w.xp_awarded
+                    ) for w in sorted_workouts
+                ]
         except Exception as e:
             logger.warning(f"Could not fetch workouts for user {user_id}: {e}")
         
@@ -150,6 +165,17 @@ async def getDashboardData(user_id: int):
         except Exception as e:
             logger.warning(f"[DASHBOARD] Could not fetch goals for user {user_id}: {e}")
         
+        # Calculate today's progress from today's workouts
+        logger.info(f"[DASHBOARD] Step 7: Calculating today's progress")
+        today_progress = TodayProgressDTO()
+        try:
+            if all_workouts:
+                progress_data = calculate_today_progress(all_workouts)
+                today_progress = TodayProgressDTO(**progress_data)
+                logger.info(f"[DASHBOARD] Today's progress: {today_progress.workouts_count} workouts, {today_progress.minutes} minutes, {today_progress.xp_earned} XP")
+        except Exception as e:
+            logger.warning(f"[DASHBOARD] Could not calculate today's progress: {e}")
+        
         logger.info(f"[DASHBOARD] {'='*10} Dashboard data complete for user_id={user_id} {'='*10}")
         logger.info(f"[DASHBOARD] Summary: profile={profile_dto is not None}, tomi={tomi_dto is not None}, streaks={len(streaks_dtos)}, workouts={len(workouts_dtos)}, goals={len(goals_dtos)}")
         
@@ -159,7 +185,8 @@ async def getDashboardData(user_id: int):
             tomi=tomi_dto,
             streaks=streaks_dtos,
             recent_workouts=workouts_dtos,
-            goals=goals_dtos
+            goals=goals_dtos,
+            today_progress=today_progress
         )
     
     except HTTPException:

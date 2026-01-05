@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrentUser } from '../hooks/useCurrentUser';
@@ -43,6 +43,33 @@ export default function HomePage() {
 
   // TOMI effects for XP and level up animations
   const tomiEffects = useTomiEffects(data?.tomi);
+
+  // Refresh data when user becomes available (e.g., after navigation from workout)
+  useEffect(() => {
+    if (user) {
+      console.log('[HomePage] 👤 User loaded, triggering refresh...');
+      console.log('[HomePage]   - User ID:', user.userId);
+      refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
+
+  // Refresh data when screen comes into focus (e.g., returning from workout)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[HomePage] 🔄 Screen focused, checking if refresh needed');
+      if (user) {
+        console.log('[HomePage] ✓ User found, refreshing dashboard data...');
+        console.log('[HomePage]   - User ID:', user.userId);
+        console.log('[HomePage]   - Current XP:', data?.tomi?.xp || 'N/A');
+        console.log('[HomePage]   - Current Level:', data?.tomi?.level || 'N/A');
+        refresh();
+      } else {
+        console.log('[HomePage] ⚠️ No user, skipping refresh');
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.userId])
+  );
 
   if (!user || loading) {
     return (
@@ -213,9 +240,7 @@ export default function HomePage() {
           <View style={styles.identity}>
             <Text style={styles.name}>{tomiData.nickname}</Text>
             <Text style={styles.subtitle}>
-              {t('home.levelStage')
-                .replace('{level}', tomiData.level.toString())
-                .replace('{stage}', tomiData.ageDays < 30 ? t('home.stageBaby') : tomiData.ageDays < 100 ? t('home.stageTeen') : t('home.stageAdult'))}
+              {t('home.levelStage').replace('{level}', tomiData.level.toString())}
             </Text>
             <Text style={styles.xpText}>
               {t('home.xpProgress').replace('{current}', tomiData.xp.toString()).replace('{total}', nextLevelXp.toString())}
@@ -303,42 +328,19 @@ export default function HomePage() {
           <Text style={styles.sectionTitle}>{t('home.todaysProgress')}</Text>
           <View style={styles.stats}>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{todayWorkouts.length}</Text>
+              <Text style={styles.statValue}>{data.todayProgress?.workoutsCount || 0}</Text>
               <Text style={styles.statLabel}>{t('home.workouts')}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>
-                {todayWorkouts.reduce((total: number, workout: WorkoutResponseDto) => {
-                  const duration = (new Date(workout.end).getTime() - new Date(workout.start).getTime()) / 60000;
-                  return total + duration;
-                }, 0).toFixed(0)}
-              </Text>
+              <Text style={styles.statValue}>{data.todayProgress?.minutes || 0}</Text>
               <Text style={styles.statLabel}>{t('home.minutes')}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{tomiData?.xp || 0}</Text>
-              <Text style={styles.statLabel}>{t('home.totalXP')}</Text>
+              <Text style={styles.statValue}>{data.todayProgress?.xpEarned || 0}</Text>
+              <Text style={styles.statLabel}>{t('home.xpEarned')}</Text>
             </View>
           </View>
         </View>
-
-        {/* Recent Activity */}
-        {recentWorkouts.length > 0 && (
-          <View style={styles.recentSection}>
-            <Text style={styles.sectionTitle}>{t('home.recentWorkouts')}</Text>
-            {recentWorkouts.slice(0, 3).map((workout: WorkoutResponseDto) => (
-              <View key={workout.workoutId} style={styles.workoutItem}>
-                <Text style={styles.workoutType}>Workout #{workout.workoutTypeId}</Text>
-                <Text style={styles.workoutDate}>
-                  {new Date(workout.start).toLocaleDateString()}
-                </Text>
-                <Text style={styles.workoutDuration}>
-                  {Math.round((new Date(workout.end).getTime() - new Date(workout.start).getTime()) / 60000)} min
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* Past Workouts Section */}
         <View style={styles.pastWorkoutsSection}>
@@ -378,6 +380,11 @@ export default function HomePage() {
                     <Text style={styles.workoutDurationBadge}>
                       {workout.durationMinutes} {t('home.min')}
                     </Text>
+                    {workout.xpAwarded !== undefined && workout.xpAwarded !== null && (
+                      <Text style={styles.workoutXpBadge}>
+                        +{workout.xpAwarded} XP
+                      </Text>
+                    )}
                   </View>
                 </View>
               ))}

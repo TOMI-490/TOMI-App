@@ -81,19 +81,23 @@ TOMI-App/
     │   │   │   ├── StreakDTO.py
     │   │   │   ├── LeaderboardDTO.py
     │   │   │   ├── NotificationDTO.py
+    │   │   │   ├── DashboardDTO.py  # Dashboard with Today's Progress
+    │   │   │   ├── GamificationDTO.py
     │   │   │   └── WatchDeviceDTO.py
-    │   │   └── Entity/             # Database Entities
-    │   │       ├── UserEntity.py
-    │   │       ├── WorkoutEntity.py
-    │   │       ├── GoalEntity.py
-    │   │       ├── ProfileEntity.py
-    │   │       ├── BadgeEntity.py
-    │   │       ├── AvatarEntity.py
-    │   │       ├── FriendEntity.py
-    │   │       ├── StreakEntity.py
-    │   │       ├── LeaderboardEntity.py
-    │   │       ├── Notifications.py
-    │   │       └── WatchDeviceEntity.py
+    │   │   ├── Entity/             # Database Entities
+    │   │   │   ├── UserEntity.py
+    │   │   │   ├── WorkoutEntity.py  # Includes xp_awarded field
+    │   │   │   ├── GoalEntity.py
+    │   │   │   ├── ProfileEntity.py
+    │   │   │   ├── BadgeEntity.py
+    │   │   │   ├── AvatarEntity.py
+    │   │   │   ├── FriendEntity.py
+    │   │   │   ├── StreakEntity.py
+    │   │   │   ├── LeaderboardEntity.py
+    │   │   │   ├── Notifications.py
+    │   │   │   └── WatchDeviceEntity.py
+    │   │   └── Utils/              # Utility functions
+    │   │       └── xp_service.py   # XP calculation and progression logic
     │   │
     │   ├── Infrastructure/
     │   │   ├── Repository/         # Data Access Layer
@@ -138,12 +142,15 @@ TOMI-App/
         │   └── (tabs)/            # Tab navigation screens
         │
         ├── pages/                  # Main page components
-        │   ├── HomePage.tsx
+        │   ├── HomePage.tsx        # Dashboard with Today's Progress & Past Workouts
         │   ├── LoginPage.tsx
         │   ├── RegisterPage.tsx   # Registration with email pre-check
         │   ├── ForgotPasswordPage.tsx  # Password reset request (⚠️ deep linking needs configuration)
         │   ├── ResetPasswordPage.tsx   # Password reset form (⚠️ deep linking needs configuration)
         │   ├── WorkoutPage.tsx
+        │   ├── WorkoutStartScreen.tsx  # Workout type selection with XP preview
+        │   ├── LiveWorkoutScreen.tsx   # Active workout tracking
+        │   ├── WorkoutSummaryScreen.tsx # Workout completion summary
         │   ├── CommunityPage.tsx
         │   ├── HistoryPage.tsx
         │   └── AvatarPage.tsx
@@ -160,6 +167,13 @@ TOMI-App/
         │   │   ├── PasswordStrengthIndicator.tsx
         │   │   ├── ProgressBar.tsx
         │   │   └── LogoPlaceholder.tsx
+        │   ├── gamification/      # Gamification components
+        │   │   ├── ProgressRings.tsx     # XP and level progress rings
+        │   │   ├── BadgesCard.tsx        # Badge display
+        │   │   ├── LeaderboardPreviewCard.tsx
+        │   │   ├── XpToast.tsx           # XP gain notification
+        │   │   ├── LevelUpModal.tsx      # Level up celebration
+        │   │   └── index.ts
         │   ├── ui/
         │   ├── haptic-tab.tsx
         │   ├── ScreenWrapper.tsx
@@ -177,35 +191,58 @@ TOMI-App/
         │   │   ├── passwordStrengthIndicator.styles.ts
         │   │   ├── progressBar.styles.ts
         │   │   └── logoPlaceholder.styles.ts
+        │   ├── workout/           # Workout flow styles
+        │   │   ├── workoutStartScreen.styles.ts
+        │   │   ├── liveWorkoutScreen.styles.ts
+        │   │   └── workoutSummaryScreen.styles.ts
+        │   ├── gamification/      # Gamification component styles
+        │   ├── home/              # Home page styles
+        │   │   └── homePage.styles.ts
         │   ├── auth.styles.ts     # Shared auth styles
-        │   └── README.md          # Style organization documentati (login, register, password reset)
+        │   └── README.md          # Style organization documentation
+        │
+        ├── services/              # API services
+        │   ├── auth.ts           # Authentication service (login, register, password reset)
         │   ├── httpClient.ts     # Axios HTTP client configuration
+        │   ├── api.ts            # General API utilities
+        │   ├── gamification.ts   # Gamification service
         │   ├── config/
         │   │   └── api.config.ts # API configuration
         │   ├── core/
         │   │   ├── base.service.ts
-        │   │   └── supabase.ts   # Supabase client initialization Axios HTTP client configuration
-        │   ├── config/
-        │   │   └── api.config.ts # API configuration
-        │   ├── core/
-        │   │   └── base.service.ts
+        │   │   └── supabase.ts   # Supabase client initialization
         │   └── resources/
-        │       └── user.service.ts    # User API service with email check
+        │       ├── user.service.ts     # User API service with email check
+        │       ├── workout.service.ts  # Workout CRUD and flow operations
+        │       ├── workoutType.service.ts # Workout type management
+        │       └── gamification.service.ts # Gamification data fetching
         │
         ├── models/                # TypeScript models and DTOs
         │   ├── index.ts
         │   └── dto/
-        │       └── User.dto.ts    # User DTOs (authID, created_at)
+        │       ├── User.dto.ts    # User DTOs (authID, created_at)
+        │       ├── Workout.dto.ts # Workout DTOs with xpAwarded field
+        │       ├── WorkoutType.dto.ts
+        │       ├── Dashboard.dto.ts # Dashboard and Today's Progress
+        │       ├── UserAvatar.dto.ts
+        │       └── Gamification.dto.ts
         │
         ├── constants/             # Application constants
         │   └── options.ts         # Country, unit system, language options
         │
         ├── locales/               # Internationalization
         │   ├── en.json           # English translations
-        │   └── fr.json           # French translations
+        │   ├── fr.json           # French translations
+        │   └── i18n.ts           # i18n configuration
         │
         ├── hooks/                 # Custom React hooks
-        │   └── use-color-scheme.ts
+        │   ├── use-color-scheme.ts
+        │   ├── useCurrentUser.ts  # Current user data fetching
+        │   ├── useDashboardData.ts # Dashboard data with Today's Progress
+        │   ├── useGamification.ts # Gamification data (badges, leaderboard)
+        │   ├── useTomiEffects.ts  # XP and level up effect detection
+        │   ├── usePastWorkouts.ts # Past workouts with XP data
+        │   └── useLanguage.ts     # Multi-language support
         │
         ├── app.json
         ├── eslint.config.js
@@ -308,10 +345,28 @@ TOMI-App/
 - User preferences and settings
 
 ### Workout Tracking
+- **Complete Workout Flow**: Start → Live Tracking → Summary
 - Record workouts with details (type, duration, intensity)
-- Multiple workout types support
+- Multiple workout types support (Running, Walking, Cycling, Swimming, Strength Training, Yoga)
 - Integration with wearable devices (Apple Watch, Fitbit, etc.)
-- Workout history and analytics
+- Workout history with XP earned per workout
+- Real-time workout tracking with pause/resume functionality
+
+### XP & Gamification System
+- **Randomized XP System**: Each workout earns 5-49 XP (generated on frontend, stored in backend)
+- XP preview on workout type selection cards
+- Level progression with visual feedback
+- Level up celebrations with modal notifications
+- XP gain notifications with toast messages
+- Progress rings showing XP and level progression
+- Avatar system with level-based progression
+
+### Dashboard & Progress Tracking
+- **Today's Progress**: Real-time tracking of daily workouts, minutes, and XP earned
+- Past workouts carousel with XP badges
+- Streak tracking for consecutive activity days
+- Goal progress monitoring
+- Weekly, monthly, and all-time statistics
 
 ### Goals & Achievements
 - Set and track fitness goals
@@ -352,9 +407,15 @@ GET    /api/users/{id}         - Get user by ID
 PUT    /api/users/{id}         - Update user
 DELETE /api/users/{id}         - Delete user
 
-POST   /api/workouts           - Create workout
+POST   /api/workouts/start     - Start a new workout (returns XP)
+POST   /api/workouts/{id}/end  - End an active workout (awards XP to user)
 GET    /api/workouts           - List workouts
-GET    /api/workouts/{id}      - Get workout details
+GET    /api/workouts/{id}      - Get workout details (includes xpAwarded)
+GET    /api/workouts/user/{id} - Get user's workouts with XP data
+GET    /api/workouts/{id}/summary - Get workout summary
+
+GET    /api/dashboard/{user_id} - Get dashboard data (includes Today's Progress)
+GET    /api/gamification/{user_id} - Get gamification data (badges, leaderboard)
 
 POST   /api/goals              - Create goal
 GET    /api/goals              - List user goals
@@ -375,7 +436,7 @@ The application uses **Supabase** (PostgreSQL) as the database with the followin
 
 - **users** - User accounts and authentication
 - **profiles** - User profile information
-- **workouts** - Workout records
+- **workouts** - Workout records with XP tracking (includes `xp_awarded` column)
 - **workout_types** - Types of workouts (cardio, strength, etc.)
 - **goals** - User fitness goals
 - **goal_types** - Types of goals (steps, calories, etc.)
@@ -385,7 +446,7 @@ The application uses **Supabase** (PostgreSQL) as the database with the followin
 - **badges** - Available badges
 - **user_badges** - Badges earned by users
 - **avatars** - Available avatar options
-- **user_avatars** - User's current avatar
+- **user_avatars** - User's current avatar with XP and level tracking
 - **streaks** - Consecutive activity day tracking
 - **leaderboard** - Ranking and points
 - **notifications** - User notifications
@@ -394,6 +455,11 @@ The application uses **Supabase** (PostgreSQL) as the database with the followin
 ### Database Connection
 
 The backend uses a singleton pattern for database connections to ensure efficient resource management. The connection is established at startup and properly closed on shutdown.
+
+### Recent Schema Updates
+- Added `xp_awarded` column to `workouts` table (INTEGER, nullable) for storing randomized XP per workout
+- XP values are generated on frontend (5-49 range) and stored when workout starts
+- XP is awarded to user avatar when workout ends
 
 ## 🤝 Contributing
 

@@ -8,3 +8,4 @@ export const HTTP_TIMEOUT = 15000; // 15 seconds
 
 export const SUPABASE_URL = getEnv('SUPABASE_URL');
 export const SUPABASE_KEY = getEnv('SUPABASE_KEY');
+
