@@ -1,10 +1,8 @@
 import { Device, BleError } from "react-native-ble-plx";
 import { getBleManager } from "./bleManager";
 
-const isDuplicateDevice = (devices: Device[], nextDevice: Device) =>
-  devices.some((device) => device.id === nextDevice.id);
-
-export const scanForArduinoDevices = (
+export const scanForDevices = (
+  filter: (device: Device) => boolean,
   onDeviceFound: (device: Device) => void,
   onError?: (error: BleError) => void
 ) => {
@@ -16,16 +14,12 @@ export const scanForArduinoDevices = (
       return;
     }
 
-    if (
-      device &&
-      (device.localName === "Arduino" || device.name === "Arduino")
-    ) {
+    if (device && filter(device)) {
       onDeviceFound(device);
     }
   });
 };
 
 export const stopScan = () => {
-  const bleManager = getBleManager();
-  bleManager.stopDeviceScan();
+  getBleManager().stopDeviceScan();
 };
