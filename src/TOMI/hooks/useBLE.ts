@@ -6,7 +6,6 @@ import { Device, Characteristic, BleError } from "react-native-ble-plx";
 
 import { getBleManager, destroyBleManager } from "../services/ble/bleManager";
 import { scanForDevices, stopScan } from "../services/ble/bleScanner";
-import { BleColorData } from "../models/bleColorData";
 import { bleConfig } from "../models/bleConfig";
 
 const DATA_SERVICE_UUID = "19b10000-e8f2-537e-4f6c-d104768a1214";
