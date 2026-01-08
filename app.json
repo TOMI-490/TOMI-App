@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    "react-native-ble-plx"
+  ],
+  "android": {
+    "permissions": [
+      "android.permission.BLUETOOTH",
+      "android.permission.BLUETOOTH_ADMIN",
+      "android.permission.BLUETOOTH_CONNECT"
+    ],
+    "package": "com.anonymous.tomiapp"
+  }
+}
