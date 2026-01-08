@@ -12,7 +12,7 @@ import { SmartwatchSensorData } from "../models/smartwatchSensorData";
  * "0.12,-0.01,9.81,0.02,0.01,0.00,72,98"
  */
 
-export const smartwatchBleConfig: bleConfig = {
+export const smartwatchBleConfig: bleConfig<SmartwatchSensorData> = {
   /**
    * Allow:
    * - Your smartwatch
@@ -25,7 +25,7 @@ export const smartwatchBleConfig: bleConfig = {
       name.toLowerCase().includes("watch") ||
       name.toLowerCase().includes("band") ||
       name.toLowerCase().includes("buds") ||
-      name.toLowerCase().includes("headphones") // add more as needed
+      name.toLowerCase().includes("headphones")
     );
   },
 
@@ -35,11 +35,13 @@ export const smartwatchBleConfig: bleConfig = {
   serviceUUID: "0000abcd-0000-1000-8000-00805f9b34fb",
   characteristicUUID: "0000dcba-0000-1000-8000-00805f9b34fb",
 
-  decode: (value: string): SmartwatchSensorData => {   // Decode base64 and parse CSV-like format
+  decode: (value: string): SmartwatchSensorData => {
+    // Decode base64 payload
     const decoded = base64.decode(value);
 
+    // Parse CSV-like format
     const parts = decoded.split(",").map(Number);
-    if (parts.length !== 8) { // check if we have exactly 8 parts
+    if (parts.length !== 8) {
       throw new Error("Invalid smartwatch BLE payload");
     }
 
