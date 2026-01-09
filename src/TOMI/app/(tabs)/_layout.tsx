@@ -9,6 +9,13 @@ export default function TabLayout() {
       <Tabs.Screen name="workout" options={{ title: strings.nav.workout }} />
       <Tabs.Screen name="avatar" options={{ title: strings.nav.avatar }} />
       <Tabs.Screen name="history" options={{ title: strings.nav.history }} />
+      <Tabs.Screen 
+        name="workout-detail" 
+        options={{ 
+          title: 'Workout Details',
+          href: null // Hide from tab bar
+        }} 
+      />
     </Tabs>
   );
 }

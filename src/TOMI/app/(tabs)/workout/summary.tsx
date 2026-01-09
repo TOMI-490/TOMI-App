@@ -1,1 +1,1 @@
-export { default } from '../../../pages/WorkoutSummaryScreen';
+export { default } from '../../../pages/workout/WorkoutSummaryScreen';

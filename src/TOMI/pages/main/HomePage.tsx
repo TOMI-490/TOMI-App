@@ -1,28 +1,28 @@
 import React, { useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { useAuth } from '../contexts/AuthContext';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useLanguage } from '../hooks/useLanguage';
-import { useDashboard } from '../hooks/useDashboardData';
-import { useGamification } from '../hooks/useGamification';
-import { useTomiEffects } from '../hooks/useTomiEffects';
-import { usePastWorkouts } from '../hooks/usePastWorkouts';
-import { useTranslation } from '../locales/i18n';
-import { GoalResponseDto } from '../models/dto/Goal.dto';
-import { StreakResponseDto } from '../models/dto/Streak.dto';
-import { WorkoutResponseDto } from '../models/dto/Workout.dto';
-import { NotificationResponseDto } from '../models/dto/Notification.dto';
-import { homePageStyles as styles } from '../styles/home/homePage.styles';
-import { getRelativeTime, getGreeting } from '../utils/timeFormat';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDashboard } from '../../hooks/useDashboardData';
+import { useGamification } from '../../hooks/useGamification';
+import { useTomiEffects } from '../../hooks/useTomiEffects';
+import { usePastWorkouts } from '../../hooks/usePastWorkouts';
+import { useTranslation } from '../../locales/i18n';
+import { GoalResponseDto } from '../../models/dto/Goal.dto';
+import { StreakResponseDto } from '../../models/dto/Streak.dto';
+import { WorkoutResponseDto } from '../../models/dto/Workout.dto';
+import { NotificationResponseDto } from '../../models/dto/Notification.dto';
+import { homePageStyles as styles } from '../../styles/home/homePage.styles';
+import { getRelativeTime, getGreeting } from '../../utils/timeFormat';
 import {
   ProgressRings,
   BadgesCard,
   LeaderboardPreviewCard,
   XpToast,
   LevelUpModal
-} from '../components/gamification';
+} from '../../components/gamification';
 
 interface TomiNeed {
   icon: string;

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import strings from '../locales/en.json';
-import { signUpWithEmail } from '../services/auth';
-import { userService } from '../services/api';
-import type { UserCreateDto } from '../models/dto/User.dto';
+import strings from '../../locales/en.json';
+import { signUpWithEmail } from '../../services/auth';
+import { userService } from '../../services/api';
+import type { UserCreateDto } from '../../models/dto/User.dto';
 import {
   AuthContainer,
   AuthCard,
@@ -13,9 +13,9 @@ import {
   PrimaryButton,
   SecondaryButton,
   PasswordStrengthIndicator,
-} from '../components/auth';
-import { authStyles } from '../styles/auth.styles';
-import { COUNTRY_OPTIONS, UNIT_SYSTEM_OPTIONS, LANGUAGE_OPTIONS } from '../constants/options';
+} from '../../components/auth';
+import { authStyles } from '../../styles/auth.styles';
+import { COUNTRY_OPTIONS, UNIT_SYSTEM_OPTIONS, LANGUAGE_OPTIONS } from '../../constants/options';
 
 interface ValidationErrors {
   name?: string;

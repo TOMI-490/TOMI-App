@@ -25,6 +25,7 @@ from .Routes.GamificationRoutes import router as GamificationRouter
 from .Routes.GoalRoutes import router as GoalRouter
 from .Routes.GoalStatusRoutes import router as GoalStatusRouter
 from .Routes.GoalTypeRoutes import router as GoalTypeRouter
+from .Routes.HistoryRoutes import router as HistoryRouter
 from .Routes.LeaderboardRoutes import router as LeaderboardRouter
 from .Routes.NotificationRoutes import router as NotificationRouter
 from .Routes.ProfileRoutes import router as ProfileRouter
@@ -153,6 +154,7 @@ app.include_router(GamificationRouter, prefix="/api/v1/gamification", tags=["Gam
 app.include_router(GoalRouter, prefix="/api/v1/goals", tags=["Goals"])
 app.include_router(GoalStatusRouter, prefix="/api/v1/goalStatus", tags=["Goal Status"])
 app.include_router(GoalTypeRouter, prefix="/api/v1/goalTypes", tags=["Goal Types"])
+app.include_router(HistoryRouter, prefix="/api/v1/history", tags=["History"])
 app.include_router(LeaderboardRouter, prefix="/api/v1/leaderboards", tags=["Leaderboards"])
 app.include_router(NotificationRouter, prefix="/api/v1/notifications", tags=["Notifications"])
 app.include_router(ProfileRouter, prefix="/api/v1/profiles", tags=["Profiles"])

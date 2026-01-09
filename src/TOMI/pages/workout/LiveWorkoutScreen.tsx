@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-na
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { workoutService } from '../services/resources/workout.service';
-import { workoutTypeService } from '../services/resources/workoutType.service';
-import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import { styles } from '../styles/workout/liveWorkoutScreen.styles';
+import { workoutService } from '../../services/resources/workout.service';
+import { workoutTypeService } from '../../services/resources/workoutType.service';
+import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 

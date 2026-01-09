@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { workoutTypeService } from '../services/resources/workoutType.service';
-import { workoutService } from '../services/resources/workout.service';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useAuth } from '../contexts/AuthContext';
-import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import { styles } from '../styles/workout/workoutStartScreen.styles';
+import { workoutTypeService } from '../../services/resources/workoutType.service';
+import { workoutService } from '../../services/resources/workout.service';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useAuth } from '../../contexts/AuthContext';
+import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import { styles } from '../../styles/workout/workoutStartScreen.styles';
 
 const WorkoutStartScreen: React.FC = () => {
   const router = useRouter();

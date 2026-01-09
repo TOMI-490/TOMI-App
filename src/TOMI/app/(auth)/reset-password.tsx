@@ -1,3 +1,3 @@
-import ResetPasswordPage from '../../pages/ResetPasswordPage';
+import ResetPasswordPage from '../../pages/auth/ResetPasswordPage';
 
 export default ResetPasswordPage;

@@ -1,1 +1,1 @@
-export { default } from '../../../pages/LiveWorkoutScreen';
+export { default } from '../../../pages/workout/LiveWorkoutScreen';

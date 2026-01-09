@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { workoutService } from '../services/resources/workout.service';
-import type { WorkoutSummaryDto } from '../models/dto/Workout.dto';
-import { styles } from '../styles/workout/workoutSummaryScreen.styles';
+import { workoutService } from '../../services/resources/workout.service';
+import type { WorkoutSummaryDto } from '../../models/dto/Workout.dto';
+import { styles } from '../../styles/workout/workoutSummaryScreen.styles';
 
 const WorkoutSummaryScreen: React.FC = () => {
   const router = useRouter();

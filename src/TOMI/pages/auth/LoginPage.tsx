@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import strings from '../locales/en.json';
-import { signInWithEmail } from '../services/auth';
+import strings from '../../locales/en.json';
+import { signInWithEmail } from '../../services/auth';
 import {
   AuthContainer,
   AuthCard,
   FormInput,
   PrimaryButton,
   SecondaryButton,
-} from '../components/auth';
-import { authStyles } from '../styles/auth.styles';
+} from '../../components/auth';
+import { authStyles } from '../../styles/auth.styles';
 
 export default function LoginPage() {
   const router = useRouter();
