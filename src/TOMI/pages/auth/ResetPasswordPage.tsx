@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import strings from '../locales/en.json';
-import { updatePassword } from '../services/auth';
+import strings from '../../locales/en.json';
+import { updatePassword } from '../../services/auth';
 import {
   AuthContainer,
   AuthCard,
@@ -10,8 +10,8 @@ import {
   PrimaryButton,
   SecondaryButton,
   PasswordStrengthIndicator,
-} from '../components/auth';
-import { authStyles } from '../styles/auth.styles';
+} from '../../components/auth';
+import { authStyles } from '../../styles/auth.styles';
 
 export default function ResetPasswordPage() {
   const router = useRouter();

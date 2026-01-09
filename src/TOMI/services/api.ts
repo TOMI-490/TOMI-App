@@ -10,6 +10,7 @@ export { friendStatusService } from './resources/friendStatus.service';
 export { goalService } from './resources/goal.service';
 export { goalStatusService } from './resources/goalStatus.service';
 export { goalTypeService } from './resources/goalType.service';
+export { historyService } from './resources/history.service';
 export { leaderboardService } from './resources/leaderboard.service';
 export { notificationService } from './resources/notification.service';
 export { profileService } from './resources/profile.service';

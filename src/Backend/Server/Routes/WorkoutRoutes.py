@@ -7,7 +7,7 @@ from ...Core.Entity.WorkoutEntity import WorkoutEntity
 from ...Core.DTO.WorkoutDTO import WorkoutCreateDTO, WorkoutUpdateDTO, WorkoutResponseDTO, WorkoutStartDTO, WorkoutEndDTO, WorkoutEndResponseDTO
 from ...Infrastructure.Repository.WorkoutRepository import WorkoutRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
-from ...Core.Utils.xp_service import XPService
+from ...Core.Utils.xp_utils import XPService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -135,7 +135,7 @@ async def startWorkout(workout_data: WorkoutStartDTO):
             xp_awarded = workout_data.xpAwarded
             logger.info(f"[WORKOUT] Using XP from frontend: {xp_awarded}")
         else:
-            from ...Core.Utils.xp_service import generate_random_workout_xp
+            from ...Core.Utils.xp_utils import generate_random_workout_xp
             xp_awarded = generate_random_workout_xp()
             logger.info(f"[WORKOUT] Generated random XP: {xp_awarded}")
         

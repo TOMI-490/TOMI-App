@@ -9,7 +9,7 @@ from ...Core.DTO.UserAvatarDTO import UserAvatarWithDetailsResponseDTO
 from ...Core.DTO.StreakDTO import StreakResponseDTO
 from ...Core.DTO.WorkoutDTO import WorkoutResponseDTO
 from ...Core.DTO.GoalDTO import GoalWithDetailsResponseDTO
-from ...Core.Utils.xp_service import calculate_xp_progression, calculate_today_progress
+from ...Core.Utils.xp_utils import calculate_xp_progression, calculate_today_progress
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.ProfileRepository import ProfileRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository

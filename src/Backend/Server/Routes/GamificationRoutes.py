@@ -54,13 +54,11 @@ BADGE_MILESTONES = {
 
 @router.get("/{user_id}", response_model=GamificationResponseDTO)
 async def getGamificationData(user_id: int):
-    """
-    Get comprehensive gamification data for a user including:
-    - Earned badges (from user_badge + badge)
-    - Upcoming badge progress (computed from DB stats)
-    - Progress rings (from active goals)
-    - Leaderboard preview (active leaderboards + user rank + top 3)
-    """
+    # Get comprehensive gamification data for a user including:
+    # - Earned badges (from user_badge + badge)
+    # - Upcoming badge progress (computed from DB stats)
+    # - Progress rings (from active goals)
+    # - Leaderboard preview (active leaderboards + user rank + top 3)
     try:
         logger.info(f"[GAMIFICATION] {'='*10} Starting gamification fetch for user_id={user_id} {'='*10}")
         # Verify user exists
