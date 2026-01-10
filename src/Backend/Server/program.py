@@ -18,6 +18,7 @@ sys.path.insert(0, str(projectRoot))
 #Import routers 
 from .Routes.AvatarRoutes import router as AvatarRouter
 from .Routes.BadgeRoutes import router as BadgeRouter
+from .Routes.CommunityRoutes import router as CommunityRouter
 from .Routes.DashboardRoutes import router as DashboardRouter
 from .Routes.FriendRoutes import router as FriendRouter
 from .Routes.FriendStatusRoutes import router as FriendStatusRouter
@@ -147,6 +148,7 @@ async def apiVersion():
 # Registers routers with the app
 app.include_router(AvatarRouter, prefix="/api/v1/avatars", tags=["Avatars"])
 app.include_router(BadgeRouter, prefix="/api/v1/badges", tags=["Badges"])
+app.include_router(CommunityRouter, prefix="/api/v1/community", tags=["Community"])
 app.include_router(DashboardRouter, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(FriendRouter, prefix="/api/v1/friends", tags=["Friends"])
 app.include_router(FriendStatusRouter, prefix="/api/v1/friendStatus", tags=["Friend Status"])

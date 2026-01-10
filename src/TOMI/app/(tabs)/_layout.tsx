@@ -16,6 +16,13 @@ export default function TabLayout() {
           href: null // Hide from tab bar
         }} 
       />
+      <Tabs.Screen 
+        name="friend-visit" 
+        options={{ 
+          title: 'Friend Profile',
+          href: null // Hide from tab bar
+        }} 
+      />
     </Tabs>
   );
 }

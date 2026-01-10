@@ -40,6 +40,10 @@ class GoalStatusRepository:
         except Exception as e:
             logger.error(f"Error fetching goal status {status_id}: {e}")
             raise
+    
+    # Alias for consistency with other repositories
+    def fetchGoalStatusById(self, status_id: int) -> Optional[GoalStatusEntity]:
+        return self.fetchStatusById(status_id)
 
     def createStatus(self, status: GoalStatusEntity) -> GoalStatusEntity:
         try:

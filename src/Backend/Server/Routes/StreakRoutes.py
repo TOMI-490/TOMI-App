@@ -2,85 +2,112 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 import logging
 
-from ...Core.Entity.StreakEntity import StreakEntity
-from ...Core.DTO.StreakDTO import StreakCreateDTO, StreakUpdateDTO, StreakResponseDTO
-from ...Infrastructure.Repository.StreakRepository import StreakRepository
+from ...Core.DTO.StreakDTO import StreakResponseDTO, StreakCreateDTO, StreakUpdateDTO, UserStreakDTO
+from ...Core.Services.StreakService import StreakService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-streakRepo = StreakRepository()
+
+# Initialize service
+streak_service = StreakService()
 
 # Get all streaks
 @router.get("/", response_model=List[StreakResponseDTO])
 async def getAllStreaks():
     try:
-        streaks = streakRepo.fetchAllStreaks()
-        return [StreakResponseDTO(**streak.__dict__) for streak in streaks]
+        return streak_service.get_all_streaks()
     except Exception as e:
         logger.error(f"Error fetching all streaks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get all active streaks for a user
-@router.get("/user/{user_id}", response_model=List[StreakResponseDTO])
-async def getUserStreaks(user_id: int):
-    try:
-        streaks = streakRepo.fetchStreaksByUserId(user_id)
-        return [StreakResponseDTO(**streak.__dict__) for streak in streaks]
-    except Exception as e:
-        logger.error(f"Error fetching streaks for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Get a specific streak by ID
+# Get a specific streak
 @router.get("/{streak_id}", response_model=StreakResponseDTO)
-async def getStreak(streak_id: int):
+async def getStreakById(streak_id: int):
     try:
-        streak = streakRepo.fetchStreakById(streak_id)
-        if not streak:
-            raise HTTPException(status_code=404, detail="Streak not found")
-        return StreakResponseDTO(**streak.__dict__)
-    except HTTPException:
-        raise
+        return streak_service.get_streak_by_id(streak_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching streak {streak_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Create a new streak tracker
-@router.post("/", response_model=StreakResponseDTO, status_code=status.HTTP_201_CREATED)
-async def createStreak(streak_data: StreakCreateDTO):
+# Get all streaks for a user
+@router.get("/user/{user_id}", response_model=List[UserStreakDTO])
+async def getUserStreaks(user_id: int):
     try:
-        streak = StreakEntity(**streak_data.model_dump())
-        created_streak = streakRepo.createStreak(streak)
-        return StreakResponseDTO(**created_streak.__dict__)
+        return streak_service.get_user_streaks(user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error fetching streaks for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Get current streak for a user by type
+@router.get("/user/{user_id}/current")
+async def getCurrentUserStreak(user_id: int, streak_type: str = "workout"):
+    try:
+        streak = streak_service.get_current_user_streak(user_id, streak_type)
+        if not streak:
+            raise HTTPException(status_code=404, detail=f"No {streak_type} streak found for user")
+        return streak
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error fetching current streak for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Create a new streak
+@router.post("/", response_model=StreakResponseDTO, status_code=status.HTTP_201_CREATED)
+async def createStreak(streak: StreakCreateDTO):
+    try:
+        return streak_service.create_streak(streak)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating streak: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-# Update streak progress (increment days, etc.)
+# Update a streak
 @router.put("/{streak_id}", response_model=StreakResponseDTO)
-async def updateStreak(streak_id: int, streak_data: StreakUpdateDTO):
+async def updateStreak(streak_id: int, streak: StreakUpdateDTO):
     try:
-        existing_streak = streakRepo.fetchStreakById(streak_id)
-        if not existing_streak:
-            raise HTTPException(status_code=404, detail="Streak not found")
-        
-        update_data = streak_data.model_dump(exclude_unset=True)
-        streak_dict = existing_streak.__dict__.copy()
-        streak_dict.update(update_data)
-        
-        streak = StreakEntity(**streak_dict)
-        updated_streak = streakRepo.updateStreak(streak)
-        return StreakResponseDTO(**updated_streak.__dict__)
-    except HTTPException:
-        raise
+        return streak_service.update_streak(streak_id, streak)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating streak {streak_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-# Delete a streak from tracking
-@router.delete("/{streak_id}", status_code=status.HTTP_204_NO_CONTENT)
+# Delete a streak
+@router.delete("/{streak_id}")
 async def deleteStreak(streak_id: int):
     try:
-        streakRepo.deleteStreak(streak_id)
+        return streak_service.delete_streak(streak_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error deleting streak {streak_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Increment workout streak (called after workout completion)
+@router.post("/user/{user_id}/increment", response_model=UserStreakDTO)
+async def incrementWorkoutStreak(user_id: int):
+    try:
+        return streak_service.increment_workout_streak(user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error incrementing workout streak for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Check and break inactive streaks
+@router.post("/user/{user_id}/check")
+async def checkAndBreakStreaks(user_id: int):
+    try:
+        broken_streaks = streak_service.check_and_break_streaks(user_id)
+        return {"brokenStreaks": broken_streaks}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error checking streaks for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
