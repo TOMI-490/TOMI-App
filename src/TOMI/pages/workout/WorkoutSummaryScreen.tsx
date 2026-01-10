@@ -20,6 +20,7 @@ const WorkoutSummaryScreen: React.FC = () => {
     console.log('[WorkoutSummary]   - Workout ID:', workoutId);
     console.log('[WorkoutSummary]   - Tracked Distance:', trackedDistance);
     console.log('[WorkoutSummary]   - XP Awarded:', xpAwarded);
+    
     loadWorkoutSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

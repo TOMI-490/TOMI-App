@@ -34,8 +34,8 @@ export const workoutService = {
   endWorkout: async (workoutId: Id): Promise<{ workout: WorkoutResponseDto; xpAwarded: number }> => {
     console.log('[WorkoutService] 🏁 Ending workout...', workoutId);
     
-    // End the workout - backend handles XP awarding
-    const response = await httpClient.put<WorkoutResponseDto & { xpAwarded: number }>(`/api/v1/workouts/${workoutId}/end`);
+    // End the workout - backend handles XP awarding (send empty body)
+    const response = await httpClient.post<WorkoutResponseDto & { xpAwarded: number }>(`/api/v1/workouts/${workoutId}/end`, {});
     const { xpAwarded, ...workout } = response.data;
     
     console.log('[WorkoutService] ✓ Workout ended (backend processed)');
@@ -56,16 +56,18 @@ export const workoutService = {
     const endTime = workout.end ? new Date(workout.end).getTime() : Date.now();
     const duration = Math.floor((endTime - startTime) / 1000); // in seconds
 
-    // Mock values for now (can be replaced with backend-calculated values later)
+    // Use actual XP from backend if available, otherwise calculate as 1 XP per minute
+    const actualXp = workout.xpAwarded ?? Math.floor(duration / 60);
+    
+    // Mock calories for now (can be replaced with backend-calculated values later)
     const mockCalories = Math.floor(duration / 60 * 10); // ~10 cal/min
-    const mockXp = Math.floor(duration / 60 * 5); // ~5 xp/min
 
     return {
       workout,
       workoutType,
       duration,
       calories: mockCalories,
-      xp: mockXp,
+      xp: actualXp,
     };
   },
 

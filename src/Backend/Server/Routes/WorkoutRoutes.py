@@ -51,7 +51,7 @@ async def startWorkout(workout: WorkoutStartDTO):
 
 # End a workout
 @router.post("/{workout_id}/end", response_model=WorkoutEndResponseDTO)
-async def endWorkout(workout_id: int, workout_data: WorkoutEndDTO):
+async def endWorkout(workout_id: int, workout_data: WorkoutEndDTO = WorkoutEndDTO()):
     try:
         return workout_service.end_workout(workout_id, workout_data)
     except ValueError as e:

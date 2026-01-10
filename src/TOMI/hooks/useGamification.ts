@@ -6,6 +6,10 @@
 import { useState, useEffect } from 'react';
 import { gamificationService, GamificationData } from '../services/gamification';
 
+// Simple in-memory cache for gamification data
+const gamificationCache = new Map<number, { data: GamificationData; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds (gamification data changes less frequently)
+
 export interface UseGamificationResult {
   data: GamificationData | null;
   loading: boolean;
@@ -23,12 +27,23 @@ export function useGamification(userId: number | null | undefined): UseGamificat
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchGamification = async () => {
+  const fetchGamification = async (forceRefresh = false) => {
     if (!userId) {
       console.log('[useGamification] No userId provided, skipping fetch');
       setData(null);
       setLoading(false);
       return;
+    }
+
+    // Check cache first (unless forcing refresh)
+    if (!forceRefresh) {
+      const cached = gamificationCache.get(userId);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('[useGamification] 💾 Using cached gamification data');
+        setData(cached.data);
+        setLoading(false);
+        return;
+      }
     }
 
     console.log('[useGamification] 🎯 Starting gamification fetch for userId:', userId);
@@ -38,6 +53,10 @@ export function useGamification(userId: number | null | undefined): UseGamificat
 
       const gamificationData = await gamificationService.getGamificationData(userId);
       console.log('[useGamification] ✓ Gamification data loaded successfully');
+      
+      // Cache the gamification data
+      gamificationCache.set(userId, { data: gamificationData, timestamp: Date.now() });
+      
       setData(gamificationData);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch gamification data');
@@ -57,6 +76,6 @@ export function useGamification(userId: number | null | undefined): UseGamificat
     data,
     loading,
     error,
-    refresh: fetchGamification,
+    refresh: () => fetchGamification(true), // Force refresh when explicitly called
   };
 }

@@ -164,21 +164,27 @@ class DashboardService:
                 logger.info(f"[DASHBOARD] No goals found for user {user_id}")
             
             # Calculate today's progress
+            logger.info(f"[DASHBOARD] Calculating today's progress")
             today_progress_dto = None
-            if user_avatar_dto and workout_entities:
+            if workout_entities:
+                logger.info(f"[DASHBOARD] Found {len(workout_entities)} total workouts")
                 today_progress = calculate_today_progress(workout_entities)
+                logger.info(f"[DASHBOARD] Today's progress: {today_progress}")
                 today_progress_dto = TodayProgressDTO(
-                    workoutsCompleted=today_progress["workouts_count"],
+                    workoutsCount=today_progress["workouts_count"],
                     xpEarned=today_progress["xp_earned"],
-                    minutesActive=today_progress["minutes"]
+                    minutes=today_progress["minutes"]
                 )
+                logger.info(f"[DASHBOARD] Today progress DTO created: workouts={today_progress['workouts_count']}, minutes={today_progress['minutes']}, xp={today_progress['xp_earned']}")
+            else:
+                logger.info(f"[DASHBOARD] No workouts found, using default progress")
             
             # Build dashboard response
             logger.info(f"[DASHBOARD] Building dashboard response")
             dashboard = DashboardDTO(
                 user=user_dto,
                 profile=profile_dto,
-                userAvatar=user_avatar_dto,
+                tomi=user_avatar_dto,
                 streaks=streak_dtos,
                 recentWorkouts=recent_workouts,
                 activeGoals=active_goals,
