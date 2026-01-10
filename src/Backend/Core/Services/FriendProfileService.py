@@ -183,11 +183,11 @@ class FriendProfileService:
                     duration_minutes = int((workout.end - workout.start).total_seconds() / 60)
                 
                 workout_dtos.append(FriendRecentWorkoutDTO(
-                    workoutId=workout.id,
-                    workoutType=workout_type.name if workout_type else "Unknown",
-                    date=workout.start.isoformat() if workout.start else None,
+                    id=workout.workout_id,
+                    type=workout_type.name if workout_type else "Unknown",
+                    startedAt=workout.start,
                     durationMinutes=duration_minutes,
-                    xpAwarded=workout.xp_awarded or 0
+                    xpEarned=workout.xp_awarded or 0
                 ))
             
             return FriendRecentWorkoutsDTO(items=workout_dtos)

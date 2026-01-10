@@ -49,8 +49,7 @@ class UserService:
                 
                 results.append(UserSearchResultDTO(
                     userId=user.user_id,
-                    email=user.email,
-                    relationshipStatus=relationship_status,
+                    relationship=relationship_status,
                     **display_info
                 ))
             
@@ -102,7 +101,7 @@ class UserService:
                     if friendship.status_id == accepted_status_id:
                         return "friends"
                     elif friendship.status_id == pending_status_id:
-                        return "pending_outgoing"
+                        return "outgoing_request"
                     elif friendship.status_id == blocked_status_id:
                         return "blocked"
             
@@ -116,7 +115,7 @@ class UserService:
             if incoming_response.data:
                 friendship_data = incoming_response.data[0]
                 if friendship_data['status_id'] == pending_status_id:
-                    return "pending_incoming"
+                    return "incoming_request"
                 elif friendship_data['status_id'] == blocked_status_id:
                     return "blocked"
             
