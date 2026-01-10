@@ -21,6 +21,7 @@ const LiveWorkoutScreen: React.FC = () => {
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const workoutTypeId = Number(params.workoutTypeId);
+  const currentLevel = params.currentLevel ? Number(params.currentLevel) : null;
 
   const [workoutType, setWorkoutType] = useState<WorkoutTypeResponseDto | null>(null);
   const [workoutXp, setWorkoutXp] = useState<number | null>(null);
@@ -236,6 +237,7 @@ const LiveWorkoutScreen: React.FC = () => {
                   workoutId: workoutId.toString(),
                   distance: distance.toFixed(2),
                   xpAwarded: xpAwarded.toString(),
+                  previousLevel: currentLevel?.toString() || '0',
                 },
               });
             } catch (error) {

@@ -3,12 +3,16 @@
  * Resolves and manages the current authenticated user
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserResponseDto } from '../models/dto/User.dto';
 import { userService } from '../services/resources/user.service';
 
 // DEV fallback email when no auth session exists
 const DEV_DEFAULT_EMAIL = 'thomasmejia69@gmail.com';
+
+// Simple in-memory cache for user data
+const userCache = new Map<string, { user: UserResponseDto; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds
 
 export interface UseCurrentUserResult {
   user: UserResponseDto | null;
@@ -27,7 +31,20 @@ export function useCurrentUser(authId?: string): UseCurrentUserResult {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = async (forceRefresh = false) => {
+    const cacheKey = authId || DEV_DEFAULT_EMAIL;
+    
+    // Check cache first (unless forcing refresh)
+    if (!forceRefresh) {
+      const cached = userCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('[useCurrentUser] 💾 Using cached user:', cached.user.email);
+        setUser(cached.user);
+        setLoading(false);
+        return;
+      }
+    }
+
     console.log('[useCurrentUser] 🔍 Starting user resolution with authId:', authId || 'none');
     try {
       setLoading(true);
@@ -54,6 +71,9 @@ export function useCurrentUser(authId?: string): UseCurrentUserResult {
         console.log('[useCurrentUser] ✓ DEV fallback fetch successful:', fetchedUser.email);
       }
 
+      // Cache the user data
+      userCache.set(cacheKey, { user: fetchedUser, timestamp: Date.now() });
+      
       setUser(fetchedUser);
       console.log('[useCurrentUser] ✅ User set in state:', fetchedUser.userId, fetchedUser.email);
     } catch (err) {
@@ -74,7 +94,7 @@ export function useCurrentUser(authId?: string): UseCurrentUserResult {
     user,
     loading,
     error,
-    refresh: fetchUser,
+    refresh: () => fetchUser(true), // Force refresh when explicitly called
   };
 }
 

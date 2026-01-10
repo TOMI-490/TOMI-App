@@ -30,7 +30,7 @@ export interface WorkoutStartDto {
   userId: number;
   workoutTypeId: number;
   deviceId: number;
-  xpAwarded?: number; // Optional XP from frontend (5-49)
+  xpAwarded?: number;
 }
 
 export interface WorkoutUpdateDto {

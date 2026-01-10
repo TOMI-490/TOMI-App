@@ -78,7 +78,8 @@ class WorkoutService:
                 user_id=workout_data.userId,
                 workout_type_id=workout_data.workoutTypeId,
                 start=datetime.now(),
-                device_id=workout_data.deviceId if hasattr(workout_data, 'deviceId') else None
+                device_id=workout_data.deviceId if hasattr(workout_data, 'deviceId') else None,
+                xp_awarded=workout_data.xpAwarded
             )
             created_workout = self.workout_repo.createWorkout(workout_entity)
             return WorkoutResponseDTO(
@@ -109,25 +110,28 @@ class WorkoutService:
             # Update workout with end time
             workout.end = datetime.now()
             
-            # Calculate duration and XP
+            # Calculate duration
             duration_minutes = 0
             if workout.start:
                 duration_seconds = (workout.end - workout.start).total_seconds()
                 duration_minutes = int(duration_seconds / 60)
             
-            # Award XP based on duration (example: 1 XP per minute)
-            xp_awarded = duration_minutes
-            workout.xp_awarded = xp_awarded
+            # Use XP that was set when workout started (random 5-49)
+            xp_awarded = workout.xp_awarded if workout.xp_awarded else 0
+            
+            logger.info(f"[WORKOUT_END] Workout {workout_id} ended")
+            logger.info(f"[WORKOUT_END]   - Duration: {duration_minutes} minutes ({duration_seconds} seconds)")
+            logger.info(f"[WORKOUT_END]   - XP Awarded: {xp_awarded} (from workout start)")
             
             # Update workout
             updated_workout = self.workout_repo.updateWorkout(workout)
             
             # Award XP to user's avatar
             try:
-                self.xp_service.awardXP(workout.user_id, xp_awarded, "workout_completion")
-                logger.info(f"Awarded {xp_awarded} XP to user {workout.user_id} for workout completion")
+                self.xp_service.award_xp(workout.user_id, xp_awarded)
+                logger.info(f"[WORKOUT_END] ✓ Awarded {xp_awarded} XP to user {workout.user_id}")
             except Exception as e:
-                logger.warning(f"Failed to award XP to user {workout.user_id}: {e}")
+                logger.warning(f"[WORKOUT_END] Failed to award XP to user {workout.user_id}: {e}")
             
             return WorkoutEndResponseDTO(
                 workoutId=updated_workout.workout_id,

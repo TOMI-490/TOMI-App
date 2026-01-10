@@ -31,26 +31,36 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
   // Store previous values to detect changes
   const prevTomiRef = useRef<UserAvatarResponseDto | null>(null);
 
+  // Extract values to use as dependencies (to avoid infinite loops from object reference changes)
+  const currentXp = currentTomi?.xp;
+  const currentLevel = currentTomi?.level;
+
   useEffect(() => {
+    console.log('[useTomiEffects] Effect triggered - currentTomi:', currentTomi ? `Lv${currentTomi.level} XP${currentTomi.xp}` : 'null');
+    
     if (!currentTomi) {
+      console.log('[useTomiEffects] No current TOMI, skipping');
       return;
     }
 
     const prevTomi = prevTomiRef.current;
+    console.log('[useTomiEffects] Previous TOMI:', prevTomi ? `Lv${prevTomi.level} XP${prevTomi.xp}` : 'null (first time)');
 
     // First time seeing TOMI data - just store it, no effects
     if (!prevTomi) {
-      prevTomiRef.current = currentTomi;
+      console.log('[useTomiEffects] First TOMI data, storing reference');
+      prevTomiRef.current = { ...currentTomi };
       return;
     }
 
     // Detect XP change
     if (currentTomi.xp !== prevTomi.xp) {
       const delta = currentTomi.xp - prevTomi.xp;
+      console.log('[useTomiEffects] XP change detected:', prevTomi.xp, '→', currentTomi.xp, '(delta:', delta, ')');
       if (delta > 0) {
         setXpDelta(delta);
         setShowXpToast(true);
-        console.log('[useTomiEffects] XP gained:', delta);
+        console.log('[useTomiEffects] ✨ XP gained:', delta);
 
         // Auto-dismiss XP toast after 3 seconds
         setTimeout(() => {
@@ -62,15 +72,16 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
 
     // Detect level up
     if (currentTomi.level > prevTomi.level) {
+      console.log('[useTomiEffects] 🎉 LEVEL UP DETECTED!', prevTomi.level, '→', currentTomi.level);
       setLevelUp(true);
       setNewLevel(currentTomi.level);
       setShowLevelUpModal(true);
-      console.log('[useTomiEffects] Level up!', currentTomi.level);
     }
 
-    // Update ref with current data
-    prevTomiRef.current = currentTomi;
-  }, [currentTomi]);
+    // Update ref with current data (create a copy to store values)
+    console.log('[useTomiEffects] Updating ref with current TOMI');
+    prevTomiRef.current = { ...currentTomi };
+  }, [currentXp, currentLevel]); // Only depend on primitive values to avoid infinite loop
 
   const dismissXpToast = () => {
     setShowXpToast(false);
