@@ -16,10 +16,26 @@ class StreakUpdateDTO(BaseModel):
 
 # DTO for responding with streak data
 class StreakResponseDTO(BaseModel):
-    streakId: int
-    userId: int
+    streakId: int = Field(..., alias="streak_id")
+    userId: int = Field(..., alias="user_id")
     metric: str
     current: int
     longest: int
+    
+    class Config:
+        populate_by_name = True
+
+
+# DTO for user-specific streak data
+class UserStreakDTO(BaseModel):
+    streakId: int = Field(..., alias="streak_id")
+    userId: int = Field(..., alias="user_id")
+    metric: str
+    current: int
+    longest: int
+    isActive: bool = True
+    
+    class Config:
+        populate_by_name = True
     
 

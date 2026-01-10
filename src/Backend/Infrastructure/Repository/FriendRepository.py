@@ -19,9 +19,21 @@ class FriendRepository:
             raise
 
     def entityToData(self, entity: FriendEntity) -> dict:
-        if hasattr(entity, "to_dict") and callable(entity.to_dict):
-            return entity.to_dict()
-        return entity.__dict__
+        if hasattr(entity, "model_dump"):
+            # Pydantic v2
+            return entity.model_dump(exclude_none=True, mode='json')
+        elif hasattr(entity, "dict"):
+            # Pydantic v1
+            return entity.dict(exclude_none=True)
+        # Fallback with datetime handling
+        result = {}
+        for k, v in entity.__dict__.items():
+            if v is not None:
+                if hasattr(v, 'isoformat'):
+                    result[k] = v.isoformat()
+                else:
+                    result[k] = v
+        return result
 
     def fetchFriendsByUserId(self, user_id: int) -> List[FriendEntity]:
         try:
