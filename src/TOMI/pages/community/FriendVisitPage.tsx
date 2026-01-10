@@ -283,13 +283,13 @@ export default function FriendVisitPage() {
                       <Text style={styles.workoutStatLabel}>{t('history.duration')}</Text>
                       <Text style={styles.workoutStatValue}>{workout.durationMinutes} {t('history.min')}</Text>
                     </View>
-                    {workout.xpEarned && (
+                    {workout.xpEarned !== undefined && (
                       <View style={styles.workoutStat}>
                         <Text style={styles.workoutStatLabel}>XP</Text>
                         <Text style={styles.workoutStatValue}>{workout.xpEarned}</Text>
                       </View>
                     )}
-                    {workout.calories && (
+                    {workout.calories !== undefined && (
                       <View style={styles.workoutStat}>
                         <Text style={styles.workoutStatLabel}>{t('history.calories')}</Text>
                         <Text style={styles.workoutStatValue}>{workout.calories}</Text>
