@@ -8,17 +8,30 @@ import { getBleManager, destroyBleManager } from "../services/ble/bleManager";
 import { scanForDevices, stopScan } from "../services/ble/bleScanner";
 import { bleConfig } from "../models/bleConfig";
 
-interface BLEData<T> {
-  value: T;
+/* ---------- Types ---------- */
+
+export type FlattenedBLEData<T> = T & {
   timestamp: number;
+};
+
+export interface UseBLEReturn<T> {
+  devices: Device[];
+  connectedDevice: Device | null;
+  data: FlattenedBLEData<T> | null;
+  requestPermissions: () => Promise<boolean>;
+  startScan: () => void;
+  connectToDevice: (device: Device) => Promise<void>;
+  disconnect: () => Promise<void>;
 }
 
-function useBLE<T>(config: bleConfig<T>) {
+/* ---------- Hook ---------- */
+
+function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
   const bleManager = useMemo(() => getBleManager(), []);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
-  const [data, setData] = useState<BLEData<T> | null>(null);
+  const [data, setData] = useState<FlattenedBLEData<T> | null>(null);
 
   const notificationCleanup = useRef<(() => void) | null>(null);
 
@@ -95,7 +108,6 @@ function useBLE<T>(config: bleConfig<T>) {
       await connection.discoverAllServicesAndCharacteristics();
       stopScan();
 
-      // Clean up any previous notification
       notificationCleanup.current?.();
       notificationCleanup.current = null;
 
@@ -109,7 +121,7 @@ function useBLE<T>(config: bleConfig<T>) {
             const decoded = config.decode(characteristic.value);
 
             setData({
-              value: decoded,
+              ...decoded,
               timestamp: Date.now(),
             });
           } catch (e) {
@@ -123,6 +135,8 @@ function useBLE<T>(config: bleConfig<T>) {
       console.error("Connection failed:", e);
     }
   };
+
+  /* ---------- Disconnect ---------- */
 
   const disconnect = async () => {
     try {
