@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 
 import BLEPopup from "../components/ble/BLEPopup";

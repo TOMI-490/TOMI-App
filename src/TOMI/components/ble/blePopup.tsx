@@ -10,8 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 
-//import useBLE from "../../hooks/useBLE";
-import useBLE from "../../hooks/useBLE.mock";
+import useBLE from "../../hooks/useBLEmock";
 import { smartwatchBleConfig } from "../../config/smartwatchBleConfig";
 
 interface blePopupProps {
