@@ -10,15 +10,16 @@ import {
   ScrollView,
 } from "react-native";
 
-import useBLE from "../../hooks/useBLE";
+//import useBLE from "../../hooks/useBLE";
+import useBLE from "../../hooks/useBLE.mock";
 import { smartwatchBleConfig } from "../../config/smartwatchBleConfig";
 
-interface BLEPopupProps {
+interface blePopupProps {
   visible: boolean;
   onClose: () => void;
 }
 
-export default function BLEPopup({ visible, onClose }: BLEPopupProps) {
+export default function BLEPopup({ visible, onClose }: blePopupProps) {
   const {
     devices,
     connectedDevice,

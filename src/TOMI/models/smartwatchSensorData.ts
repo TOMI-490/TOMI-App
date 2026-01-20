@@ -11,5 +11,4 @@ export interface SmartwatchSensorData {
   imu: IMUData;
   heartRate: number;   // bpm
   spo2: number;        // %
-  timestamp: number;
 }

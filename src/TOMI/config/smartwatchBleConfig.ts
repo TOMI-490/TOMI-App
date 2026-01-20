@@ -56,7 +56,7 @@ export const smartwatchBleConfig: bleConfig<SmartwatchSensorData> = {
       imu: { ax, ay, az, gx, gy, gz },
       heartRate,
       spo2,
-      timestamp: Date.now(),
+      
     };
   },
 };
