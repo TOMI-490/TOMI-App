@@ -9,15 +9,16 @@ export default function WorkoutPage() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Workout Page</Text>
-
+  
       <Button
+
         title="Connect Smartwatch"
         onPress={() => setShowBLE(true)}
+
       />
 
-      <BLEPopup
-        visible={showBLE}
-        onClose={() => setShowBLE(false)}
+      <BLEPopup visible={showBLE}
+       onClose={() => setShowBLE(false)}
       />
     </View>
   );
