@@ -4,6 +4,7 @@
     "expo-location": "~19.0.8",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-base64": "^0.2.2",
     "react-native-ble-plx": "^3.5.0",
     "react-native-safe-area-context": "~5.6.0"
   },
@@ -14,6 +15,7 @@
     "ios": "expo run:ios"
   },
   "devDependencies": {
+    "@types/react-native-base64": "^0.2.2",
     "@types/react-native-maps": "^0.24.1",
     "typescript": "~5.9.2"
   }
