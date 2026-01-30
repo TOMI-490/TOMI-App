@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import useBLE from "../../hooks/useBLEmock";
-import { smartwatchBleConfig } from "../../config/smartwatchBleConfig";
+import { smartwatchBleConfig } from "../../config/SmartwatchBleConfig";
 
 interface blePopupProps {
   visible: boolean;

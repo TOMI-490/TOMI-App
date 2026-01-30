@@ -1,6 +1,6 @@
 import { bleConfig } from "../models/bleConfig";
 import base64 from "react-native-base64";
-import { SmartwatchSensorData } from "../models/smartwatchSensorData";
+import { SmartwatchSensorData } from "../models/SmartwatchSensorData";
 
 /**
  * ASSUMPTION (you can change this later):

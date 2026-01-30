@@ -1,6 +1,7 @@
 {
   "plugins": [
-    "react-native-ble-plx"
+    "react-native-ble-plx",
+    "expo-router"
   ],
   "android": {
     "permissions": [
