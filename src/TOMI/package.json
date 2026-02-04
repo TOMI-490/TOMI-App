@@ -20,7 +20,7 @@
     "axios": "^1.13.2",
     "expo": "~54.0.30",
     "expo-constants": "~18.0.12",
-    "expo-device": "^8.0.10",
+    "expo-device": "~8.0.10",
     "expo-font": "~14.0.10",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
@@ -50,11 +50,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-
     "@types/react-native-base64": "^0.2.2",
-
     "dotenv": "^17.2.3",
-
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
