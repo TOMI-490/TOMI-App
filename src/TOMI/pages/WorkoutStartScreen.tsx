@@ -5,7 +5,10 @@ import { workoutTypeService } from '../services/resources/workoutType.service';
 import { workoutService } from '../services/resources/workout.service';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useAuth } from '../contexts/AuthContext';
+import useBLE from '../hooks/useBLE';
+import { smartwatchBleConfig } from '../config/smartwatchBleConfig';
 import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
+import type { SmartWatchSensorData } from '../models/smartwatchSensorData';
 import { styles } from '../styles/workout/workoutStartScreen.styles';
 
 const WorkoutStartScreen: React.FC = () => {
@@ -17,6 +20,9 @@ const WorkoutStartScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
+
+  // Initialize BLE
+  const { requestPermissions, bluetoothState } = useBLE<SmartWatchSensorData>(smartwatchBleConfig);
 
   useEffect(() => {
     loadWorkoutTypes();
@@ -50,6 +56,23 @@ const WorkoutStartScreen: React.FC = () => {
 
     try {
       setStarting(true);
+      
+      // Request Bluetooth permissions before starting workout
+      console.log('[WorkoutStart] 📡 Requesting Bluetooth permissions...');
+      const hasPermission = await requestPermissions();
+      
+      if (!hasPermission) {
+        Alert.alert(
+          'Bluetooth Required',
+          'TOMI needs Bluetooth access to connect to your smartwatch. Please enable Bluetooth in Settings.',
+          [{ text: 'OK' }]
+        );
+        setStarting(false);
+        return;
+      }
+
+      console.log('[WorkoutStart] ✓ Bluetooth permissions granted');
+      console.log('[WorkoutStart] 📶 Bluetooth state:', bluetoothState);
       
       // Default device ID (you can make this dynamic if needed)
       const deviceId = 1;

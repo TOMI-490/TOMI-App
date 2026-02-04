@@ -98,8 +98,18 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
   };
 
   const requestPermissions = async () => {
-    if (Platform.OS !== "android") return true;
+    if (Platform.OS === "ios") {
+      // iOS: Bluetooth permissions are requested automatically when first accessing BLE
+      // Just check if Bluetooth is powered on
+      const state = await bleManager.state();
+      if (state !== State.PoweredOn) {
+        setError(new Error("Bluetooth is not enabled. Please enable Bluetooth in Settings."));
+        return false;
+      }
+      return true;
+    }
 
+    // Android permissions
     if ((ExpoDevice.platformApiLevel ?? -1) < 31) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
