@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { supabase } from '../services/core/supabase';
 import { AuthProvider } from '../contexts/AuthContext';
+import { initializeLocalDatabase } from '../services/localDatabase/localDb';
 
 export default function RootLayout() {
   const router = useRouter();

@@ -6,9 +6,9 @@ import { workoutService } from '../services/resources/workout.service';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useAuth } from '../contexts/AuthContext';
 import useBLE from '../hooks/useBLE';
-import { smartwatchBleConfig } from '../config/smartwatchBleConfig';
+import { smartwatchBleConfig } from '../config/SmartwatchBleConfig';
 import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import type { SmartWatchSensorData } from '../models/smartwatchSensorData';
+import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
 import { styles } from '../styles/workout/workoutStartScreen.styles';
 
 const WorkoutStartScreen: React.FC = () => {
@@ -22,7 +22,7 @@ const WorkoutStartScreen: React.FC = () => {
   const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
 
   // Initialize BLE
-  const { requestPermissions, bluetoothState } = useBLE<SmartWatchSensorData>(smartwatchBleConfig);
+  const { requestPermissions, bluetoothState } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
 
   useEffect(() => {
     loadWorkoutTypes();
