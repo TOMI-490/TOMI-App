@@ -11,14 +11,16 @@ import {
 } from "react-native";
 
 import useBLE from "../../hooks/useBLE";
+import { UseBLEReturn } from "../../hooks/useBLE";
 import { smartwatchBleConfig } from "../../config/SmartwatchBleConfig";
 
 interface blePopupProps {
   visible: boolean;
   onClose: () => void;
+  bleHook: UseBLEReturn<any>;
 }
 
-export default function BLEPopup({ visible, onClose }: blePopupProps) {
+export default function BLEPopup({ visible, onClose, bleHook }: blePopupProps) {
   const {
     devices,
     connectedDevice,
@@ -27,7 +29,7 @@ export default function BLEPopup({ visible, onClose }: blePopupProps) {
     startScan,
     connectToDevice,
     disconnect,
-  } = useBLE(smartwatchBleConfig);
+  } = bleHook;
 
   useEffect(() => {
     if (visible) {

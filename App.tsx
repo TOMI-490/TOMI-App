@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { Button } from "react-native";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import WorkoutPage from "./src/TOMI/pages/WorkoutPage";
-import BLEPopup from "./src/TOMI/components/ble/BLEPopup";
+import SensorScreen from "./src/TOMI/pages/SensorScreen";
+import { initializeLocalDatabase } from './src/TOMI/services/localDatabase/localDb';
 
 export default function App() {
-  const [bleVisible, setBleVisible] = useState(false);
+
+  useEffect(() => {
+    initializeLocalDatabase();
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <WorkoutPage />
-      <Button title="Connect to Smartwatch" onPress={() => setBleVisible(true)} />
-      <BLEPopup visible={bleVisible} onClose={() => setBleVisible(false)} />
+      <SensorScreen />
     </SafeAreaView>
   );
 }

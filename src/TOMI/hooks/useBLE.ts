@@ -183,10 +183,21 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
       config.serviceUUID,
       config.characteristicUUID,
       (error, characteristic) => {
-        if (error || !characteristic?.value) return;
+        if (error) {
+      console.error('[BLE] Monitor error:', error); // ADD
+      return;
+    }
+    
+    if (!characteristic?.value) {
+      console.log('[BLE] Received empty characteristic'); // ADD
+      return;
+    }
+
+    console.log('[BLE] Raw data received:', characteristic.value); // ADD
 
         try {
           const decoded = config.decode(characteristic.value);
+          console.log('[BLE] Decoded data:', decoded); // ADD
 
           setData({
             ...decoded,
@@ -237,6 +248,7 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
       setIsScanning(false);
 
       await setupConnection(connection);
+      console.log('[BLE] Setup complete!');
     } catch (e) {
       console.error("Connection failed:", e);
       const error = e instanceof Error ? e : new Error("Connection failed");

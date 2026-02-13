@@ -1,5 +1,5 @@
 // screens/SensorScreen.tsx - UPDATED VERSION
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import useBLE from '../hooks/useBLE';
 import { useSensorDataCollection } from '../hooks/useSensorDataCollection';
@@ -47,7 +47,15 @@ export default function SensorScreen() {
     connectToDevice,
     disconnect,
     requestPermissions,
+    error,
+    bluetoothState,
+    writeData,
   } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
+
+  useEffect(() => {
+  console.log('[SensorScreen] Connection Status:', connectionStatus);
+  console.log('[SensorScreen] Connected Device:', connectedDevice?.name);
+}, [connectionStatus, connectedDevice]);
 
   // ==========================================
   // DATA COLLECTION
@@ -247,9 +255,23 @@ export default function SensorScreen() {
 
       {/* ========== BLE POPUP ========== */}
       <BLEPopup 
-        visible={showBLEPopup}
-        onClose={() => setShowBLEPopup(false)}
-      />
+  visible={showBLEPopup}
+  onClose={() => setShowBLEPopup(false)}
+  bleHook={{
+    devices,
+    connectedDevice,
+    data,
+    connectionStatus,
+    error,
+    isScanning,
+    bluetoothState,
+    requestPermissions,
+    startScan,
+    connectToDevice,
+    disconnect,
+    writeData,
+  }}
+/>
     </ScrollView>
   );
 }
