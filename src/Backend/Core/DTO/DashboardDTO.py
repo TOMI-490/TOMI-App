@@ -10,7 +10,7 @@ from .GoalDTO import GoalWithDetailsResponseDTO
 # DTO for today's progress summary
 class TodayProgressDTO(BaseModel):
     workouts_count: int = Field(default=0, alias="workoutsCount")
-    minutes: int = Field(default=0)
+    minutes: int = Field(default=0, alias="minutes")
     xp_earned: int = Field(default=0, alias="xpEarned")
     
     class Config:

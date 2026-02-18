@@ -15,7 +15,7 @@ class WorkoutStartDTO(BaseModel):
     userId: int = Field(..., gt=0)
     workoutTypeId: int = Field(..., gt=0)
     deviceId: int = Field(..., gt=0)
-    xpAwarded: Optional[int] = Field(None, ge=5, le=49)  # Optional XP from frontend (5-49)
+    xpAwarded: Optional[int] = Field(None, ge=5, le=49)
 
 # DTO for ending a workout (just updates end timestamp)
 class WorkoutEndDTO(BaseModel):

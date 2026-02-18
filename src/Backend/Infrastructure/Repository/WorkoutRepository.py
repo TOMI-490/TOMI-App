@@ -101,3 +101,28 @@ class WorkoutRepository:
             logger.error(f"Error deleting workout: {e}")
             raise
     
+    def fetchWorkoutsByUserIdAndDateRange(self, user_id: int, start_date, end_date) -> List[WorkoutEntity]:
+        # Fetch workouts for a user within a date range (inclusive).
+        # Args:
+        #   user_id: User ID to filter by
+        #   start_date: Start date (inclusive) as date object
+        #   end_date: End date (inclusive) as date object
+        # Returns:
+        #   List of WorkoutEntity objects
+        try:
+            # Convert dates to ISO format strings for the query
+            start_str = start_date.isoformat()
+            end_str = end_date.isoformat() + "T23:59:59.999999"  # End of day
+            
+            response = (self._client.table(self._table_name)
+                       .select("*")
+                       .eq("user_id", user_id)
+                       .gte("start", start_str)
+                       .lte("start", end_str)
+                       .execute())
+            
+            return [self.dataToEntity(record) for record in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching workouts by user ID and date range: {e}")
+            raise
+    

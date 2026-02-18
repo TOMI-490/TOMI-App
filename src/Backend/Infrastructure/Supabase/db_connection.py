@@ -32,7 +32,7 @@ class SupabaseConnection:
     
     # Load environment variables
     def _load_environment(self) -> tuple[str, str]:
-        """Load and validate environment variables"""
+        # Load and validate environment variables
         # Find .env file in src directory (parent of Backend)
         backend_dir = Path(__file__).parent.parent.parent
         src_dir = backend_dir.parent

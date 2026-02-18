@@ -49,6 +49,17 @@ class ProfileRepository:
         except Exception as e:
             logger.error(f"Error fetching profile by ID: {e}")
             raise
+    
+    # Fetch the profile by user_id and return as Profile object    
+    def fetchProfileByUserId(self, user_id: int) -> Optional[ProfileEntity]:
+        try:
+            response = self._client.table(self._table_name).select("*").eq("user_id", user_id).execute()
+            if response.data:
+                return self.dataToEntity(response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching profile by user_id: {e}")
+            raise
         
    # Create a new profile and return the created Profile object
     def createProfile(self, profile: ProfileEntity) -> ProfileEntity:

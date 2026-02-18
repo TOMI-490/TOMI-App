@@ -1,1 +1,1 @@
-export { default } from '../../pages/AvatarPage';
+export { default } from '../../pages/main/AvatarPage';

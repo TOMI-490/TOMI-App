@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { workoutTypeService } from '../services/resources/workoutType.service';
-import { workoutService } from '../services/resources/workout.service';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useAuth } from '../contexts/AuthContext';
-import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import { styles } from '../styles/workout/workoutStartScreen.styles';
+import { workoutTypeService } from '../../services/resources/workoutType.service';
+import { workoutService } from '../../services/resources/workout.service';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useDashboard } from '../../hooks/useDashboardData';
+import { useAuth } from '../../contexts/AuthContext';
+import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import { styles } from '../../styles/workout/workoutStartScreen.styles';
 
 const WorkoutStartScreen: React.FC = () => {
   const router = useRouter();
   const { authId } = useAuth();
   const { user, loading: userLoading } = useCurrentUser(authId || undefined);
+  const { data: dashboardData } = useDashboard(user);
   
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,15 +56,15 @@ const WorkoutStartScreen: React.FC = () => {
       // Default device ID (you can make this dynamic if needed)
       const deviceId = 1;
       
-      // Get the pre-generated XP for this workout type
+      // Get the pre-generated random XP for this workout type
       const xpAwarded = workoutXpValues[workoutTypeId];
 
-      // Start workout via backend API with XP value
+      // Start workout via backend API with random XP value
       const workout = await workoutService.startWorkout({
         userId: user.userId,
         workoutTypeId,
         deviceId,
-        xpAwarded, // Send XP to backend
+        xpAwarded,
       });
 
       console.log('Workout started:', workout);

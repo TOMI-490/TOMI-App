@@ -1,1 +1,1 @@
-export { default } from '../../pages/HistoryPage';
+export { default } from '../../pages/main/HistoryPage';

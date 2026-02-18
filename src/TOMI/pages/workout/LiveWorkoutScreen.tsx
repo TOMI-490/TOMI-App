@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-na
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { workoutService } from '../services/resources/workout.service';
-import { workoutTypeService } from '../services/resources/workoutType.service';
-import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import { styles } from '../styles/workout/liveWorkoutScreen.styles';
+import { workoutService } from '../../services/resources/workout.service';
+import { workoutTypeService } from '../../services/resources/workoutType.service';
+import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 
@@ -21,6 +21,7 @@ const LiveWorkoutScreen: React.FC = () => {
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const workoutTypeId = Number(params.workoutTypeId);
+  const currentLevel = params.currentLevel ? Number(params.currentLevel) : null;
 
   const [workoutType, setWorkoutType] = useState<WorkoutTypeResponseDto | null>(null);
   const [workoutXp, setWorkoutXp] = useState<number | null>(null);
@@ -236,6 +237,7 @@ const LiveWorkoutScreen: React.FC = () => {
                   workoutId: workoutId.toString(),
                   distance: distance.toFixed(2),
                   xpAwarded: xpAwarded.toString(),
+                  previousLevel: currentLevel?.toString() || '0',
                 },
               });
             } catch (error) {

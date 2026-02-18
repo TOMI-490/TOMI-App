@@ -24,6 +24,32 @@ def calculate_xp_from_duration(duration_minutes: int) -> int:
     return max(5, duration_minutes * 5)
 
 
+# Calculate XP reward for completing a goal
+# Args:
+#   target_value: The target value of the goal
+#   difficulty_multiplier: Optional multiplier for goal difficulty (default: 1.0)
+# Returns:
+#   XP amount to award (base: 50 XP, scales with target)
+def calculate_goal_completion_xp(target_value: int, difficulty_multiplier: float = 1.0) -> int:
+    base_xp = 50
+    # Scale XP based on target value (add 10 XP per 100 units of target)
+    scaled_xp = base_xp + (target_value // 100) * 10
+    return int(scaled_xp * difficulty_multiplier)
+
+
+# Calculate bonus XP for maintaining a streak
+# Args:
+#   streak_count: Current streak count
+#   streak_type: Type of streak (e.g., 'workout', 'daily')
+# Returns:
+#   Bonus XP amount (increases with longer streaks)
+def calculate_streak_bonus_xp(streak_count: int, streak_type: str = 'workout') -> int:
+    base_bonus = 10
+    # Bonus increases by 5 XP per week of streak (every 7 days)
+    milestone_bonus = (streak_count // 7) * 5
+    return base_bonus + milestone_bonus
+
+
 # Calculate today's progress from a list of all workouts
 # Args:
 #   all_workouts: List of workout entities

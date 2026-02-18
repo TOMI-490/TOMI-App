@@ -1,1 +1,1 @@
-export { default } from '../../pages/CommunityPage';
+export { default } from '../../pages/main/CommunityPage';

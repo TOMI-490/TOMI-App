@@ -1,28 +1,28 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { useAuth } from '../contexts/AuthContext';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useLanguage } from '../hooks/useLanguage';
-import { useDashboard } from '../hooks/useDashboardData';
-import { useGamification } from '../hooks/useGamification';
-import { useTomiEffects } from '../hooks/useTomiEffects';
-import { usePastWorkouts } from '../hooks/usePastWorkouts';
-import { useTranslation } from '../locales/i18n';
-import { GoalResponseDto } from '../models/dto/Goal.dto';
-import { StreakResponseDto } from '../models/dto/Streak.dto';
-import { WorkoutResponseDto } from '../models/dto/Workout.dto';
-import { NotificationResponseDto } from '../models/dto/Notification.dto';
-import { homePageStyles as styles } from '../styles/home/homePage.styles';
-import { getRelativeTime, getGreeting } from '../utils/timeFormat';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDashboard } from '../../hooks/useDashboardData';
+import { useGamification } from '../../hooks/useGamification';
+import { useTomiEffects } from '../../hooks/useTomiEffects';
+import { usePastWorkouts } from '../../hooks/usePastWorkouts';
+import { useTranslation } from '../../locales/i18n';
+import { GoalResponseDto } from '../../models/dto/Goal.dto';
+import { StreakResponseDto } from '../../models/dto/Streak.dto';
+import { WorkoutResponseDto } from '../../models/dto/Workout.dto';
+import { NotificationResponseDto } from '../../models/dto/Notification.dto';
+import { homePageStyles as styles } from '../../styles/home/homePage.styles';
+import { getRelativeTime, getGreeting } from '../../utils/timeFormat';
 import {
   ProgressRings,
   BadgesCard,
   LeaderboardPreviewCard,
   XpToast,
   LevelUpModal
-} from '../components/gamification';
+} from '../../components/gamification';
 
 interface TomiNeed {
   icon: string;
@@ -44,28 +44,71 @@ export default function HomePage() {
   // TOMI effects for XP and level up animations
   const tomiEffects = useTomiEffects(data?.tomi);
 
-  // Refresh data when user becomes available (e.g., after navigation from workout)
-  useEffect(() => {
-    if (user) {
-      console.log('[HomePage] 👤 User loaded, triggering refresh...');
-      console.log('[HomePage]   - User ID:', user.userId);
-      refresh();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId]);
+  // Track last refresh time to prevent rapid re-fetches
+  const lastRefreshRef = useRef<number>(0);
+  const MIN_REFRESH_INTERVAL = 2000; // 2 seconds minimum between refreshes
+
+  // Memoize derived data to prevent unnecessary recalculations (must be before conditional returns)
+  const tomiData = data?.tomi || null;
+  const dashboardMetrics = useMemo(() => {
+    const streaks: StreakResponseDto[] = data?.streaks || [];
+    const recentWorkouts: WorkoutResponseDto[] = data?.recentWorkouts || [];
+    const notifications: NotificationResponseDto[] = [];
+    
+    // TODO: Implement activeGoal when goal endpoint includes nested goalStatus and goalType
+    const activeGoal: GoalResponseDto | null = null;
+    const workoutStreak = streaks.find((s) => s.metric === 'workout');
+    const todayWorkouts = recentWorkouts.filter((w) => {
+      const today = new Date().toDateString();
+      const workoutDate = new Date(w.start).toDateString();
+      return today === workoutDate;
+    });
+
+    const dailyGoalProgress = 0;
+    const xpProgress = tomiData?.xpProgress ?? 0;
+    const nextLevelXp = tomiData?.nextLevelXp ?? 100;
+
+    const tomiNeeds: TomiNeed[] = tomiData ? [
+      { icon: '🏃', label: 'Activity', status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
+      { icon: '🍽️', label: 'Nutrition', status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
+      { icon: '❤️', label: 'Health', status: 'good', value: tomiData.happinessLevel || 0 },
+      { icon: '🌙', label: 'Rest', status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
+    ] : [
+      { icon: '🏃', label: 'Activity', status: 'good', value: 50 },
+      { icon: '🍽️', label: 'Nutrition', status: 'good', value: 50 },
+      { icon: '❤️', label: 'Health', status: 'good', value: 50 },
+      { icon: '🌙', label: 'Rest', status: 'good', value: 50 },
+    ];
+
+    return {
+      streaks,
+      recentWorkouts,
+      notifications,
+      activeGoal,
+      workoutStreak,
+      todayWorkouts,
+      dailyGoalProgress,
+      xpProgress,
+      nextLevelXp,
+      tomiNeeds,
+    };
+  }, [data, tomiData]);
 
   // Refresh data when screen comes into focus (e.g., returning from workout)
+  // Only refresh if enough time has passed since last refresh
   useFocusEffect(
     useCallback(() => {
-      console.log('[HomePage] 🔄 Screen focused, checking if refresh needed');
-      if (user) {
-        console.log('[HomePage] ✓ User found, refreshing dashboard data...');
-        console.log('[HomePage]   - User ID:', user.userId);
-        console.log('[HomePage]   - Current XP:', data?.tomi?.xp || 'N/A');
-        console.log('[HomePage]   - Current Level:', data?.tomi?.level || 'N/A');
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshRef.current;
+      
+      if (user && timeSinceLastRefresh >= MIN_REFRESH_INTERVAL) {
+        console.log('[HomePage] 🔄 Refreshing dashboard (last refresh:', timeSinceLastRefresh, 'ms ago)');
+        lastRefreshRef.current = now;
         refresh();
-      } else {
+      } else if (!user) {
         console.log('[HomePage] ⚠️ No user, skipping refresh');
+      } else {
+        console.log('[HomePage] ⏭️ Skipping refresh (too soon:', timeSinceLastRefresh, 'ms)');
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.userId])
@@ -94,54 +137,8 @@ export default function HomePage() {
     );
   }
 
-  // Extract data from dashboard response
-  const tomiData = data.tomi || null;
-  
-  // Log data for debugging
-  console.log('[HomePage] 🏠 Dashboard data loaded:');
-  console.log('[HomePage]   - TOMI:', tomiData ? `${tomiData.nickname} Lv.${tomiData.level}` : 'none');
-  console.log('[HomePage]   - Streaks:', data.streaks?.length || 0);
-  console.log('[HomePage]   - Recent workouts:', data.recentWorkouts?.length || 0);
-  console.log('[HomePage] 🎮 Gamification data:');
-  console.log('[HomePage]   - Loading:', gamificationLoading);
-  console.log('[HomePage]   - Earned badges:', gamificationData?.badgesEarned?.length || 0);
-  console.log('[HomePage]   - Upcoming badges:', gamificationData?.badgesUpcoming?.length || 0);
-  console.log('[HomePage]   - Progress rings:', gamificationData?.progressRings?.length || 0);
-  console.log('[HomePage]   - Leaderboards:', gamificationData?.leaderboards?.length || 0);
-  
-  // Use actual dashboard data
-  const streaks: StreakResponseDto[] = data.streaks || [];
-  const recentWorkouts: WorkoutResponseDto[] = data.recentWorkouts || [];
-  const notifications: NotificationResponseDto[] = [];
-  
-  // TODO: Implement activeGoal when goal endpoint includes nested goalStatus and goalType
-  const activeGoal: GoalResponseDto | null = null;
-  const workoutStreak = streaks.find((s) => s.metric === 'workout');
-  const todayWorkouts = recentWorkouts.filter((w) => {
-    const today = new Date().toDateString();
-    const workoutDate = new Date(w.start).toDateString();
-    return today === workoutDate;
-  });
-
-  // Daily goal progress
-  const dailyGoalProgress = 0; // TODO: Calculate when activeGoal is available
-
-  // XP progress comes from backend
-  const xpProgress = tomiData?.xpProgress ?? 0;
-  const nextLevelXp = tomiData?.nextLevelXp ?? 100;
-
-  // TOMI needs status - show defaults if no data
-  const tomiNeeds: TomiNeed[] = tomiData ? [
-    { icon: '🏃', label: 'Activity', status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
-    { icon: '🍽️', label: 'Nutrition', status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
-    { icon: '❤️', label: 'Health', status: 'good', value: tomiData.happinessLevel || 0 },
-    { icon: '🌙', label: 'Rest', status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
-  ] : [
-    { icon: '🏃', label: 'Activity', status: 'good', value: 50 },
-    { icon: '🍽️', label: 'Nutrition', status: 'good', value: 50 },
-    { icon: '❤️', label: 'Health', status: 'good', value: 50 },
-    { icon: '🌙', label: 'Rest', status: 'good', value: 50 },
-  ];
+  // Destructure metrics after early returns
+  const { streaks, recentWorkouts, notifications, activeGoal, workoutStreak, todayWorkouts, dailyGoalProgress, xpProgress, nextLevelXp, tomiNeeds } = dashboardMetrics;
 
   const handleNeedPress = (need: TomiNeed, index: number) => {
     if (!tomiData) return;
