@@ -16,7 +16,9 @@ export interface UserAvatarResponseDto {
   // Avatar details (when fetched with avatar join)
   avatarName?: string;
   imageUrl?: string;
-  animationUrl?: string;
+  animationIdleUrl?: string;          // Idle / resting state GIF
+  animationActiveUrl?: string;        // Active / happy state GIF
+  animationPostWorkoutUrl?: string;   // Post-workout celebration GIF
   themeColor?: string;
   // XP progression (calculated on backend)
   currentLevelXp?: number;

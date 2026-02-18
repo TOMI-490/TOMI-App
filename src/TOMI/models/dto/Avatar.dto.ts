@@ -2,7 +2,9 @@ export interface AvatarResponseDto {
   avatarId: number;
   name: string;
   imageURL: string;
-  animationURL: string;
+  animationIdleURL?: string;         // Idle / resting state GIF
+  animationActiveURL?: string;       // Active / happy state GIF
+  animationPostWorkoutURL?: string;  // Post-workout celebration GIF
   themeColor: string;
   isDefault: boolean;
   createdBy: string;
@@ -12,7 +14,9 @@ export interface AvatarResponseDto {
 export interface AvatarCreateDto {
   name: string;
   imageURL: string;
-  animationURL: string;
+  animationIdleURL?: string;
+  animationActiveURL?: string;
+  animationPostWorkoutURL?: string;
   themeColor: string;
   isDefault?: boolean;
   createdBy: string;
@@ -21,7 +25,9 @@ export interface AvatarCreateDto {
 export interface AvatarUpdateDto {
   name?: string;
   imageURL?: string;
-  animationURL?: string;
+  animationIdleURL?: string;
+  animationActiveURL?: string;
+  animationPostWorkoutURL?: string;
   themeColor?: string;
   isDefault?: boolean;
 }

@@ -1,18 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { workoutTypeService } from '../services/resources/workoutType.service';
-import { workoutService } from '../services/resources/workout.service';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useAuth } from '../contexts/AuthContext';
-import useBLE from '../hooks/useBLE';
-import { smartwatchBleConfig } from '../config/SmartwatchBleConfig';
-import type { WorkoutTypeResponseDto } from '../models/dto/WorkoutType.dto';
-import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
-import { styles } from '../styles/workout/workoutStartScreen.styles';
+import { useTranslation } from '../../locales/i18n';
+import { workoutTypeService } from '../../services/resources/workoutType.service';
+import { workoutService } from '../../services/resources/workout.service';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useAuth } from '../../contexts/AuthContext';
+import useBLE from '../../hooks/useBLE';
+import { smartwatchBleConfig } from '../../config/smartwatchBleConfig';
+import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import type { SmartwatchSensorData } from '../../models/smartwatchSensorData';
+import { styles } from '../../styles/workout/workoutStartScreen.styles';
 
-const WorkoutStartScreen: React.FC = () => {
+type WorkoutIconDef =
+  | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
+  | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] }
+  | { lib: 'FontAwesome5'; name: React.ComponentProps<typeof FontAwesome5>['name'] };
+
+function getWorkoutIcon(typeName: string): WorkoutIconDef {
+  const lower = typeName.toLowerCase();
+  if (lower.includes('run'))      return { lib: 'MaterialCommunityIcons', name: 'run' };
+  if (lower.includes('walk'))     return { lib: 'MaterialCommunityIcons', name: 'walk' };
+  if (lower.includes('cycl') || lower.includes('bike')) return { lib: 'MaterialCommunityIcons', name: 'bike' };
+  if (lower.includes('swim'))     return { lib: 'MaterialCommunityIcons', name: 'swim' };
+  if (lower.includes('yoga'))     return { lib: 'MaterialCommunityIcons', name: 'yoga' };
+  if (lower.includes('strength') || lower.includes('weight')) return { lib: 'Ionicons', name: 'barbell-outline' };
+  if (lower.includes('hiit') || lower.includes('interval'))   return { lib: 'MaterialCommunityIcons', name: 'lightning-bolt' };
+  if (lower.includes('stretch') || lower.includes('flex'))    return { lib: 'MaterialCommunityIcons', name: 'human-handsup' };
+  if (lower.includes('box') || lower.includes('martial'))     return { lib: 'MaterialCommunityIcons', name: 'boxing-glove' };
+  if (lower.includes('climb'))    return { lib: 'MaterialCommunityIcons', name: 'image-filter-hdr' };
+  if (lower.includes('dance'))    return { lib: 'MaterialCommunityIcons', name: 'music-note' };
+  if (lower.includes('row'))      return { lib: 'MaterialCommunityIcons', name: 'rowing' };
+  if (lower.includes('ski'))      return { lib: 'FontAwesome5', name: 'skiing' };
+  if (lower.includes('soccer') || lower.includes('football')) return { lib: 'Ionicons', name: 'football-outline' };
+  if (lower.includes('basket'))   return { lib: 'Ionicons', name: 'basketball-outline' };
+  if (lower.includes('tennis'))   return { lib: 'Ionicons', name: 'tennisball-outline' };
+  // default
+  return { lib: 'Ionicons', name: 'fitness-outline' };
+}
+
+function WorkoutIcon({ def, size, color }: { def: WorkoutIconDef; size: number; color: string }) {
+  if (def.lib === 'Ionicons')               return <Ionicons name={def.name as any} size={size} color={color} />;
+  if (def.lib === 'MaterialCommunityIcons') return <MaterialCommunityIcons name={def.name as any} size={size} color={color} />;
+  return <FontAwesome5 name={def.name as any} size={size} color={color} />;
+}
+
+const WorkoutStartScreen = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const { authId } = useAuth();
   const { user, loading: userLoading } = useCurrentUser(authId || undefined);
   
@@ -42,7 +78,7 @@ const WorkoutStartScreen: React.FC = () => {
       setWorkoutXpValues(xpValues);
     } catch (error) {
       console.error('Error loading workout types:', error);
-      Alert.alert('Error', 'Failed to load workout types');
+      Alert.alert(t('common.error'), t('workout.errorLoadingTypes'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +86,7 @@ const WorkoutStartScreen: React.FC = () => {
 
   const handleStartWorkout = async (workoutTypeId: number) => {
     if (!user) {
-      Alert.alert('Error', 'User not found. Please log in.');
+      Alert.alert(t('common.error'), t('workout.errorUserNotFound'));
       return;
     }
 
@@ -63,9 +99,9 @@ const WorkoutStartScreen: React.FC = () => {
       
       if (!hasPermission) {
         Alert.alert(
-          'Bluetooth Required',
-          'TOMI needs Bluetooth access to connect to your smartwatch. Please enable Bluetooth in Settings.',
-          [{ text: 'OK' }]
+          t('workout.bluetoothRequired'),
+          t('workout.bluetoothMessage'),
+          [{ text: t('workout.ok') }]
         );
         setStarting(false);
         return;
@@ -100,7 +136,7 @@ const WorkoutStartScreen: React.FC = () => {
       });
     } catch (error) {
       console.error('Error starting workout:', error);
-      Alert.alert('Error', 'Failed to start workout. Please try again.');
+      Alert.alert(t('common.error'), t('workout.errorStarting'));
     } finally {
       setStarting(false);
     }
@@ -118,7 +154,7 @@ const WorkoutStartScreen: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>Loading workout types...</Text>
+        <Text style={styles.loadingText}>{t('workout.loadingTypes')}</Text>
       </View>
     );
   }
@@ -127,7 +163,7 @@ const WorkoutStartScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       {/* Quick Start Card */}
       <View style={styles.quickStartCard}>
-        <Text style={styles.quickStartTitle}>Quick Start</Text>
+        <Text style={styles.quickStartTitle}>{t('workout.quickStart')}</Text>
         <TouchableOpacity
           style={styles.quickStartButton}
           onPress={handleQuickStart}
@@ -138,7 +174,7 @@ const WorkoutStartScreen: React.FC = () => {
           ) : (
             <>
               <Text style={styles.playIcon}>▶</Text>
-              <Text style={styles.quickStartButtonText}>Start Workout</Text>
+              <Text style={styles.quickStartButtonText}>{t('workout.startWorkout')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -146,7 +182,7 @@ const WorkoutStartScreen: React.FC = () => {
 
       {/* Choose Workout Type */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Choose Workout Type</Text>
+        <Text style={styles.sectionTitle}>{t('workout.chooseType')}</Text>
         <View style={styles.grid}>
           {workoutTypes.map((type) => (
             <TouchableOpacity
@@ -156,7 +192,7 @@ const WorkoutStartScreen: React.FC = () => {
               disabled={starting}
             >
               <View style={styles.iconPlaceholder}>
-                <Text style={styles.iconText}>🏃</Text>
+                <WorkoutIcon def={getWorkoutIcon(type.name)} size={30} color="#4A90E2" />
               </View>
               <Text style={styles.workoutName}>{type.name}</Text>
               <View style={styles.xpBadge}>
@@ -167,7 +203,7 @@ const WorkoutStartScreen: React.FC = () => {
                 onPress={() => handleStartWorkout(type.workoutTypeId)}
                 disabled={starting}
               >
-                <Text style={styles.startButtonText}>Start</Text>
+                <Text style={styles.startButtonText}>{t('workout.start')}</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           ))}

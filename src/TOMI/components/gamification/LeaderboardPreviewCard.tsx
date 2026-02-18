@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LeaderboardPreview } from '../../services/gamification';
 import { useTranslation } from '../../locales/i18n';
 import { leaderboardPreviewCardStyles as styles } from '../../styles/gamification/leaderboardPreviewCard.styles';
@@ -19,13 +20,10 @@ export const LeaderboardPreviewCard: React.FC<LeaderboardPreviewCardProps> = ({ 
   const leaderboard = leaderboards.find(lb => lb.scope === 'friends') || leaderboards[0];
   if (!leaderboard) return null;
 
-  const getMedalEmoji = (rank: number) => {
-    switch (rank) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      default: return `#${rank}`;
-    }
+  const getMedalIcon = (rank: number) => {
+    const color = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : '#8E8E93';
+    if (rank <= 3) return <Ionicons name="medal" size={20} color={color} />;
+    return <Text style={styles.medal}>{`#${rank}`}</Text>;
   };
 
   const getScopeLabel = (scope: string) => {
@@ -36,7 +34,10 @@ export const LeaderboardPreviewCard: React.FC<LeaderboardPreviewCardProps> = ({ 
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>🏁 {leaderboard.name}</Text>
+      <View style={styles.sectionTitleRow}>
+        <Ionicons name="podium-outline" size={16} color="#007AFF" style={{ marginRight: 6 }} />
+        <Text style={styles.sectionTitle}>{leaderboard.name}</Text>
+      </View>
       <Text style={styles.scope}>
         {getScopeLabel(leaderboard.scope)}
       </Text>
@@ -52,7 +53,7 @@ export const LeaderboardPreviewCard: React.FC<LeaderboardPreviewCardProps> = ({ 
                 entry.userId === leaderboard.userEntry?.userId && styles.userEntry,
               ]}
             >
-              <Text style={styles.medal}>{getMedalEmoji(entry.rank)}</Text>
+              {getMedalIcon(entry.rank)}
               <View style={styles.entryInfo}>
                 <Text style={styles.entryName} numberOfLines={1}>
                   {entry.userName}
@@ -69,7 +70,7 @@ export const LeaderboardPreviewCard: React.FC<LeaderboardPreviewCardProps> = ({ 
       {leaderboard.userEntry &&
         !leaderboard.top3.some((e) => e.userId === leaderboard.userEntry!.userId) && (
           <View style={[styles.entry, styles.userEntry, styles.userEntryBelow]}>
-            <Text style={styles.medal}>{getMedalEmoji(leaderboard.userEntry.rank)}</Text>
+            {getMedalIcon(leaderboard.userEntry.rank)}
             <View style={styles.entryInfo}>
               <Text style={styles.entryName}>
                 {leaderboard.userEntry.userName} ({t('gamification.you')})

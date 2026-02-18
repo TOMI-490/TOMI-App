@@ -2,10 +2,18 @@ import * as SQLite from 'expo-sqlite';
 import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
 
 // Local SQLite database for high-frequency sensor data
-const db = SQLite.openDatabaseSync('tomi_local.db');
+// Lazy-initialized to avoid holding the JS thread at module load time (New Architecture)
+let _db: SQLite.SQLiteDatabase | null = null;
+
+const getDb = (): SQLite.SQLiteDatabase => {
+  if (!_db) {
+    _db = SQLite.openDatabaseSync('tomi_local.db');
+  }
+  return _db;
+};
 
 export const initializeLocalDatabase = () => {
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS sensor_readings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       workout_id INTEGER NOT NULL,
@@ -46,7 +54,7 @@ export const sensorDataDb = {
     data: SmartwatchSensorData,
     timestamp: number = Date.now()
   ) => {
-    const result = db.runSync(
+    const result = getDb().runSync(
       `INSERT INTO sensor_readings (
         workout_id, timestamp,
         accel_x, accel_y, accel_z,
@@ -77,7 +85,7 @@ export const sensorDataDb = {
       timestamp: number;
     }>
   ) => {
-    db.withTransactionSync(() => {
+    getDb().withTransactionSync(() => {
       readings.forEach(({ data, timestamp }) => {
         sensorDataDb.insertReading(workoutId, data, timestamp);
       });
@@ -85,7 +93,7 @@ export const sensorDataDb = {
   },
 
   getByWorkout: (workoutId: number) => {
-    return db.getAllSync(
+    return getDb().getAllSync(
       `SELECT * FROM sensor_readings 
        WHERE workout_id = ? 
        ORDER BY timestamp ASC`,
@@ -94,7 +102,7 @@ export const sensorDataDb = {
   },
 
   getAverageHeartRate: (workoutId: number): number => {
-    const result = db.getFirstSync<{ avg_hr: number }>(
+    const result = getDb().getFirstSync<{ avg_hr: number }>(
       `SELECT AVG(heart_rate) as avg_hr 
        FROM sensor_readings 
        WHERE workout_id = ?`,
@@ -104,7 +112,7 @@ export const sensorDataDb = {
   },
 
   getAverageSpO2: (workoutId: number): number => {
-    const result = db.getFirstSync<{ avg_spo2: number }>(
+    const result = getDb().getFirstSync<{ avg_spo2: number }>(
       `SELECT AVG(spo2) as avg_spo2 
        FROM sensor_readings 
        WHERE workout_id = ?`,
@@ -114,7 +122,7 @@ export const sensorDataDb = {
   },
 
   getMaxHeartRate: (workoutId: number): number => {
-    const result = db.getFirstSync<{ max_hr: number }>(
+    const result = getDb().getFirstSync<{ max_hr: number }>(
       `SELECT MAX(heart_rate) as max_hr 
        FROM sensor_readings 
        WHERE workout_id = ?`,
@@ -124,7 +132,7 @@ export const sensorDataDb = {
   },
 
   getCount: (workoutId: number): number => {
-    const result = db.getFirstSync<{ count: number }>(
+    const result = getDb().getFirstSync<{ count: number }>(
       `SELECT COUNT(*) as count 
        FROM sensor_readings 
        WHERE workout_id = ?`,
@@ -134,7 +142,7 @@ export const sensorDataDb = {
   },
 
   deleteByWorkout: (workoutId: number) => {
-    return db.runSync(
+    return getDb().runSync(
       `DELETE FROM sensor_readings WHERE workout_id = ?`,
       [workoutId]
     );
@@ -142,7 +150,7 @@ export const sensorDataDb = {
 
   // Get unsynced readings for cloud upload
   getUnsyncedReadings: (workoutId: number) => {
-    return db.getAllSync(
+    return getDb().getAllSync(
       `SELECT * FROM sensor_readings 
        WHERE workout_id = ? AND synced_to_cloud = 0
        ORDER BY timestamp ASC`,
@@ -152,9 +160,9 @@ export const sensorDataDb = {
 
   // Mark readings as synced
   markAsSynced: (readingIds: number[]) => {
-    db.withTransactionSync(() => {
+    getDb().withTransactionSync(() => {
       readingIds.forEach(id => {
-        db.runSync(
+        getDb().runSync(
           `UPDATE sensor_readings SET synced_to_cloud = 1 WHERE id = ?`,
           [id]
         );

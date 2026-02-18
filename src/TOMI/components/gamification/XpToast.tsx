@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { xpToastStyles as styles } from '../../styles/gamification/xpToast.styles';
 
 interface XpToastProps {
@@ -62,7 +63,7 @@ export const XpToast: React.FC<XpToastProps> = ({ xpDelta, visible, onDismiss })
         },
       ]}
     >
-      <Text style={styles.icon}>✨</Text>
+      <Ionicons name="flash" size={16} color="#FFD700" style={{ marginRight: 4 }} />
       <Text style={styles.text}>+{xpDelta} XP</Text>
     </Animated.View>
   );

@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field
 class AvatarCreateDTO(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     imageURL: str = Field(..., min_length=1)
-    animationURL: str = Field(..., min_length=1)
+    animationIdleURL: Optional[str] = Field(None, min_length=1)
+    animationActiveURL: Optional[str] = Field(None, min_length=1)
+    animationPostWorkoutURL: Optional[str] = Field(None, min_length=1)
     themeColor: str = Field(..., pattern=r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$')
     isDefault: bool = False
 
@@ -14,7 +16,9 @@ class AvatarCreateDTO(BaseModel):
 class AvatarUpdateDTO(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     imageURL: Optional[str] = Field(None, min_length=1)
-    animationURL: Optional[str] = Field(None, min_length=1)
+    animationIdleURL: Optional[str] = Field(None, min_length=1)
+    animationActiveURL: Optional[str] = Field(None, min_length=1)
+    animationPostWorkoutURL: Optional[str] = Field(None, min_length=1)
     themeColor: Optional[str] = Field(None, pattern=r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$')
     isDefault: Optional[bool] = None
 
@@ -23,7 +27,9 @@ class AvatarResponseDTO(BaseModel):
     avatarId: Optional[int] = None
     name: str
     imageURL: str
-    animationURL: str
+    animationIdleURL: Optional[str] = None
+    animationActiveURL: Optional[str] = None
+    animationPostWorkoutURL: Optional[str] = None
     themeColor: str
     isDefault: bool
     createdAt: Optional[datetime] = None

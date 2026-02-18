@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
@@ -233,7 +234,7 @@ export default function FriendVisitPage() {
           {/* Streak Badge */}
           {dashboardSummary.streak.days > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
+              <Ionicons name="flame" size={16} color="#FF6B35" style={{ marginRight: 4 }} />
               <Text style={styles.streakText}>
                 {t('friendProfile.streakDays').replace('{days}', dashboardSummary.streak.days.toString())}
               </Text>

@@ -56,43 +56,104 @@ export const homePageStyles = StyleSheet.create({
   card: {
     backgroundColor: '#FFF',
     borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
+    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E5E5E7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  cardInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  levelText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginBottom: 10,
+  },
+  xpSection: {
+    marginBottom: 10,
   },
   progressBar: {
     width: '100%',
     height: 6,
     backgroundColor: '#E5E5E7',
     borderRadius: 3,
-    marginBottom: 20,
+    marginBottom: 4,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#007AFF',
     borderRadius: 3,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#8E8E93',
-    marginBottom: 16,
-    overflow: 'hidden',
+  xpLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+  },
+  streakPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3ED',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  streakPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF6B35',
+  },
+  needsDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F2',
+    marginVertical: 12,
   },
   needs: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-around',
   },
   need: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F5F5F7',
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F7',
+    marginHorizontal: 4,
+  },
+  needLabel: {
+    fontSize: 10,
+    color: '#666',
+    fontWeight: '500',
+  },
+  needLabelWarning: {
+    color: '#FFF',
+  },
+  needWarning: {
+    backgroundColor: '#FF9500',
   },
   needIcon: {
     fontSize: 22,
@@ -100,12 +161,6 @@ export const homePageStyles = StyleSheet.create({
   identity: {
     alignItems: 'center',
     marginBottom: 16,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
@@ -244,9 +299,6 @@ export const homePageStyles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  needWarning: {
-    backgroundColor: '#FF9500',
   },
   xpText: {
     fontSize: 14,

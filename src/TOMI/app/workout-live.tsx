@@ -1,5 +1,5 @@
-// export { default } from '../pages/LiveWorkoutScreen';
+// export { default } from '../pages/workout/LiveWorkoutScreen';
 
-import LiveWorkoutScreen from '../pages/LiveWorkoutScreen';
+import LiveWorkoutScreen from '../pages/workout/LiveWorkoutScreen';
 
 export default LiveWorkoutScreen;

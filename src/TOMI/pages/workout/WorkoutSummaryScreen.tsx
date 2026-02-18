@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from '../../locales/i18n';
 import { workoutService } from '../../services/resources/workout.service';
 import type { WorkoutSummaryDto } from '../../models/dto/Workout.dto';
 import { styles } from '../../styles/workout/workoutSummaryScreen.styles';
+import { avatarStateStore } from '../../utils/avatarStateStore';
 
 const WorkoutSummaryScreen: React.FC = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const trackedDistance = params.distance ? Number(params.distance) : undefined;
@@ -94,6 +98,9 @@ const WorkoutSummaryScreen: React.FC = () => {
     console.log('[WorkoutSummary] 📱 Navigating to home page...');
     console.log('[WorkoutSummary]   - XP earned:', summary?.xp || 0);
     
+    // Signal HomePage to play post-workout GIF before navigating
+    avatarStateStore.triggerPostWorkout();
+
     // Small delay to ensure backend updates are committed
     console.log('[WorkoutSummary] ⏳ Waiting for database updates to complete...');
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -107,7 +114,7 @@ const WorkoutSummaryScreen: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>Loading workout summary...</Text>
+        <Text style={styles.loadingText}>{t('workout.summaryLoading')}</Text>
       </View>
     );
   }
@@ -115,9 +122,9 @@ const WorkoutSummaryScreen: React.FC = () => {
   if (!summary) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Failed to load workout summary</Text>
+        <Text style={styles.errorText}>{t('workout.summaryError')}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadWorkoutSummary}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('workout.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -127,27 +134,27 @@ const WorkoutSummaryScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       {/* Success Header */}
       <View style={styles.header}>
-        <Text style={styles.successIcon}>🎉</Text>
-        <Text style={styles.title}>Workout Complete!</Text>
+        <Ionicons name="checkmark-circle" size={60} color="#34C759" style={{ marginBottom: 10 }} />
+        <Text style={styles.title}>{t('workout.summaryComplete')}</Text>
         <Text style={styles.subtitle}>{summary.workoutType.name}</Text>
       </View>
 
       {/* Primary Stats */}
       <View style={styles.primaryStats}>
         <View style={styles.primaryStat}>
-          <Text style={styles.primaryStatLabel}>Duration</Text>
+          <Text style={styles.primaryStatLabel}>{t('workout.summaryDuration')}</Text>
           <Text style={styles.primaryStatValue}>{formatDuration(summary.duration)}</Text>
         </View>
 
         {summary.distance !== undefined && (
           <View style={styles.primaryStat}>
-            <Text style={styles.primaryStatLabel}>Distance</Text>
+            <Text style={styles.primaryStatLabel}>{t('workout.summaryDistance')}</Text>
             <Text style={styles.primaryStatValue}>{summary.distance.toFixed(2)} km</Text>
           </View>
         )}
 
         <View style={styles.primaryStat}>
-          <Text style={styles.primaryStatLabel}>XP Earned</Text>
+          <Text style={styles.primaryStatLabel}>{t('workout.summaryXpEarned')}</Text>
           <Text style={styles.primaryStatValue}>+{summary.xp || 0}</Text>
         </View>
       </View>
@@ -155,46 +162,46 @@ const WorkoutSummaryScreen: React.FC = () => {
       {/* Secondary Stats */}
       <View style={styles.secondaryStats}>
         <View style={styles.statCard}>
-          <Text style={styles.statCardIcon}>🔥</Text>
+          <Ionicons name="flame" size={30} color="#FF6B35" style={{ marginBottom: 8 }} />
           <Text style={styles.statCardValue}>{summary.calories || 0}</Text>
-          <Text style={styles.statCardLabel}>Calories</Text>
+          <Text style={styles.statCardLabel}>{t('workout.summaryCalories')}</Text>
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statCardIcon}>⏱</Text>
+          <Ionicons name="time-outline" size={30} color="#4A90E2" style={{ marginBottom: 8 }} />
           <Text style={styles.statCardValue}>{formatTime(summary.workout.start)}</Text>
-          <Text style={styles.statCardLabel}>Start Time</Text>
+          <Text style={styles.statCardLabel}>{t('workout.summaryStartTime')}</Text>
         </View>
 
         {summary.distance !== undefined && summary.duration > 0 && (
           <View style={styles.statCard}>
-            <Text style={styles.statCardIcon}>📊</Text>
+            <Ionicons name="speedometer-outline" size={30} color="#4A90E2" style={{ marginBottom: 8 }} />
             <Text style={styles.statCardValue}>
               {((summary.duration / 60) / summary.distance).toFixed(2)}
             </Text>
-            <Text style={styles.statCardLabel}>Avg Pace (min/km)</Text>
+            <Text style={styles.statCardLabel}>{t('workout.summaryAvgPace')}</Text>
           </View>
         )}
       </View>
 
       {/* Workout Details */}
       <View style={styles.detailsCard}>
-        <Text style={styles.detailsTitle}>Workout Details</Text>
+        <Text style={styles.detailsTitle}>{t('workout.summaryDetailsTitle')}</Text>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date</Text>
+          <Text style={styles.detailLabel}>{t('workout.summaryDate')}</Text>
           <Text style={styles.detailValue}>{formatDate(summary.workout.start)}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Type</Text>
+          <Text style={styles.detailLabel}>{t('workout.summaryType')}</Text>
           <Text style={styles.detailValue}>{summary.workoutType.name}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Started</Text>
+          <Text style={styles.detailLabel}>{t('workout.summaryStarted')}</Text>
           <Text style={styles.detailValue}>{formatTime(summary.workout.start)}</Text>
         </View>
         {summary.workout.end && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Ended</Text>
+            <Text style={styles.detailLabel}>{t('workout.summaryEnded')}</Text>
             <Text style={styles.detailValue}>{formatTime(summary.workout.end)}</Text>
           </View>
         )}
@@ -203,7 +210,7 @@ const WorkoutSummaryScreen: React.FC = () => {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-          <Text style={styles.doneButtonText}>Done</Text>
+          <Text style={styles.doneButtonText}>{t('workout.done')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
