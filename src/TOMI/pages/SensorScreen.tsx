@@ -1,11 +1,12 @@
 // screens/SensorScreen.tsx - UPDATED VERSION
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import useBLE from '../hooks/useBLE';
 import { useSensorDataCollection } from '../hooks/useSensorDataCollection';
-import { smartwatchBleConfig } from '../config/SmartwatchBleConfig';
+import { smartwatchBleConfig } from '../config/smartwatchBleConfig';
 import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
-import BLEPopup from '../components/ble/BLEPopup';
+import BLEPopup from '../components/ble/blePopup';
 
 /**
  * 🧪 SENSOR TEST SCREEN
@@ -111,7 +112,10 @@ export default function SensorScreen() {
   // ==========================================
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>🧪 Sensor Test Screen</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
+        <Ionicons name="flask" size={24} color="#4A90E2" />
+        <Text style={styles.title}>Sensor Test Screen</Text>
+      </View>
 
       {/* ========== CONNECTION STATUS ========== */}
       <View style={styles.card}>
@@ -160,7 +164,10 @@ export default function SensorScreen() {
       {/* ========== DATA WARNING ========== */}
       {dataSourceWarning && (
         <View style={styles.warningCard}>
-          <Text style={styles.warningText}>⚠️ {dataSourceWarning}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="warning" size={18} color="#FF9800" />
+            <Text style={styles.warningText}>{dataSourceWarning}</Text>
+          </View>
         </View>
       )}
 

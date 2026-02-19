@@ -133,6 +133,27 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
     setIsScanning(true);
     setError(null);
 
+    // First, check for already-connected devices (paired in iOS Settings)
+    const serviceUUIDs = config.serviceUUID ? [config.serviceUUID] : [];
+    bleManager.connectedDevices(serviceUUIDs).then((connectedDevices) => {
+      console.log('[BLE] Already connected devices:', connectedDevices.map(d => d.name));
+      connectedDevices.forEach((device) => {
+        if (config.deviceNameFilter?.(device.name ?? device.localName) ?? true) {
+          setDevices((prev) =>
+            prev.some((d) => d.id === device.id) ? prev : [...prev, device]
+          );
+        }
+      });
+    }).catch((e) => {
+      console.warn('[BLE] Error checking connected devices:', e);
+    });
+
+    // Also check known devices (previously bonded)
+    bleManager.devices([]).then((knownDevices) => {
+      console.log('[BLE] Known devices:', knownDevices.map(d => d.name));
+    }).catch(() => {});
+
+    // Then do a normal scan for advertising devices
     scanForDevices(
       (device) =>
         config.deviceNameFilter?.(device.name ?? device.localName) ?? true,

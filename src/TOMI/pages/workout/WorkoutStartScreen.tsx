@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import useBLE from '../../hooks/useBLE';
 import { smartwatchBleConfig } from '../../config/smartwatchBleConfig';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
-import type { SmartwatchSensorData } from '../../models/smartwatchSensorData';
+import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
 import { styles } from '../../styles/workout/workoutStartScreen.styles';
 
 type WorkoutIconDef =
@@ -56,6 +56,7 @@ const WorkoutStartScreen = () => {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
+  const startingRef = useRef(false); // ref-based guard against double-tap
 
   // Initialize BLE
   const { requestPermissions, bluetoothState } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
@@ -85,12 +86,16 @@ const WorkoutStartScreen = () => {
   };
 
   const handleStartWorkout = async (workoutTypeId: number) => {
+    // Ref-based guard: prevent double-tap before React state updates
+    if (startingRef.current) return;
+
     if (!user) {
       Alert.alert(t('common.error'), t('workout.errorUserNotFound'));
       return;
     }
 
     try {
+      startingRef.current = true;
       setStarting(true);
       
       // Request Bluetooth permissions before starting workout
@@ -138,6 +143,7 @@ const WorkoutStartScreen = () => {
       console.error('Error starting workout:', error);
       Alert.alert(t('common.error'), t('workout.errorStarting'));
     } finally {
+      startingRef.current = false;
       setStarting(false);
     }
   };
@@ -173,10 +179,31 @@ const WorkoutStartScreen = () => {
             <ActivityIndicator color="#FFF" />
           ) : (
             <>
-              <Text style={styles.playIcon}>▶</Text>
+              <Ionicons name="play" size={20} color="#FFF" />
               <Text style={styles.quickStartButtonText}>{t('workout.startWorkout')}</Text>
             </>
           )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Sensor Test Button */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#2C2C3E',
+            borderRadius: 12,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+          }}
+          onPress={() => router.push('/(tabs)/workout/sensor')}
+        >
+          <Ionicons name="bluetooth" size={22} color="#4A90E2" />
+          <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
+            Sensor / BLE Test
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -185,11 +212,9 @@ const WorkoutStartScreen = () => {
         <Text style={styles.sectionTitle}>{t('workout.chooseType')}</Text>
         <View style={styles.grid}>
           {workoutTypes.map((type) => (
-            <TouchableOpacity
+            <View
               key={type.workoutTypeId}
               style={styles.workoutCard}
-              onPress={() => handleStartWorkout(type.workoutTypeId)}
-              disabled={starting}
             >
               <View style={styles.iconPlaceholder}>
                 <WorkoutIcon def={getWorkoutIcon(type.name)} size={30} color="#4A90E2" />
@@ -203,9 +228,13 @@ const WorkoutStartScreen = () => {
                 onPress={() => handleStartWorkout(type.workoutTypeId)}
                 disabled={starting}
               >
-                <Text style={styles.startButtonText}>{t('workout.start')}</Text>
+                {starting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.startButtonText}>{t('workout.start')}</Text>
+                )}
               </TouchableOpacity>
-            </TouchableOpacity>
+            </View>
           ))}
         </View>
       </View>

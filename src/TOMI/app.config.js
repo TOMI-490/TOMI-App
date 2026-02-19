@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
 module.exports = {
   expo: {
@@ -38,6 +38,14 @@ module.exports = {
     plugins: [
       "expo-router",
       "expo-sqlite",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["central"],
+          "bluetoothAlwaysPermission": "TOMI needs Bluetooth to connect to your smartwatch sensor during workouts."
+        }
+      ],
       [
         "expo-location",
         {

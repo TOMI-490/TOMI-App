@@ -12,7 +12,7 @@ import {
 
 import useBLE from "../../hooks/useBLE";
 import { UseBLEReturn } from "../../hooks/useBLE";
-import { smartwatchBleConfig } from "../../config/SmartwatchBleConfig";
+import { smartwatchBleConfig } from "../../config/smartwatchBleConfig";
 
 interface blePopupProps {
   visible: boolean;

@@ -37,43 +37,57 @@ function getMoodMetrics(avatar: {
   const happiness  = avatar.happinessLevel;
 
   const statusKeyFor = (val: number, inverted: boolean) => {
-    const effective = inverted ? val : 100 - val;
+    // inverted metrics (hunger/sleepiness/boredom): high val = bad → low goodness
+    // non-inverted (happiness): high val = good → high goodness
+    const effective = inverted ? 100 - val : val;
     if (effective < 30) return 'avatar.moodCritical';
     if (effective < 60) return 'avatar.moodNeedsCare';
     return 'avatar.moodGood';
   };
+
+  // Bar fill = wellness (low = bad, high = good)
+  // For inverted metrics: fillValue = 100 - raw  (high hunger → low bar)
+  // For happiness:        fillValue = raw         (high happiness → high bar)
+  const fillFor = (raw: number, inverted: boolean) => inverted ? 100 - raw : raw;
+  const colorFor = (fill: number) =>
+    fill < 30 ? '#FF3B30' : fill < 60 ? '#FF9500' : '#34C759';
+
+  const hFill  = fillFor(hunger, true);
+  const sFill  = fillFor(sleepiness, true);
+  const bFill  = fillFor(boredom, true);
+  const hpFill = fillFor(happiness, false);
 
   return [
     {
       iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' } as MoodIconDef,
       labelKey: 'avatar.moodHunger',
       value: hunger,
-      fillValue: hunger,
-      color: hunger > 70 ? '#FF3B30' : hunger > 40 ? '#FF9500' : '#34C759',
+      fillValue: hFill,
+      color: colorFor(hFill),
       statusKey: statusKeyFor(hunger, true),
     },
     {
       iconDef: { lib: 'Ionicons', name: 'moon-outline' } as MoodIconDef,
       labelKey: 'avatar.moodSleepiness',
       value: sleepiness,
-      fillValue: sleepiness,
-      color: sleepiness > 70 ? '#FF3B30' : sleepiness > 40 ? '#FF9500' : '#34C759',
+      fillValue: sFill,
+      color: colorFor(sFill),
       statusKey: statusKeyFor(sleepiness, true),
     },
     {
       iconDef: { lib: 'Ionicons', name: 'game-controller-outline' } as MoodIconDef,
       labelKey: 'avatar.moodBoredom',
       value: boredom,
-      fillValue: boredom,
-      color: boredom > 70 ? '#FF3B30' : boredom > 40 ? '#FF9500' : '#34C759',
+      fillValue: bFill,
+      color: colorFor(bFill),
       statusKey: statusKeyFor(boredom, true),
     },
     {
       iconDef: { lib: 'Ionicons', name: 'heart-outline' } as MoodIconDef,
       labelKey: 'avatar.moodHappiness',
       value: happiness,
-      fillValue: happiness,
-      color: happiness < 30 ? '#FF3B30' : happiness < 60 ? '#FF9500' : '#34C759',
+      fillValue: hpFill,
+      color: colorFor(hpFill),
       statusKey: statusKeyFor(happiness, false),
     },
   ];

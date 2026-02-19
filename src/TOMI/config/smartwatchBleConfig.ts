@@ -6,13 +6,10 @@ let dataBuffer = '';
 
 export const smartwatchBleConfig: bleConfig<SmartwatchSensorData> = {
   deviceNameFilter: (name) => {
-
-    // Temporarily accept ALL devices to see what's available
-    //console.log("Found device:", name); // This will log device names
-    //return true; // Accept everything for now
+    // Log ALL discovered devices for debugging
+    console.log("[BLE Filter] Found device:", name);
     if (!name) return false;
-    return name.includes("XIAO") || name.includes("nRF52840");
-
+    return name.includes("XIAO") || name.includes("nRF52840") || name.includes("nRF");
   },
 
   serviceUUID: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
