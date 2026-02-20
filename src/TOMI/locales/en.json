@@ -206,6 +206,8 @@
     "errorUserNotFound": "User not found. Please log in.",
     "bluetoothRequired": "Bluetooth Required",
     "bluetoothMessage": "TOMI needs Bluetooth access to connect to your smartwatch. Please enable Bluetooth in Settings.",
+    "bluetoothDeviceNotFound": "Device Not Found",
+    "bluetoothDeviceMessage": "Could not connect to your TOMI device within 15 seconds. Please ensure it is nearby and Bluetooth is enabled.",
     "errorStarting": "Failed to start workout. Please try again.",
     "ok": "OK",
     "endWorkoutTitle": "End Workout",

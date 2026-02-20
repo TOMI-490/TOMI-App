@@ -116,6 +116,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 6,
     width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   startButtonText: {
     color: '#FFF',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Device } from 'react-native-ble-plx';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../locales/i18n';
@@ -7,7 +8,7 @@ import { workoutTypeService } from '../../services/resources/workoutType.service
 import { workoutService } from '../../services/resources/workout.service';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAuth } from '../../contexts/AuthContext';
-import useBLE from '../../hooks/useBLE';
+import useBLE, { ConnectionStatus } from '../../hooks/useBLE';
 import { smartwatchBleConfig } from '../../config/smartwatchBleConfig';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
@@ -54,12 +55,34 @@ const WorkoutStartScreen = () => {
   
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
+  const [startingId, setStartingId] = useState<number | null>(null);
   const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
+  const [bleCountdown, setBleCountdown] = useState<number | null>(null);
   const startingRef = useRef(false); // ref-based guard against double-tap
+  const devicesRef = useRef<Device[]>([]);
+  const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Initialize BLE
-  const { requestPermissions, bluetoothState } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
+  const {
+    requestPermissions, bluetoothState, startScan, connectToDevice,
+    devices, connectionStatus, connectedDevice,
+  } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
+
+  // Keep refs in sync with BLE state (for use inside async callbacks)
+  useEffect(() => { devicesRef.current = devices; }, [devices]);
+  useEffect(() => { connectionStatusRef.current = connectionStatus; }, [connectionStatus]);
+
+  // If the XIAO is already connected (e.g. paired via Sensor screen), auto-populate devices ref
+  useEffect(() => {
+    if (
+      connectedDevice &&
+      (connectedDevice.name ?? connectedDevice.localName ?? '').toUpperCase().includes('XIAO') &&
+      !devicesRef.current.some((d) => d.id === connectedDevice.id)
+    ) {
+      devicesRef.current = [connectedDevice, ...devicesRef.current];
+    }
+  }, [connectedDevice]);
 
   useEffect(() => {
     loadWorkoutTypes();
@@ -96,7 +119,7 @@ const WorkoutStartScreen = () => {
 
     try {
       startingRef.current = true;
-      setStarting(true);
+      setStartingId(workoutTypeId);
       
       // Request Bluetooth permissions before starting workout
       console.log('[WorkoutStart] 📡 Requesting Bluetooth permissions...');
@@ -108,13 +131,108 @@ const WorkoutStartScreen = () => {
           t('workout.bluetoothMessage'),
           [{ text: t('workout.ok') }]
         );
-        setStarting(false);
+        setStartingId(null);
         return;
       }
 
       console.log('[WorkoutStart] ✓ Bluetooth permissions granted');
-      console.log('[WorkoutStart] 📶 Bluetooth state:', bluetoothState);
-      
+      console.log('[WorkoutStart] 📶 Bluetooth state (react):', bluetoothState);
+
+      // Start BLE scan and wait up to 15 seconds to connect to the device
+      const BLE_TIMEOUT_SECS = 15;
+      console.log('[WorkoutStart] ─────────────────────────────────────');
+      console.log('[WorkoutStart] 🔍 Starting BLE scan — 15s timeout begins NOW');
+      console.log('[WorkoutStart] ─────────────────────────────────────');
+
+      // Fast-path: if already connected to XIAO, skip the scan entirely
+      if (connectionStatusRef.current === 'connected') {
+        console.log('[WorkoutStart] ✅ Already connected to XIAO — skipping scan');
+      } else {
+        startScan();
+      }
+
+      setBleCountdown(BLE_TIMEOUT_SECS);
+      const scanStartTime = Date.now();
+
+      // Per-second countdown log
+      countdownTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
+        const remaining = Math.max(0, BLE_TIMEOUT_SECS - elapsed);
+        const devicesFound = devicesRef.current.length;
+        const status = connectionStatusRef.current;
+        console.log(
+          `[WorkoutStart] ⏱  T+${elapsed}s | ${remaining}s remaining | devices: ${devicesFound} | status: ${status}`
+        );
+        setBleCountdown(remaining);
+      }, 1000);
+
+      const bleConnected = await new Promise<boolean>((resolve) => {
+        let resolved = false;
+        let connectAttempted = false;
+        let poll: ReturnType<typeof setInterval>;
+
+        const doResolve = (val: boolean) => {
+          if (resolved) return;
+          resolved = true;
+          clearInterval(poll);
+          clearTimeout(timer);
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
+          setBleCountdown(null);
+          const elapsed = ((Date.now() - scanStartTime) / 1000).toFixed(1);
+          console.log(`[WorkoutStart] ${val ? '✅' : '❌'} doResolve(${val}) at T+${elapsed}s`);
+          resolve(val);
+        };
+
+        const timer = setTimeout(() => {
+          console.log('[WorkoutStart] ⏰ 15s timeout fired — no device connected');
+          doResolve(false);
+        }, BLE_TIMEOUT_SECS * 1000);
+
+        poll = setInterval(async () => {
+          if (resolved) { clearInterval(poll); return; }
+
+          if (connectionStatusRef.current === 'connected') {
+            console.log('[WorkoutStart] 📶 Connection status is connected — resolving true');
+            doResolve(true);
+            return;
+          }
+
+          if (!connectAttempted && devicesRef.current.length > 0) {
+            // Only connect to the XIAO device
+            const xiaoDevice = devicesRef.current.find(
+              (d) => (d.name ?? d.localName ?? '').toUpperCase().includes('XIAO')
+            );
+            if (!xiaoDevice) return; // keep polling until XIAO is found
+
+            connectAttempted = true;
+            console.log('[WorkoutStart] 📱 XIAO device found:', xiaoDevice.name ?? xiaoDevice.id, '— attempting connect...');
+            try {
+              await connectToDevice(xiaoDevice);
+              console.log('[WorkoutStart] 🔗 connectToDevice resolved successfully');
+              doResolve(true);
+            } catch (e) {
+              console.warn('[WorkoutStart] ⚠️  connectToDevice failed:', e);
+              connectAttempted = false;
+            }
+          }
+        }, 500);
+      });
+
+      if (!bleConnected) {
+        Alert.alert(
+          t('workout.bluetoothDeviceNotFound'),
+          t('workout.bluetoothDeviceMessage'),
+          [{ text: t('workout.ok') }]
+        );
+        setStartingId(null);
+        return;
+      }
+
+      console.log('[WorkoutStart] ✅ BLE device connected, proceeding...');
+
       // Default device ID (you can make this dynamic if needed)
       const deviceId = 1;
       
@@ -144,7 +262,12 @@ const WorkoutStartScreen = () => {
       Alert.alert(t('common.error'), t('workout.errorStarting'));
     } finally {
       startingRef.current = false;
-      setStarting(false);
+      setStartingId(null);
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+      setBleCountdown(null);
     }
   };
 
@@ -173,10 +296,17 @@ const WorkoutStartScreen = () => {
         <TouchableOpacity
           style={styles.quickStartButton}
           onPress={handleQuickStart}
-          disabled={starting || workoutTypes.length === 0}
+          disabled={startingId !== null || workoutTypes.length === 0}
         >
-          {starting ? (
-            <ActivityIndicator color="#FFF" />
+          {startingId !== null ? (
+            <>
+              <ActivityIndicator color="#FFF" />
+              {bleCountdown !== null && (
+                <Text style={{ color: '#FFF', fontSize: 13, marginLeft: 8 }}>
+                  {bleCountdown}s
+                </Text>
+              )}
+            </>
           ) : (
             <>
               <Ionicons name="play" size={20} color="#FFF" />
@@ -226,10 +356,17 @@ const WorkoutStartScreen = () => {
               <TouchableOpacity
                 style={styles.startButton}
                 onPress={() => handleStartWorkout(type.workoutTypeId)}
-                disabled={starting}
+                disabled={startingId !== null}
               >
-                {starting ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                {startingId === type.workoutTypeId ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFF" />
+                    {bleCountdown !== null && (
+                      <Text style={{ color: '#FFF', fontSize: 12, marginLeft: 6 }}>
+                        {bleCountdown}s
+                      </Text>
+                    )}
+                  </>
                 ) : (
                   <Text style={styles.startButtonText}>{t('workout.start')}</Text>
                 )}

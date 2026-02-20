@@ -48,13 +48,22 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldReconnect = useRef(false);
   const targetDeviceId = useRef<string | null>(null);
+  const bluetoothStateRef = useRef<State>(State.Unknown); // always tracks latest BT state
 
   /* ---------- Lifecycle ---------- */
 
   useEffect(() => {
+    // Seed the ref with the live state immediately (handles re-mount after destroyBleManager)
+    bleManager.state().then((s) => {
+      bluetoothStateRef.current = s;
+      setBluetoothState(s);
+    }).catch(() => {});
+
     // Monitor Bluetooth state
     const subscription = bleManager.onStateChange((state) => {
+      bluetoothStateRef.current = state;
       setBluetoothState(state);
+      console.log('[BLE] Bluetooth state changed:', state);
       
       if (state === State.PoweredOn && shouldReconnect.current && targetDeviceId.current) {
         // Bluetooth turned back on, attempt reconnect
@@ -73,7 +82,9 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
       }
       
       notificationCleanup.current?.();
-      destroyBleManager();
+      // NOTE: do NOT destroy the BLE manager here — it is a shared singleton.
+      // Destroying it on every component unmount forces re-initialisation and
+      // causes "BluetoothLE is in unknown state" errors on the next scan.
     };
   }, []);
 
@@ -99,11 +110,35 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
 
   const requestPermissions = async () => {
     if (Platform.OS === "ios") {
-      // iOS: Bluetooth permissions are requested automatically when first accessing BLE
-      // Just check if Bluetooth is powered on
-      const state = await bleManager.state();
-      if (state !== State.PoweredOn) {
-        setError(new Error("Bluetooth is not enabled. Please enable Bluetooth in Settings."));
+      // Use the ref for an immediate, synchronous check — avoids hanging on bleManager.state()
+      // which can block for several seconds before BT stack initialises.
+      const currentState = bluetoothStateRef.current;
+      console.log('[BLE] requestPermissions (iOS) — bluetoothStateRef:', currentState);
+
+      if (currentState === State.PoweredOn) return true;
+
+      if (currentState !== State.Unknown && currentState !== State.Resetting) {
+        // Explicitly off, unauthorized, or unsupported
+        setError(new Error(`Bluetooth unavailable (state: ${currentState})`));
+        return false;
+      }
+
+      // State is still Unknown (BT stack just started) — wait up to 3s for it to settle
+      console.log('[BLE] BT state Unknown — waiting up to 3s for state change...');
+      const settled = await new Promise<State>((resolve) => {
+        const unsub = bleManager.onStateChange((s) => {
+          if (s !== State.Unknown && s !== State.Resetting) {
+            bluetoothStateRef.current = s;
+            setBluetoothState(s);
+            unsub.remove();
+            resolve(s);
+          }
+        }, false);
+        setTimeout(() => { unsub.remove(); resolve(bluetoothStateRef.current); }, 3000);
+      });
+      console.log('[BLE] BT state after wait:', settled);
+      if (settled !== State.PoweredOn) {
+        setError(new Error(`Bluetooth unavailable (state: ${settled})`));
         return false;
       }
       return true;
@@ -123,8 +158,11 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
   /* ---------- Scanning ---------- */
 
   const startScan = () => {
-    if (bluetoothState !== State.PoweredOn) {
-      setError(new Error("Bluetooth is not powered on"));
+    console.log('[BLE] startScan called — state (ref):', bluetoothStateRef.current, '| state (react):', bluetoothState);
+    if (bluetoothStateRef.current !== State.PoweredOn) {
+      const msg = `Bluetooth is not powered on (state: ${bluetoothStateRef.current})`;
+      console.warn('[BLE] startScan aborted:', msg);
+      setError(new Error(msg));
       return;
     }
 
@@ -162,10 +200,24 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
           prev.some((d) => d.id === device.id) ? prev : [...prev, device]
         );
       },
-      (error) => {
-        console.error("BLE scan error:", error);
-        setError(error);
-        setIsScanning(false);
+      (scanError) => {
+        const msg: string = (scanError as any)?.message ?? String(scanError);
+        if (msg.toLowerCase().includes('unknown state') || msg.toLowerCase().includes('unknown error')) {
+          // BLE manager just re-initialised — wait for PoweredOn then retry automatically
+          console.warn('[BLE] Scan failed with unknown state — waiting for PoweredOn to retry...');
+          setIsScanning(false);
+          const retrySub = bleManager.onStateChange((s) => {
+            if (s === State.PoweredOn) {
+              retrySub.remove();
+              console.log('[BLE] PoweredOn received — retrying scan...');
+              startScan();
+            }
+          }, true);
+        } else {
+          console.error('[BLE] Scan error:', scanError);
+          setError(scanError);
+          setIsScanning(false);
+        }
       }
     );
   };
@@ -259,7 +311,7 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
       setError(null);
       
       const connection = await bleManager.connectToDevice(device.id, {
-        timeout: 10000, // 10 second timeout
+        timeout: 6000, // 6s — must fit within the 15s scan window
       });
       
       targetDeviceId.current = device.id;

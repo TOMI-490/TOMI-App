@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from '../../services/auth';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useDashboard } from '../../hooks/useDashboardData';
@@ -207,6 +208,11 @@ export default function HomePage() {
 
   // Destructure metrics after early returns
   const { streaks, recentWorkouts, notifications, activeGoal, workoutStreak, todayWorkouts, dailyGoalProgress, xpProgress, nextLevelXp, tomiNeeds } = dashboardMetrics;
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/(auth)/login');
+  };
 
   const handleNeedPress = (need: TomiNeed, index: number) => {
     if (!tomiData) return;
@@ -440,6 +446,15 @@ export default function HomePage() {
             </ScrollView>
           )}
         </View>
+
+        {/* Log Out */}
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#FF3B30', marginTop: 24, marginBottom: 8 }]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
+          <Text style={styles.buttonText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* ===== TOMI EFFECTS ===== */}
