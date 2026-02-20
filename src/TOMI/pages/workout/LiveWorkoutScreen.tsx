@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../../locales/i18n';
 import { workoutService } from '../../services/resources/workout.service';
 import { workoutTypeService } from '../../services/resources/workoutType.service';
+import { userAvatarService } from '../../services/resources/userAvatar.service';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
+import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
@@ -18,13 +24,18 @@ interface LocationPoint {
 
 const LiveWorkoutScreen: React.FC = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const workoutTypeId = Number(params.workoutTypeId);
   const currentLevel = params.currentLevel ? Number(params.currentLevel) : null;
 
+  const { authId } = useAuth();
+  const { user } = useCurrentUser(authId || undefined);
+
   const [workoutType, setWorkoutType] = useState<WorkoutTypeResponseDto | null>(null);
   const [workoutXp, setWorkoutXp] = useState<number | null>(null);
+  const [avatarData, setAvatarData] = useState<UserAvatarResponseDto | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [heartRate] = useState(72); // Mock for now
@@ -45,6 +56,7 @@ const LiveWorkoutScreen: React.FC = () => {
     console.log('[LiveWorkout]   - Workout Type ID:', workoutTypeId);
     loadWorkoutType();
     loadWorkoutXp();
+    loadAvatar();
     requestLocationPermission();
     startTimer();
 
@@ -86,6 +98,36 @@ const LiveWorkoutScreen: React.FC = () => {
     } catch (error) {
       console.error('[LiveWorkout] ❌ Error loading workout XP:', error);
     }
+  };
+
+  const loadAvatar = async () => {
+    try {
+      if (!user) return;
+      console.log('[LiveWorkout] 🐾 Loading avatar for user:', user.userId);
+      const avatar = await userAvatarService.getByUserId(user.userId);
+      console.log('[LiveWorkout] ✓ Avatar loaded:', avatar.nickname, 'activeUrl:', avatar.animationActiveUrl);
+      setAvatarData(avatar);
+    } catch (error) {
+      console.error('[LiveWorkout] ❌ Error loading avatar:', error);
+    }
+  };
+
+  // Re-fetch avatar once user is available
+  useEffect(() => {
+    if (user && !avatarData) {
+      loadAvatar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  /** Format pace as mm:ss per km, or '--' if distance too small */
+  const formatPace = (): string => {
+    if (distance < 0.01 || elapsedSeconds <= 0) return '--';
+    const paceMinutes = (elapsedSeconds / 60) / distance; // min/km
+    if (paceMinutes > 60) return '--'; // cap unreasonable values
+    const mins = Math.floor(paceMinutes);
+    const secs = Math.round((paceMinutes - mins) * 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const requestLocationPermission = async () => {
@@ -204,12 +246,12 @@ const LiveWorkoutScreen: React.FC = () => {
 
   const handleEndWorkout = async () => {
     Alert.alert(
-      'End Workout',
-      'Are you sure you want to end this workout?',
+      t('workout.endWorkoutTitle'),
+      t('workout.endWorkoutMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('workout.cancel'), style: 'cancel' },
         {
-          text: 'End',
+          text: t('workout.end'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -243,11 +285,11 @@ const LiveWorkoutScreen: React.FC = () => {
             } catch (error) {
               console.error('Error ending workout:', error);
               Alert.alert(
-                'Error',
-                'Failed to end workout. Please try again.',
+                t('workout.errorEndingTitle'),
+                t('workout.errorEndingMessage'),
                 [
-                  { text: 'Retry', onPress: () => handleEndWorkout() },
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('workout.retry'), onPress: () => handleEndWorkout() },
+                  { text: t('workout.cancel'), style: 'cancel' },
                 ]
               );
             } finally {
@@ -307,7 +349,15 @@ const LiveWorkoutScreen: React.FC = () => {
         </View>
       ) : (
         <View style={[styles.mapContainer, styles.noMapPlaceholder]}>
-          <Text style={styles.noMapText}>🏃</Text>
+          {(avatarData?.animationPostWorkoutUrl || avatarData?.animationActiveUrl) ? (
+            <Image
+              source={{ uri: avatarData.animationPostWorkoutUrl || avatarData.animationActiveUrl }}
+              style={{ width: 180, height: 180 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <Ionicons name="walk-outline" size={48} color="#8E8E93" />
+          )}
           <Text style={styles.workoutTypeName}>{workoutType.name}</Text>
         </View>
       )}
@@ -316,35 +366,31 @@ const LiveWorkoutScreen: React.FC = () => {
       <View style={styles.statsContainer}>
         <View style={styles.statRow}>
           <View style={styles.stat}>
-            <Text style={styles.statLabel}>Time</Text>
+            <Text style={styles.statLabel}>{t('workout.statTime')}</Text>
             <Text style={styles.statValue}>{formatTime(elapsedSeconds)}</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statLabel}>Heart Rate</Text>
+            <Text style={styles.statLabel}>{t('workout.statHeartRate')}</Text>
             <Text style={styles.statValue}>{heartRate} bpm</Text>
           </View>
         </View>
 
-        {showMap && (
-          <View style={styles.statRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Distance</Text>
-              <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Pace</Text>
-              <Text style={styles.statValue}>
-                {elapsedSeconds > 0 && distance > 0
-                  ? `${((elapsedSeconds / 60) / distance).toFixed(2)} min/km`
-                  : '-- min/km'}
-              </Text>
-            </View>
+        <View style={styles.statRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>{t('workout.statDistance')}</Text>
+            <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
           </View>
-        )}
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>{t('workout.statPace')}</Text>
+            <Text style={styles.statValue}>
+              {formatPace()} {formatPace() !== '--' ? t('workout.statPaceUnit') : ''}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.statusRow}>
           <Text style={styles.statusText}>
-            {isPaused ? '⏸ Paused' : '▶ Active'}
+            {isPaused ? t('workout.statusPaused') : t('workout.statusActive')}
           </Text>
         </View>
       </View>
@@ -356,7 +402,7 @@ const LiveWorkoutScreen: React.FC = () => {
           onPress={handlePauseResume}
           disabled={isEnding}
         >
-          <Text style={styles.controlButtonText}>{isPaused ? 'Resume' : 'Pause'}</Text>
+          <Text style={styles.controlButtonText}>{isPaused ? t('workout.resume') : t('workout.pause')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -367,7 +413,7 @@ const LiveWorkoutScreen: React.FC = () => {
           {isEnding ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.controlButtonText}>End Workout</Text>
+            <Text style={styles.controlButtonText}>{t('workout.endWorkout')}</Text>
           )}
         </TouchableOpacity>
       </View>

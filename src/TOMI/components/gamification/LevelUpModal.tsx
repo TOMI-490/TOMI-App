@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../../locales/i18n';
 import { levelUpModalStyles as styles } from '../../styles/gamification/levelUpModal.styles';
 
 interface LevelUpModalProps {
@@ -9,6 +11,7 @@ interface LevelUpModalProps {
 }
 
 export const LevelUpModal: React.FC<LevelUpModalProps> = ({ visible, level, onDismiss }) => {
+  const { t } = useTranslation();
   const scaleAnim = React.useRef(new Animated.Value(0.5)).current;
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -55,7 +58,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({ visible, level, onDi
             },
           ]}
         >
-          <Animated.Text
+          <Animated.View
             style={[
               styles.trophy,
               {
@@ -63,12 +66,12 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({ visible, level, onDi
               },
             ]}
           >
-            🏆
-          </Animated.Text>
+            <Ionicons name="trophy" size={60} color="#FFD700" />
+          </Animated.View>
           
-          <Text style={styles.title}>Level Up!</Text>
-          <Text style={styles.levelText}>Level {level}</Text>
-          <Text style={styles.message}>Your TOMI is getting stronger!</Text>
+          <Text style={styles.title}>{t('levelUp.title')}</Text>
+          <Text style={styles.levelText}>{t('levelUp.levelText').replace('{level}', String(level))}</Text>
+          <Text style={styles.message}>{t('levelUp.message')}</Text>
 
           {/* Simple confetti effect - just dots */}
           <View style={styles.confetti}>
@@ -79,7 +82,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({ visible, level, onDi
           </View>
 
           <TouchableOpacity style={styles.button} onPress={onDismiss}>
-            <Text style={styles.buttonText}>Awesome!</Text>
+            <Text style={styles.buttonText}>{t('levelUp.button')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

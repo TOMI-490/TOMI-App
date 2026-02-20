@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -458,7 +459,7 @@ export default function CommunityPage() {
           </View>
           {friends.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>👥</Text>
+              <Ionicons name="people-outline" size={48} color="#8E8E93" />
               <Text style={styles.emptyStateText}>{t('community.noFriends')}</Text>
             </View>
           ) : (

@@ -1,8 +1,11 @@
-import React, { useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from '../../services/auth';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useDashboard } from '../../hooks/useDashboardData';
@@ -16,6 +19,7 @@ import { WorkoutResponseDto } from '../../models/dto/Workout.dto';
 import { NotificationResponseDto } from '../../models/dto/Notification.dto';
 import { homePageStyles as styles } from '../../styles/home/homePage.styles';
 import { getRelativeTime, getGreeting } from '../../utils/timeFormat';
+import { avatarStateStore } from '../../utils/avatarStateStore';
 import {
   ProgressRings,
   BadgesCard,
@@ -24,32 +28,97 @@ import {
   LevelUpModal
 } from '../../components/gamification';
 
+type NeedIconDef =
+  | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
+  | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
+
 interface TomiNeed {
-  icon: string;
+  iconDef: NeedIconDef;
   label: string;
   status: 'good' | 'warning';
   value: number;
 }
 
+// Avatar animation states
+type AvatarAnimState = 'idle' | 'active' | 'post_workout';
+
 export default function HomePage() {
   const router = useRouter();
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
-  useLanguage(user); // Apply user's language automatically
+  useLanguage(user);
   const { data, loading, error, refresh } = useDashboard(user);
   const { data: gamificationData, loading: gamificationLoading } = useGamification(user?.userId);
   const { workouts: pastWorkouts, loading: workoutsLoading } = usePastWorkouts(user?.userId, 5);
-  const { t } = useTranslation(); // Get translation function
+  const { t } = useTranslation();
+
+  // Avatar animation state: idle → active on focus, post_workout after finishing a workout
+  const [avatarState, setAvatarState] = useState<AvatarAnimState>('idle');
+  const postWorkoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // TOMI effects for XP and level up animations
   const tomiEffects = useTomiEffects(data?.tomi);
+
+  // Derive tomiData early so it's available for avatarGifUrl
+  const tomiData = data?.tomi || null;
 
   // Track last refresh time to prevent rapid re-fetches
   const lastRefreshRef = useRef<number>(0);
   const MIN_REFRESH_INTERVAL = 2000; // 2 seconds minimum between refreshes
 
+  // Resolve which GIF URL to show based on current avatar state
+  const avatarGifUrl = useMemo(() => {
+    if (!tomiData) return null;
+    let url: string | null | undefined;
+    switch (avatarState) {
+      case 'post_workout': url = tomiData.animationPostWorkoutUrl || tomiData.animationActiveUrl || tomiData.animationIdleUrl; break;
+      case 'active':       url = tomiData.animationActiveUrl || tomiData.animationIdleUrl; break;
+      default:             url = tomiData.animationIdleUrl || tomiData.animationActiveUrl; break;
+    }
+    console.log('[HomePage] 🐾 Avatar GIF state:', avatarState, '→ URL:', url ?? 'null');
+    return url ?? null;
+  }, [tomiData, avatarState]);
+
+  // Switch to active state when the home screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      // Consume post-workout flag set by WorkoutSummaryScreen
+      if (avatarStateStore.consumePostWorkout()) {
+        setAvatarState('post_workout');
+        if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
+        postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
+      } else {
+        setAvatarState(prev => prev === 'post_workout' ? prev : 'active');
+      }
+      return () => {
+        // Return to idle when leaving the screen
+        setAvatarState('idle');
+      };
+    }, [])
+  );
+
+  // Detect when a new workout was just completed (workouts list grew)
+  const prevWorkoutCountRef = useRef<number>(0);
+  useEffect(() => {
+    const current = pastWorkouts.length;
+    if (prevWorkoutCountRef.current > 0 && current > prevWorkoutCountRef.current) {
+      // A new workout appeared — trigger post-workout celebration
+      setAvatarState('post_workout');
+      if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
+      postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
+    }
+    prevWorkoutCountRef.current = current;
+  }, [pastWorkouts.length]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
+    };
+  }, []);
+
   // Memoize derived data to prevent unnecessary recalculations (must be before conditional returns)
-  const tomiData = data?.tomi || null;
+  // Note: tomiData is declared above avatarGifUrl to avoid reference-before-declaration
   const dashboardMetrics = useMemo(() => {
     const streaks: StreakResponseDto[] = data?.streaks || [];
     const recentWorkouts: WorkoutResponseDto[] = data?.recentWorkouts || [];
@@ -69,15 +138,15 @@ export default function HomePage() {
     const nextLevelXp = tomiData?.nextLevelXp ?? 100;
 
     const tomiNeeds: TomiNeed[] = tomiData ? [
-      { icon: '🏃', label: 'Activity', status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
-      { icon: '🍽️', label: 'Nutrition', status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
-      { icon: '❤️', label: 'Health', status: 'good', value: tomiData.happinessLevel || 0 },
-      { icon: '🌙', label: 'Rest', status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
+      { iconDef: { lib: 'Ionicons', name: 'barbell-outline' }, label: t('home.needActivity'), status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
+      { iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' }, label: t('home.needNutrition'), status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
+      { iconDef: { lib: 'Ionicons', name: 'heart-outline' }, label: t('home.needHealth'), status: 'good', value: tomiData.happinessLevel || 0 },
+      { iconDef: { lib: 'Ionicons', name: 'moon-outline' }, label: t('home.needRest'), status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
     ] : [
-      { icon: '🏃', label: 'Activity', status: 'good', value: 50 },
-      { icon: '🍽️', label: 'Nutrition', status: 'good', value: 50 },
-      { icon: '❤️', label: 'Health', status: 'good', value: 50 },
-      { icon: '🌙', label: 'Rest', status: 'good', value: 50 },
+      { iconDef: { lib: 'Ionicons', name: 'barbell-outline' }, label: t('home.needActivity'), status: 'good', value: 50 },
+      { iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' }, label: t('home.needNutrition'), status: 'good', value: 50 },
+      { iconDef: { lib: 'Ionicons', name: 'heart-outline' }, label: t('home.needHealth'), status: 'good', value: 50 },
+      { iconDef: { lib: 'Ionicons', name: 'moon-outline' }, label: t('home.needRest'), status: 'good', value: 50 },
     ];
 
     return {
@@ -92,7 +161,7 @@ export default function HomePage() {
       nextLevelXp,
       tomiNeeds,
     };
-  }, [data, tomiData]);
+  }, [data, tomiData, t]);
 
   // Refresh data when screen comes into focus (e.g., returning from workout)
   // Only refresh if enough time has passed since last refresh
@@ -140,17 +209,22 @@ export default function HomePage() {
   // Destructure metrics after early returns
   const { streaks, recentWorkouts, notifications, activeGoal, workoutStreak, todayWorkouts, dailyGoalProgress, xpProgress, nextLevelXp, tomiNeeds } = dashboardMetrics;
 
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/(auth)/login');
+  };
+
   const handleNeedPress = (need: TomiNeed, index: number) => {
     if (!tomiData) return;
     
     // Show interaction options for each need
     Alert.alert(
-      `${need.label} Care`,
-      `Take care of your TOMI's ${need.label.toLowerCase()} needs?`,
+      t('home.needCareTitle').replace('{label}', need.label),
+      t('home.needCareMessage').replace('{label}', need.label.toLowerCase()),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Yes', 
+          text: t('common.yes'), 
           onPress: async () => {
             // TODO: Implement TOMI interaction logic when backend endpoints are available
             console.log('TOMI interaction:', need.label);
@@ -186,79 +260,63 @@ export default function HomePage() {
           styles.card,
           tomiData?.themeColor && { borderColor: tomiData.themeColor, borderWidth: 2 }
         ]}>
-          <View style={styles.progressBar}>
-            <View style={[
-              styles.progressFill, 
-              { 
-                width: `${Math.min(xpProgress, 100)}%`,
-                backgroundColor: tomiData?.themeColor || '#007AFF'
-              }
-            ]} />
+          {/* GIF + Info side-by-side */}
+          <View style={styles.cardBody}>
+            {/* Avatar GIF */}
+            <View style={styles.avatar}>
+              {avatarGifUrl ? (
+                <Image
+                  source={{ uri: avatarGifUrl }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="contain"
+                  autoplay
+                  onError={() => console.log('[HomePage] Avatar GIF failed to load:', avatarGifUrl)}
+                />
+              ) : null}
+            </View>
+
+            {/* Right column: name, level, XP bar, streak */}
+            <View style={styles.cardInfo}>
+              <Text style={styles.name}>
+                {tomiData ? tomiData.nickname : t('home.yourTomi')}
+              </Text>
+              <Text style={styles.levelText}>
+                {tomiData
+                  ? t('home.levelStage').replace('{level}', tomiData.level.toString())
+                  : 'Start your journey!'}
+              </Text>
+
+              {/* XP bar + label */}
+              {tomiData && (
+                <View style={styles.xpSection}>
+                  <View style={styles.progressBar}>
+                    <View style={[
+                      styles.progressFill,
+                      {
+                        width: `${Math.min(xpProgress, 100)}%`,
+                        backgroundColor: tomiData.themeColor || '#007AFF',
+                      },
+                    ]} />
+                  </View>
+                  <Text style={styles.xpLabel}>
+                    {tomiData.xp} / {nextLevelXp} XP
+                  </Text>
+                </View>
+              )}
+
+              {/* Streak pill */}
+              {workoutStreak && workoutStreak.current > 0 && (
+                <View style={styles.streakPill}>
+                  <Ionicons name="flame" size={13} color="#FF6B35" />
+                  <Text style={styles.streakPillText}>
+                    {t('home.dayStreak').replace('{days}', workoutStreak.current.toString())}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-          
-          {/* Avatar Image - Always show with placeholder */}
-          <View style={[
-            styles.avatar,
-            { 
-              backgroundColor: tomiData?.themeColor || '#8E8E93'
-            }
-          ]}>
-            {tomiData?.imageUrl && !tomiData.imageUrl.includes('example.com') ? (
-              <Image 
-                source={{ uri: tomiData.imageUrl }} 
-                style={{ width: '100%', height: '100%', borderRadius: 50 }}
-                resizeMode="cover"
-                onError={() => {
-                  console.log('Avatar image failed to load - using placeholder. URL was:', tomiData.imageUrl);
-                }}
-              />
-            ) : null}
-          </View>
-          
-          {/* Needs Row */}
-          <View style={styles.needs}>
-            {tomiNeeds.map((need, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={[
-                  styles.need,
-                  need.status === 'warning' && styles.needWarning
-                ]}
-                onPress={() => handleNeedPress(need, index)}
-              >
-                <Text style={styles.needIcon}>{need.icon}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+
         </View>
-
-        {/* TOMI Identity */}
-        {tomiData ? (
-          <View style={styles.identity}>
-            <Text style={styles.name}>{tomiData.nickname}</Text>
-            <Text style={styles.subtitle}>
-              {t('home.levelStage').replace('{level}', tomiData.level.toString())}
-            </Text>
-            <Text style={styles.xpText}>
-              {t('home.xpProgress').replace('{current}', tomiData.xp.toString()).replace('{total}', nextLevelXp.toString())}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.identity}>
-            <Text style={styles.name}>Your TOMI</Text>
-            <Text style={styles.subtitle}>Start your journey!</Text>
-          </View>
-        )}
-
-        {/* Streak Badge */}
-        {workoutStreak && workoutStreak.current && workoutStreak.current > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeIcon}>🔥</Text>
-            <Text style={styles.badgeText}>
-              {t('home.dayStreak').replace('{days}', workoutStreak.current.toString())}
-            </Text>
-          </View>
-        )}
 
         {/* Daily Goal - Hidden until goal endpoint is available */}
         {activeGoal && false && (
@@ -286,14 +344,14 @@ export default function HomePage() {
             style={styles.button}
             onPress={() => router.push('/(tabs)/workout')}
           >
-            <Text style={styles.buttonIcon}>🏃</Text>
+            <Ionicons name="play-circle-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
             <Text style={styles.buttonText}>{t('home.startWorkout')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.buttonSecondary]}
             onPress={() => router.push('/(tabs)/avatar')}
           >
-            <Text style={styles.buttonIcon}>✨</Text>
+            <Ionicons name="sparkles-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
             <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
               {t('home.customize')}
             </Text>
@@ -388,6 +446,15 @@ export default function HomePage() {
             </ScrollView>
           )}
         </View>
+
+        {/* Log Out */}
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#FF3B30', marginTop: 24, marginBottom: 8 }]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
+          <Text style={styles.buttonText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* ===== TOMI EFFECTS ===== */}

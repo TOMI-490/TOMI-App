@@ -3,12 +3,15 @@ from typing import List
 import logging
 
 from ...Core.Entity.UserAvatarEntity import UserAvatarEntity
-from ...Core.DTO.UserAvatarDTO import UserAvatarCreateDTO, UserAvatarUpdateDTO, UserAvatarResponseDTO
+from ...Core.DTO.UserAvatarDTO import UserAvatarCreateDTO, UserAvatarUpdateDTO, UserAvatarResponseDTO, UserAvatarWithDetailsResponseDTO
+from ...Core.Utils.xp_utils import calculate_xp_progression
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
+from ...Infrastructure.Repository.AvatarRepository import AvatarRepository
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 userAvatarRepo = UserAvatarRepository()
+avatarRepo = AvatarRepository()
 
 # Get all user avatars
 @router.get("/", response_model=List[UserAvatarResponseDTO])
@@ -20,14 +23,45 @@ async def getAllUserAvatars():
         logger.error(f"Error fetching all user avatars: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get the active avatar for a specific user
-@router.get("/user/{user_id}", response_model=UserAvatarResponseDTO)
+# Get the active avatar for a specific user (includes avatar template details + GIF URLs)
+@router.get("/user/{user_id}", response_model=UserAvatarWithDetailsResponseDTO)
 async def getUserAvatar(user_id: int):
     try:
-        avatar = userAvatarRepo.fetchAvatarByUserId(user_id)
-        if not avatar:
+        user_avatar_entity = userAvatarRepo.fetchAvatarByUserId(user_id)
+        if not user_avatar_entity:
             raise HTTPException(status_code=404, detail="User avatar not found")
-        return UserAvatarResponseDTO(**avatar.__dict__)
+
+        avatar_entity = avatarRepo.fetchAvatarById(user_avatar_entity.avatar_id)
+        if not avatar_entity:
+            raise HTTPException(status_code=404, detail="Avatar template not found")
+
+        xp_progression = calculate_xp_progression(user_avatar_entity.level, user_avatar_entity.xp)
+
+        return UserAvatarWithDetailsResponseDTO(
+            userAvatarId=user_avatar_entity.user_avatar_id,
+            userId=user_avatar_entity.user_id,
+            avatarId=user_avatar_entity.avatar_id,
+            nickname=user_avatar_entity.nickname,
+            level=user_avatar_entity.level,
+            xp=user_avatar_entity.xp,
+            ageDays=user_avatar_entity.age_days,
+            hungerLevel=user_avatar_entity.hunger_level,
+            sleepinessLevel=user_avatar_entity.sleepiness_level,
+            boredomeLevel=user_avatar_entity.boredome_level,
+            happinessLevel=user_avatar_entity.happines_level,
+            isActive=user_avatar_entity.is_active,
+            lastUpdated=user_avatar_entity.last_updated,
+            createdAt=user_avatar_entity.created_at,
+            avatarName=avatar_entity.name,
+            imageUrl=avatar_entity.image_url,
+            animationIdleUrl=avatar_entity.animation_idle_url,
+            animationActiveUrl=avatar_entity.animation_active_url,
+            animationPostWorkoutUrl=avatar_entity.animation_post_workout_url,
+            themeColor=avatar_entity.theme_color,
+            currentLevelXp=xp_progression['current_level_xp'],
+            nextLevelXp=xp_progression['next_level_xp'],
+            xpProgress=xp_progression['xp_progress']
+        )
     except HTTPException:
         raise
     except Exception as e:

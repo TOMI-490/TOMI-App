@@ -74,7 +74,9 @@ class UserAvatarWithDetailsResponseDTO(BaseModel):
     # Avatar details
     avatar_name: Optional[str] = Field(None, alias="avatarName")
     image_url: Optional[str] = Field(None, alias="imageUrl")
-    animation_url: Optional[str] = Field(None, alias="animationUrl")
+    animation_idle_url: Optional[str] = Field(None, alias="animationIdleUrl")
+    animation_active_url: Optional[str] = Field(None, alias="animationActiveUrl")
+    animation_post_workout_url: Optional[str] = Field(None, alias="animationPostWorkoutUrl")
     theme_color: Optional[str] = Field(None, alias="themeColor")
     # XP progression (calculated on backend)
     current_level_xp: int = Field(0, alias="currentLevelXp")

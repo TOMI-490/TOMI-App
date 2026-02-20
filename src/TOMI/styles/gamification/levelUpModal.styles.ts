@@ -16,8 +16,9 @@ export const levelUpModalStyles = StyleSheet.create({
     maxWidth: 320,
   },
   trophy: {
-    fontSize: 80,
     marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,

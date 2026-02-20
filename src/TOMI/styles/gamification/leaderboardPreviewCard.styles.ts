@@ -7,10 +7,14 @@ export const leaderboardPreviewCardStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
     color: '#000',
   },
   scope: {

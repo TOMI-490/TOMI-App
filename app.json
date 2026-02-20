@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "tomiapp",
+    "slug": "tomi-app",
+    "plugins": [
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to your smartwatch"
+        }
+      ],
+      "expo-router"
+    ],
+    "ios": {
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app needs Bluetooth to connect to your smartwatch and read sensor data.",
+        "NSBluetoothPeripheralUsageDescription": "This app needs Bluetooth to connect to your smartwatch and read sensor data.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.anonymous.tomiapp"
+    },
+    "android": {
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ],
+      "package": "com.anonymous.tomiapp"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0a2ba220-88f1-4e52-a8a9-2ba44273685d"
+      }
+    }
+  }
+}

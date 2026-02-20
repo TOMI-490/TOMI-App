@@ -29,6 +29,14 @@ export default function WorkoutLayout() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name="sensor"
+        options={{
+          title: 'Sensor Test',
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }

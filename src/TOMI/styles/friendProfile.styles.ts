@@ -348,20 +348,11 @@ export const friendProfileStyles = StyleSheet.create({
     borderTopLeftRadius: 20,
   },
   buddyAvatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#8E8E93',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 180,
+    height: 180,
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 16,
-  },
-  buddyAvatarInitials: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   buddyIdentity: {
     alignItems: 'center',

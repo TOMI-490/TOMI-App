@@ -6,16 +6,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../locales/i18n';
 import { communityService } from '../../services/community';
+import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { friendProfileStyles as styles } from '../../styles/friendProfile.styles';
+import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
 import type { 
   FriendDashboardSummary,
   FriendRecentWorkout 
@@ -31,6 +34,7 @@ export default function FriendVisitPage() {
 
   const [dashboardSummary, setDashboardSummary] = useState<FriendDashboardSummary | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<FriendRecentWorkout[]>([]);
+  const [friendAvatar, setFriendAvatar] = useState<UserAvatarResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
@@ -49,14 +53,16 @@ export default function FriendVisitPage() {
       setLoading(true);
       setError(null);
 
-      // Load dashboard summary and recent workouts in parallel
-      const [summaryData, workoutsData] = await Promise.all([
+      // Load dashboard summary, recent workouts, and friend avatar in parallel
+      const [summaryData, workoutsData, avatarData] = await Promise.all([
         communityService.getFriendDashboardSummary(user.userId, parseInt(friendId, 10)),
-        communityService.getFriendRecentWorkouts(user.userId, parseInt(friendId, 10), 5)
+        communityService.getFriendRecentWorkouts(user.userId, parseInt(friendId, 10), 5),
+        userAvatarService.getByUserId(parseInt(friendId, 10)).catch(() => null),
       ]);
 
       setDashboardSummary(summaryData);
       setRecentWorkouts(workoutsData.items);
+      setFriendAvatar(avatarData);
     } catch (err: any) {
       console.error('[FriendVisitPage] Error loading data:', err);
       setError(err.message || t('community.errorLoading'));
@@ -107,15 +113,6 @@ export default function FriendVisitPage() {
     } finally {
       setRemoving(false);
     }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   const formatDate = (dateStr: string) => {
@@ -196,23 +193,15 @@ export default function FriendVisitPage() {
             ]} />
           </View>
           
-          {/* Avatar Circle */}
-          <View style={[
-            styles.buddyAvatar,
-            { backgroundColor: dashboardSummary.themeColor || '#8E8E93' }
-          ]}>
-            {dashboardSummary.avatarImageUrl && !dashboardSummary.avatarImageUrl.includes('example.com') ? (
-              <Image 
-                source={{ uri: dashboardSummary.avatarImageUrl }} 
-                style={{ width: '100%', height: '100%', borderRadius: 50 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={styles.buddyAvatarInitials}>
-                {getInitials(dashboardSummary.displayName)}
-              </Text>
-            )}
-          </View>
+          {/* Avatar */}
+          {friendAvatar?.animationActiveUrl && (
+            <Image
+              source={{ uri: friendAvatar.animationActiveUrl }}
+              style={styles.buddyAvatar}
+              contentFit="contain"
+              autoplay
+            />
+          )}
           
           {/* Identity */}
           <View style={styles.buddyIdentity}>
@@ -233,7 +222,7 @@ export default function FriendVisitPage() {
           {/* Streak Badge */}
           {dashboardSummary.streak.days > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
+              <Ionicons name="flame" size={16} color="#FF6B35" style={{ marginRight: 4 }} />
               <Text style={styles.streakText}>
                 {t('friendProfile.streakDays').replace('{days}', dashboardSummary.streak.days.toString())}
               </Text>
