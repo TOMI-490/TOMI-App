@@ -1,446 +1,770 @@
-import { StyleSheet } from 'react-native';
+/**
+ * HomeScreen styles — high-fidelity revision
+ *
+ * Design token values are sourced from src/TOMI/constants/theme.ts (TOMI_THEME)
+ * so all colour references stay in sync with styles/theme.css and tailwind.config.js.
+ *
+ * Glass-morphism in React Native:
+ *   • True `backdrop-filter: blur()` is not available natively.
+ *   • We approximate with semi-transparent white backgrounds + strong drop
+ *     shadows + near-white borders — visually very close on-device.
+ *   • Critical frosted surfaces layer a rgba(255,255,255,0.20) View on top.
+ */
 
+import { StyleSheet } from 'react-native';
+import { TOMI_THEME as T } from '../../constants/theme';
+
+/* ─── Shared shadow presets ─────────────────────────────────────────────────── */
+const shadowSm = {
+  shadowColor:   '#000',
+  shadowOffset:  { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius:  6,
+  elevation:     3,
+} as const;
+
+const shadowMd = {
+  shadowColor:   '#000',
+  shadowOffset:  { width: 0, height: 4 },
+  shadowOpacity: 0.10,
+  shadowRadius:  12,
+  elevation:     6,
+} as const;
+
+const shadowLg = {
+  shadowColor:   '#000',
+  shadowOffset:  { width: 0, height: 8 },
+  shadowOpacity: 0.15,
+  shadowRadius:  20,
+  elevation:     10,
+} as const;
+
+const shadowXl = {
+  shadowColor:   '#000',
+  shadowOffset:  { width: 0, height: 12 },
+  shadowOpacity: 0.22,
+  shadowRadius:  28,
+  elevation:     14,
+} as const;
+
+/* ─── Reusable glass surfaces ───────────────────────────────────────────────── */
+const glassSurface = {
+  backgroundColor: T.glassBg,
+  borderWidth:     1,
+  borderColor:     T.glassBorder,
+} as const;
+
+const glassSurfaceSubtle = {
+  backgroundColor: T.glassBgSubtle,
+  borderWidth:     1,
+  borderColor:     T.glassBorder,
+} as const;
+
+/* ─── StyleSheet ─────────────────────────────────────────────────────────────── */
 export const homePageStyles = StyleSheet.create({
-  container: {
+
+  /* ── Scaffold ──────────────────────────────────────────────────────────────── */
+  screen: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#FAF8F4',
   },
-  content: {
-    padding: 16,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop:        24,
+    paddingBottom:     104,
   },
-  loading: {
+  sectionGap: { height: 20 },
+
+  /* ── Loading / Error ───────────────────────────────────────────────────────── */
+  loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent:  'center',
+    alignItems:      'center',
+    backgroundColor: T.background,
   },
-  error: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+  loadingText: {
+    marginTop:  12,
+    fontSize:   16,
+    fontFamily: 'Montserrat-Medium',
+    color:      T.textMuted,
+  },
+  errorContainer: {
+    flex:            1,
+    justifyContent:  'center',
+    alignItems:      'center',
+    padding:         24,
+    backgroundColor: T.background,
   },
   errorText: {
-    fontSize: 15,
-    color: '#FF3B30',
-    textAlign: 'center',
+    fontSize:     15,
+    fontFamily:   'Montserrat-Regular',
+    color:        T.danger,
+    textAlign:    'center',
     marginBottom: 16,
+    lineHeight:   22,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+  retryBtn: {
+    backgroundColor:   T.primary,
+    paddingVertical:   12,
+    paddingHorizontal: 24,
+    borderRadius:      12,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  headerIcon: {
-    fontSize: 20,
-    color: '#1a1a1a',
-  },
-  greeting: {
-    fontSize: 28,
+  retryBtnText: {
+    fontSize:   15,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 20,
+    fontFamily: 'Montserrat-Bold',
+    color:      '#FFF',
   },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 1 — Greeting                                                         */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  greetingPill: {
+    alignSelf:         'flex-start',
+    backgroundColor:   'rgba(255,140,66,0.12)',
+    borderRadius:      20,
+    paddingVertical:   5,
+    paddingHorizontal: 14,
+    marginBottom:      10,
+    borderWidth:       1,
+    borderColor:       'rgba(255,140,66,0.25)',
   },
-  cardBody: {
+  greetingPillText: {
+    fontSize:      13,
+    fontWeight:    '600',
+    fontFamily:    'Montserrat-SemiBold',
+    color:         T.primary,
+    letterSpacing: 0.2,
+  },
+  greetingTitle: {
+    fontSize:      38,
+    fontWeight:    '900',
+    fontFamily:    'SangBleu-Black',
+    color:         T.textPrimary,
+    lineHeight:    44,
+    marginBottom:  6,
+    letterSpacing: -0.8,
+  },
+  greetingSubtitle: {
+    fontSize:      15,
+    fontWeight:    '500',
+    fontFamily:    'Montserrat-Medium',
+    color:         T.textMuted,
+    lineHeight:    22,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 2 — Stats overview (3-column grid)                                   */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    gap:           12,
   },
-  cardInfo: {
-    flex: 1,
+  statCard: {
+    flex:              1,
+    backgroundColor:   '#FFFFFF',
+    borderRadius:      18,
+    paddingVertical:   18,
+    paddingHorizontal: 12,
+    alignItems:        'center',
+    ...shadowMd,
+    borderWidth:       1,
+    borderColor:       'rgba(0,0,0,0.05)',
+  },
+  statIconBox: {
+    width:          48,
+    height:         48,
+    borderRadius:   24,
     justifyContent: 'center',
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2,
-  },
-  levelText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginBottom: 10,
-  },
-  xpSection: {
-    marginBottom: 10,
-  },
-  progressBar: {
-    width: '100%',
-    height: 6,
-    backgroundColor: '#E5E5E7',
-    borderRadius: 3,
-    marginBottom: 4,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 3,
-  },
-  xpLabel: {
-    fontSize: 11,
-    color: '#8E8E93',
-  },
-  streakPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3ED',
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    gap: 4,
-    alignSelf: 'flex-start',
-  },
-  streakPillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B35',
-  },
-  needsDivider: {
-    height: 1,
-    backgroundColor: '#F0F0F2',
-    marginVertical: 12,
-  },
-  needs: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  need: {
-    alignItems: 'center',
-    gap: 4,
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: '#F5F5F7',
-    marginHorizontal: 4,
-  },
-  needLabel: {
-    fontSize: 10,
-    color: '#666',
-    fontWeight: '500',
-  },
-  needLabelWarning: {
-    color: '#FFF',
-  },
-  needWarning: {
-    backgroundColor: '#FF9500',
-  },
-  needIcon: {
-    fontSize: 22,
-  },
-  identity: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#666',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignSelf: 'center',
-    marginBottom: 16,
-    gap: 6,
-  },
-  badgeIcon: {
-    fontSize: 18,
-  },
-  badgeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  goalCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  goalTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  goalValue: {
-    fontSize: 14,
-    color: '#666',
-  },
-  goalBar: {
-    height: 8,
-    backgroundColor: '#E5E5E7',
-    borderRadius: 4,
-  },
-  goalFill: {
-    height: '100%',
-    backgroundColor: '#34C759',
-    borderRadius: 4,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  buttonSecondary: {
-    backgroundColor: '#FFF',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  buttonIcon: {
-    fontSize: 18,
-  },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  buttonTextSecondary: {
-    color: '#007AFF',
-  },
-  progressSection: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 18,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 14,
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  stat: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
+    alignItems:     'center',
+    marginBottom:   10,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
+    fontSize:      28,
+    fontWeight:    '900',
+    fontFamily:    'Montserrat-Black',
+    color:         T.textPrimary,
+    marginBottom:  2,
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#666',
-    textAlign: 'center',
+    fontSize:      10,
+    fontWeight:    '600',
+    fontFamily:    'Montserrat-SemiBold',
+    color:         T.textMuted,
+    textAlign:     'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  // New styles for backend integration
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 3 — Avatar Living-Room card                                          */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  avatarCard: {
+    borderRadius:    24,
+    overflow:        'hidden',
+    backgroundColor: '#FFFFFF',
+    borderWidth:     1,
+    borderColor:     'rgba(0,0,0,0.06)',
+    ...shadowXl,
   },
-  notificationBadge: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
+  avatarCardGlassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    zIndex:          0,
+  },
+  avatarCardInner: {
+    padding: 24,
+    zIndex:  1,
+  },
+  avatarCardHeader: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'flex-start',
+    marginBottom:   20,
+  },
+  avatarName: {
+    fontSize:      24,
+    fontWeight:    '900',
+    fontFamily:    'SangBleu-Bold',
+    color:         T.textPrimary,
+    marginBottom:  2,
+    letterSpacing: -0.4,
+  },
+  avatarSubtitle: {
+    fontSize:      13,
+    fontWeight:    '500',
+    fontFamily:    'Montserrat-Medium',
+    color:         T.textMuted,
+  },
+  xpPill: {
+    backgroundColor:   'rgba(255,140,66,0.08)',
+    borderRadius:      12,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
-    alignSelf: 'flex-start',
+    paddingVertical:    8,
+    alignItems:        'center',
+    borderWidth:       1,
+    borderColor:       'rgba(255,140,66,0.20)',
   },
-  notificationText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+  xpPillLabel: {
+    fontSize:      9,
+    fontWeight:    '700',
+    fontFamily:    'Montserrat-Bold',
+    color:         T.primary,
+    marginBottom:  2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  xpText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+  xpPillValue: {
+    fontSize:      14,
+    fontWeight:    '900',
+    fontFamily:    'Montserrat-Black',
+    color:         T.primary,
   },
-  goalProgress: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+
+  /* Living-room scene */
+  livingRoom: {
+    backgroundColor: '#FEF3D8',
+    borderRadius:    16,
+    height:          210,
+    marginBottom:    20,
+    borderWidth:     1,
+    borderColor:     'rgba(230,195,120,0.45)',
+    overflow:        'hidden',
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  recentSection: {
-    marginTop: 20,
+  roomSkyTop: {
+    position:         'absolute',
+    top:              0,
+    left:             0,
+    right:            0,
+    height:           '48%',
+    backgroundColor:  'rgba(255,248,230,0.60)',
   },
-  workoutItem: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  roomFloor: {
+    position:                'absolute',
+    bottom:                  0,
+    left:                    0,
+    right:                   0,
+    height:                  80,
+    backgroundColor:         '#D4A874',
+    borderBottomLeftRadius:  16,
+    borderBottomRightRadius: 16,
+  },
+  roomWindow: {
+    position:        'absolute',
+    top:             14,
+    right:           14,
+    width:           84,
+    height:          84,
+    backgroundColor: 'rgba(100,190,255,0.55)',
+    borderRadius:    10,
+    borderWidth:     4,
+    borderColor:     'rgba(255,255,255,0.95)',
+    flexDirection:   'row',
+    flexWrap:        'wrap',
+    padding:         8,
+    ...shadowMd,
+  },
+  windowPane: {
+    width:           '46%',
+    height:          '46%',
+    backgroundColor: 'rgba(200,235,255,0.65)',
+    borderRadius:    4,
+    margin:          '2%',
+  },
+  roomSofa: {
+    position:        'absolute',
+    bottom:          22,
+    right:           18,
+    backgroundColor: 'rgba(255,140,66,0.18)',
+    borderRadius:    14,
+    padding:         10,
+    borderWidth:     2,
+    borderColor:     'rgba(255,140,66,0.35)',
+    ...shadowSm,
+  },
+  roomLampContainer: {
+    position:   'absolute',
+    bottom:     16,
+    left:       20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  workoutType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    flex: 1,
+  roomLampShade: {
+    width:           32,
+    height:          32,
+    backgroundColor: T.warningTint,
+    borderRadius:    16,
+    borderWidth:     2,
+    borderColor:     T.glassBorder,
+    justifyContent:  'center',
+    alignItems:      'center',
+    ...shadowSm,
   },
-  workoutDate: {
-    fontSize: 14,
-    color: '#666',
-    marginHorizontal: 8,
+  roomLampPole: {
+    width:           3,
+    height:          14,
+    backgroundColor: 'rgba(160,120,60,0.45)',
   },
-  workoutDuration: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+  roomTable: {
+    width:           44,
+    height:          28,
+    backgroundColor: T.glassBg,
+    borderRadius:    8,
+    borderWidth:     2,
+    borderColor:     T.glassBorder,
+    ...shadowSm,
   },
-  // Past Workouts Section
-  pastWorkoutsSection: {
-    marginTop: 20,
-    marginBottom: 20,
+  roomTableBase: {
+    width:           52,
+    height:          6,
+    backgroundColor: T.glassBgSubtle,
+    borderRadius:    6,
+    marginTop:       2,
+    borderWidth:     1,
+    borderColor:     T.glassBorderWeak,
+    alignSelf:       'center',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  roomCoffeeCup: {
+    position:        'absolute',
+    bottom:          62,
+    left:            52,
+    backgroundColor: T.glassBg,
+    padding:         6,
+    borderRadius:    8,
+    borderWidth:     1,
+    borderColor:     T.glassBorder,
+    ...shadowSm,
+  },
+  avatarTouchable: {
     alignItems: 'center',
-    marginBottom: 14,
+    zIndex:     20,
+  },
+  avatarCircle: {
+    width:           116,
+    height:          116,
+    borderRadius:    58,
+    backgroundColor: T.primary,
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     5,
+    borderColor:     'rgba(255,255,255,0.92)',
+    overflow:        'hidden',
+    ...shadowXl,
+  },
+  avatarShadowPlatform: {
+    width:           80,
+    height:          14,
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    borderRadius:    40,
+    marginTop:       -4,
+    alignSelf:       'center',
+  },
+  xpBarTrack: {
+    height:          14,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius:    7,
+    overflow:        'hidden',
+    marginBottom:    16,
+  },
+  xpBarFill: {
+    height:          '100%',
+    borderRadius:    7,
+    backgroundColor: T.secondary,
+  },
+  moodGrid: {
+    flexDirection: 'row',
+    gap:           12,
+  },
+  moodCard: {
+    flex:            1,
+    backgroundColor: '#FFFFFF',
+    borderRadius:    14,
+    padding:         14,
+    ...shadowMd,
+    borderWidth:     1,
+    borderColor:     'rgba(0,0,0,0.06)',
+  },
+  moodLabelRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           6,
+    marginBottom:  4,
+  },
+  moodLabel: {
+    fontSize:      10,
+    fontWeight:    '700',
+    fontFamily:    'Montserrat-Bold',
+    color:         T.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  moodValue: {
+    fontSize:      28,
+    fontWeight:    '900',
+    fontFamily:    'Montserrat-Black',
+    letterSpacing: -0.5,
+    marginTop:     2,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 4 — Start Workout CTA                                                */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  startWorkoutBtn: {
+    backgroundColor: T.primary,
+    borderRadius:    24,
+    padding:         24,
+    flexDirection:   'row',
+    justifyContent:  'space-between',
+    alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.22)',
+    overflow:        'hidden',
+    ...shadowLg,
+    shadowOpacity:   0.28,
+    shadowRadius:    24,
+  },
+  startWorkoutGloss: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    zIndex:          0,
+  },
+  startWorkoutLeft: {
+    flex:   1,
+    zIndex: 1,
+  },
+  startWorkoutLabel: {
+    fontSize:      13,
+    fontWeight:    '600',
+    fontFamily:    'Montserrat-SemiBold',
+    color:         'rgba(255,255,255,0.88)',
+    marginBottom:  4,
+    letterSpacing: 0.3,
+  },
+  startWorkoutTitle: {
+    fontSize:      26,
+    fontWeight:    '900',
+    fontFamily:    'Montserrat-Black',
+    color:         '#FFF',
+    letterSpacing: -0.5,
+  },
+  startWorkoutIconBox: {
+    width:           56,
+    height:          56,
+    borderRadius:    16,
+    backgroundColor: 'rgba(255,255,255,0.30)',
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.40)',
+    zIndex:          1,
+    ...shadowSm,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Shared section header row                                                    */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  sectionHeaderRow: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginBottom:   12,
+  },
+  sectionTitle: {
+    fontSize:      18,
+    fontWeight:    '900',
+    fontFamily:    'SangBleu-Bold',
+    color:         T.textPrimary,
+    letterSpacing: -0.3,
+  },
+  viewAllBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    ...glassSurface,
+    paddingHorizontal: 10,
+    paddingVertical:    5,
+    borderRadius:      10,
+    ...shadowSm,
   },
   viewAllText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    fontSize:      13,
+    fontWeight:    '600',
+    fontFamily:    'Montserrat-SemiBold',
+    color:         T.primary,
   },
-  workoutCarousel: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 5 — Daily Challenges                                                 */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  questCard: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             14,
+    backgroundColor: '#FFFFFF',
+    borderWidth:     1,
+    borderColor:     'rgba(0,0,0,0.07)',
+    borderRadius:    16,
+    padding:         16,
+    ...shadowMd,
+    marginBottom:    10,
+    overflow:        'hidden',
   },
-  workoutCarouselContent: {
-    paddingRight: 16,
-  },
-  pastWorkoutCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    width: 200,
-    minHeight: 100,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  workoutDetails: {
-    flex: 1,
+  questIconBox: {
+    width:          44,
+    height:         44,
+    borderRadius:   12,
     justifyContent: 'center',
+    alignItems:     'center',
+    borderWidth:    1,
+    borderColor:    T.glassBorderWeak,
+    ...shadowSm,
+  },
+  questContent: { flex: 1 },
+  questTitleRow: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginBottom:   4,
+  },
+  questTitle: {
+    fontSize:      15,
+    fontWeight:    '700',
+    fontFamily:    'Montserrat-Bold',
+    color:         T.textPrimary,
+    flex:          1,
+    marginRight:   8,
+  },
+  questXpChip: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               3,
+    backgroundColor:   T.warningTint,
+    paddingHorizontal: 8,
+    paddingVertical:   4,
+    borderRadius:      8,
+    borderWidth:       1,
+    borderColor:       'rgba(245,158,11,0.30)',
+  },
+  questXpText: {
+    fontSize:      11,
+    fontWeight:    '900',
+    fontFamily:    'Montserrat-Black',
+    color:         T.warning,
+  },
+  questProgressText: {
+    fontSize:     12,
+    fontFamily:   'Montserrat-Regular',
+    color:        T.textMuted,
+    marginBottom: 6,
+  },
+  questBarTrack: {
+    height:          8,
+    backgroundColor: T.glassBg,
+    borderRadius:    4,
+    overflow:        'hidden',
+    borderWidth:     1,
+    borderColor:     T.glassBorderWeak,
+  },
+  questBarFill: {
+    height:       '100%',
+    borderRadius: 4,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Skeleton loaders                                                              */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  skeletonCard: {
+    ...glassSurfaceSubtle,
+    borderRadius: 16,
+    padding:      20,
     marginBottom: 12,
+    ...shadowSm,
+    overflow:     'hidden',
   },
-  workoutName: {
-    fontSize: 16,
+  skeletonLine: {
+    backgroundColor: 'rgba(0,0,0,0.07)',
+    borderRadius:    8,
+    marginBottom:    10,
+  },
+  skeletonLineShort: {
+    width:           '40%',
+    height:          10,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius:    6,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 6 — Achievements preview                                             */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  achievementsGrid: {
+    flexDirection: 'row',
+    flexWrap:      'wrap',
+    gap:           12,
+  },
+  achievementCard: {
+    borderRadius: 16,
+    padding:      12,
+    alignItems:   'center',
+    borderWidth:  1,
+    ...shadowMd,
+  },
+  achievementCardUnlocked: {
+    backgroundColor: '#FFFFFF',
+    borderColor:     'rgba(0,0,0,0.08)',
+  },
+  achievementCardLocked: {
+    backgroundColor: 'rgba(255,255,255,0.30)',
+    borderColor:     'rgba(255,255,255,0.40)',
+    opacity:         0.60,
+  },
+  achievementIconBox: {
+    width:          40,
+    height:         40,
+    borderRadius:   12,
+    justifyContent: 'center',
+    alignItems:     'center',
+    marginBottom:   6,
+    borderWidth:    1,
+    borderColor:    T.glassBorderWeak,
+  },
+  achievementIconBoxUnlocked: { backgroundColor: T.primaryTint },
+  achievementIconBoxLocked:   { backgroundColor: T.glassBgSubtle },
+  achievementLabel: {
+    fontSize:   10,
     fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 4,
+    fontFamily: 'Montserrat-SemiBold',
+    color:      T.textMuted,
+    textAlign:  'center',
+    lineHeight: 13,
   },
-  workoutTime: {
-    fontSize: 13,
-    color: '#8E8E93',
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Section 7 — Rewards Shop CTA                                                 */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  rewardsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius:    24,
+    padding:         24,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+    overflow:        'hidden',
+    ...shadowLg,
+    borderWidth:     1,
+    borderColor:     'rgba(0,0,0,0.06)',
   },
-  workoutStats: {
-    alignItems: 'flex-start',
-    gap: 8,
+  rewardsGloss: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(74,144,226,0.04)',
+    zIndex:          0,
   },
-  workoutDurationBadge: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
-    backgroundColor: '#E5F1FF',
+  rewardsLeft: {
+    flex:   1,
+    marginRight: 12,
+    zIndex: 1,
+  },
+  rewardsTitle: {
+    fontSize:      18,
+    fontWeight:    '900',
+    fontFamily:    'SangBleu-Bold',
+    color:         T.textPrimary,
+    marginBottom:  4,
+    letterSpacing: -0.3,
+  },
+  rewardsSubtitle: {
+    fontSize:      13,
+    fontFamily:    'Montserrat-Regular',
+    color:         T.textMuted,
+    marginBottom:  14,
+    lineHeight:    19,
+  },
+  rewardsShopBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               6,
+    backgroundColor:   T.secondary,
+    paddingVertical:   10,
+    paddingHorizontal: 16,
+    borderRadius:      12,
+    alignSelf:         'flex-start',
+    ...shadowSm,
+  },
+  rewardsShopBtnText: {
+    fontSize:      14,
+    fontWeight:    '700',
+    fontFamily:    'Montserrat-Bold',
+    color:         '#FFF',
+  },
+  rewardsIconBox: {
+    width:           64,
+    height:          64,
+    borderRadius:    16,
+    backgroundColor: T.secondaryTint,
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     T.glassBorderWeak,
+    zIndex:          1,
+    ...shadowSm,
+  },
+
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* Inline error pill (non-fatal section errors)                                 */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  inlineErrorPill: {
+    backgroundColor:   'rgba(239,68,68,0.08)',
+    borderRadius:      10,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+    paddingVertical:   8,
+    borderWidth:       1,
+    borderColor:       'rgba(239,68,68,0.20)',
+    marginBottom:      12,
   },
-  workoutXpBadge: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#34C759',
-    backgroundColor: '#E8F8EC',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  workoutsLoadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  workoutsLoadingText: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  noWorkoutsContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  noWorkoutsText: {
-    fontSize: 15,
-    color: '#8E8E93',
-    textAlign: 'center',
+  inlineErrorText: {
+    fontSize:   12,
+    fontFamily: 'Montserrat-Regular',
+    color:      T.danger,
   },
 });

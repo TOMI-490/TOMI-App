@@ -1,13 +1,18 @@
+import '../global.css';
 import { useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Linking } from 'react-native';
+import { useFonts } from 'expo-font';
 import { AuthProvider } from '../contexts/AuthContext';
 import { supabase } from '../services/core/supabase';
 import { initializeLocalDatabase } from '../services/localDatabase/localDb'; // Import the database initialization
+import { FONT_MAP } from '../constants/fonts';
 
 export default function RootLayout() {
   const router = useRouter();
+
+  // Load Montserrat (bundled) + SangBleu (local files when present in assets/fonts/)
+  const [fontsLoaded] = useFonts(FONT_MAP);
 
   useEffect(() => {
     // ==========================================
@@ -82,7 +87,10 @@ export default function RootLayout() {
       subscription.remove();
       authListener?.subscription.unsubscribe();
     };
-  }, []); // Empty dependency array - only runs once on app start
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // router from useRouter is stable — intentionally omitted from deps
+
+  if (!fontsLoaded) return null;
 
   return (
     <AuthProvider>

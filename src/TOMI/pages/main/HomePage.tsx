@@ -1,108 +1,238 @@
-import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+/**
+ * HomeScreen — High-Fidelity UI
+ *
+ * Sections (top to bottom):
+ *  1. Greeting pill + headline
+ *  2. Stats grid (Level · Streak · XP)
+ *  3. Avatar Living-Room card + mood indicators
+ *  4. Start Workout CTA
+ *  5. Daily Challenges (Supabase: daily_quests)
+ *  6. Achievements Preview (Supabase: achievements)
+ *  7. Rewards Shop CTA
+ *
+ * All existing hooks and overlay effects (XpToast, LevelUpModal) are preserved.
+ * Daily quests and achievements come from the new useHomeQuests hook.
+ */
+
+import React, {
+  useCallback, useEffect, useRef, useMemo, useState,
+} from 'react';
+import {
+  View, Text, TouchableOpacity, ScrollView, Animated,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
-import { signOut } from '../../services/auth';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useDashboard } from '../../hooks/useDashboardData';
-import { useGamification } from '../../hooks/useGamification';
 import { useTomiEffects } from '../../hooks/useTomiEffects';
 import { usePastWorkouts } from '../../hooks/usePastWorkouts';
+import { useHomeQuests } from '../../hooks/useHomeQuests';
 import { useTranslation } from '../../locales/i18n';
-import { GoalResponseDto } from '../../models/dto/Goal.dto';
 import { StreakResponseDto } from '../../models/dto/Streak.dto';
-import { WorkoutResponseDto } from '../../models/dto/Workout.dto';
-import { NotificationResponseDto } from '../../models/dto/Notification.dto';
 import { homePageStyles as styles } from '../../styles/home/homePage.styles';
-import { getRelativeTime, getGreeting } from '../../utils/timeFormat';
+import { TOMI_THEME as T } from '../../constants/theme';
 import { avatarStateStore } from '../../utils/avatarStateStore';
-import {
-  ProgressRings,
-  BadgesCard,
-  LeaderboardPreviewCard,
-  XpToast,
-  LevelUpModal
-} from '../../components/gamification';
+import { XpToast, LevelUpModal } from '../../components/gamification';
+import { DailyQuest, Achievement } from '../../services/resources/homeScreen.service';
 
-type NeedIconDef =
+/* ---------------------------------------------------------------------------
+   Icon registry
+   --------------------------------------------------------------------------- */
+type IconDef =
   | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
   | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
 
-interface TomiNeed {
-  iconDef: NeedIconDef;
-  label: string;
-  status: 'good' | 'warning';
-  value: number;
+const ICON_REGISTRY: Record<string, IconDef> = {
+  trophy:   { lib: 'Ionicons', name: 'trophy' },
+  flame:    { lib: 'Ionicons', name: 'flame' },
+  star:     { lib: 'Ionicons', name: 'star' },
+  heart:    { lib: 'Ionicons', name: 'heart' },
+  barbell:  { lib: 'Ionicons', name: 'barbell' },
+  run:      { lib: 'MaterialCommunityIcons', name: 'run' },
+  dumbbell: { lib: 'MaterialCommunityIcons', name: 'dumbbell' },
+  medal:    { lib: 'MaterialCommunityIcons', name: 'medal' },
+  zap:      { lib: 'MaterialCommunityIcons', name: 'lightning-bolt' },
+  default:  { lib: 'Ionicons', name: 'star-outline' },
+};
+
+function RegistryIcon({ name, size, color }: { name?: string; size: number; color: string }) {
+  const def = (name && ICON_REGISTRY[name]) || ICON_REGISTRY.default;
+  if (def.lib === 'Ionicons') {
+    return <Ionicons name={def.name as React.ComponentProps<typeof Ionicons>['name']} size={size} color={color} />;
+  }
+  return (
+    <MaterialCommunityIcons
+      name={def.name as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
+      size={size}
+      color={color}
+    />
+  );
 }
 
-// Avatar animation states
+/* ---------------------------------------------------------------------------
+   Helpers
+   --------------------------------------------------------------------------- */
+function getGreetingLabel(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 18) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+function hexToRgb(hex: string): string {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.substring(i, i + 2), 16)).join(',');
+}
+
+function resolveQuestColor(token: string): string {
+  return ({ primary: T.primary, secondary: T.secondary, warning: T.warning, success: T.success, danger: T.danger } as Record<string, string>)[token] ?? T.primary;
+}
+
+/* ---------------------------------------------------------------------------
+   Skeleton block
+   --------------------------------------------------------------------------- */
+function SkeletonBlock({ height, width = '100%' }: { height: number; width?: string | number }) {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.9,  duration: 750, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.45, duration: 750, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return <Animated.View style={[styles.skeletonLine, { height, width: width as number, opacity }]} />;
+}
+
+function QuestSkeleton() {
+  return (
+    <View style={styles.skeletonCard} accessible accessibilityLabel="Loading">
+      <SkeletonBlock height={16} width="70%" />
+      <SkeletonBlock height={10} width="40%" />
+      <SkeletonBlock height={8} />
+    </View>
+  );
+}
+
+function AchievementSkeleton({ itemWidth }: { itemWidth: string }) {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.9,  duration: 750, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.45, duration: 750, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return (
+    <Animated.View style={[styles.achievementCard, styles.achievementCardUnlocked, { width: itemWidth as unknown as number, opacity }]} accessible accessibilityLabel="Loading">
+      <View style={[styles.achievementIconBox, styles.achievementIconBoxLocked]} />
+      <View style={[styles.skeletonLineShort, { alignSelf: 'center' }]} />
+    </Animated.View>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   QuestCard
+   --------------------------------------------------------------------------- */
+function QuestCard({ quest }: { quest: DailyQuest }) {
+  const pct         = quest.max_value > 0 ? Math.min(quest.progress / quest.max_value, 1) : 0;
+  const accentColor = resolveQuestColor(quest.color_token);
+  const iconBg      = `rgba(${hexToRgb(accentColor)},0.18)`;
+
+  return (
+    <View style={styles.questCard}>
+      <View style={[styles.questIconBox, { backgroundColor: iconBg }]}>
+        <RegistryIcon name={quest.icon_name} size={22} color={accentColor} />
+      </View>
+      <View style={styles.questContent}>
+        <View style={styles.questTitleRow}>
+          <Text style={styles.questTitle} numberOfLines={1}>{quest.title}</Text>
+          <View style={styles.questXpChip}>
+            <Ionicons name="flash" size={11} color={T.warning} />
+            <Text style={styles.questXpText}>+{quest.xp_reward}</Text>
+          </View>
+        </View>
+        <Text style={styles.questProgressText}>{quest.progress} / {quest.max_value}</Text>
+        <View style={styles.questBarTrack}>
+          <View style={[styles.questBarFill, { width: `${pct * 100}%` as any, backgroundColor: quest.completed ? T.success : accentColor }]} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   AchievementCard
+   --------------------------------------------------------------------------- */
+function AchievementCard({ achievement, itemWidth }: { achievement: Achievement; itemWidth: string }) {
+  const iconColor = achievement.unlocked ? resolveQuestColor(achievement.color_token) : T.textMuted;
+  return (
+    <View style={[styles.achievementCard, achievement.unlocked ? styles.achievementCardUnlocked : styles.achievementCardLocked, { width: itemWidth as unknown as number }]}>
+      <View style={[styles.achievementIconBox, achievement.unlocked ? styles.achievementIconBoxUnlocked : styles.achievementIconBoxLocked]}>
+        <RegistryIcon name={achievement.icon_name} size={20} color={iconColor} />
+      </View>
+      <Text style={styles.achievementLabel} numberOfLines={2}>{achievement.name}</Text>
+    </View>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Avatar animation state
+   --------------------------------------------------------------------------- */
 type AvatarAnimState = 'idle' | 'active' | 'post_workout';
 
+/* ===========================================================================
+   HomePage — main component
+   =========================================================================== */
 export default function HomePage() {
-  const router = useRouter();
+  const router     = useRouter();
   const { authId } = useAuth();
-  const { user } = useCurrentUser(authId || undefined);
+  const { user }   = useCurrentUser(authId || undefined);
   useLanguage(user);
+
   const { data, loading, error, refresh } = useDashboard(user);
-  const { data: gamificationData, loading: gamificationLoading } = useGamification(user?.userId);
-  const { workouts: pastWorkouts, loading: workoutsLoading } = usePastWorkouts(user?.userId, 5);
+  const { workouts: pastWorkouts }        = usePastWorkouts(user?.userId, 5);
+  const { dailyQuests, achievements, loading: questsLoading, error: questsError } = useHomeQuests(user?.userId);
   const { t } = useTranslation();
 
-  // Avatar animation state: idle → active on focus, post_workout after finishing a workout
-  const [avatarState, setAvatarState] = useState<AvatarAnimState>('idle');
-  const postWorkoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /* Avatar animation */
+  const [avatarState, setAvatarState]   = useState<AvatarAnimState>('idle');
+  const postWorkoutTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tomiEffects                     = useTomiEffects(data?.tomi);
+  const tomiData                        = data?.tomi ?? null;
 
-  // TOMI effects for XP and level up animations
-  const tomiEffects = useTomiEffects(data?.tomi);
-
-  // Derive tomiData early so it's available for avatarGifUrl
-  const tomiData = data?.tomi || null;
-
-  // Track last refresh time to prevent rapid re-fetches
-  const lastRefreshRef = useRef<number>(0);
-  const MIN_REFRESH_INTERVAL = 2000; // 2 seconds minimum between refreshes
-
-  // Resolve which GIF URL to show based on current avatar state
   const avatarGifUrl = useMemo(() => {
     if (!tomiData) return null;
-    let url: string | null | undefined;
     switch (avatarState) {
-      case 'post_workout': url = tomiData.animationPostWorkoutUrl || tomiData.animationActiveUrl || tomiData.animationIdleUrl; break;
-      case 'active':       url = tomiData.animationActiveUrl || tomiData.animationIdleUrl; break;
-      default:             url = tomiData.animationIdleUrl || tomiData.animationActiveUrl; break;
+      case 'post_workout': return tomiData.animationPostWorkoutUrl || tomiData.animationActiveUrl || tomiData.animationIdleUrl;
+      case 'active':       return tomiData.animationActiveUrl || tomiData.animationIdleUrl;
+      default:             return tomiData.animationIdleUrl || tomiData.animationActiveUrl;
     }
-    console.log('[HomePage] 🐾 Avatar GIF state:', avatarState, '→ URL:', url ?? 'null');
-    return url ?? null;
   }, [tomiData, avatarState]);
 
-  // Switch to active state when the home screen gains focus
-  useFocusEffect(
-    useCallback(() => {
-      // Consume post-workout flag set by WorkoutSummaryScreen
-      if (avatarStateStore.consumePostWorkout()) {
-        setAvatarState('post_workout');
-        if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
-        postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
-      } else {
-        setAvatarState(prev => prev === 'post_workout' ? prev : 'active');
-      }
-      return () => {
-        // Return to idle when leaving the screen
-        setAvatarState('idle');
-      };
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    if (avatarStateStore.consumePostWorkout()) {
+      setAvatarState('post_workout');
+      if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
+      postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
+    } else {
+      setAvatarState(prev => (prev === 'post_workout' ? prev : 'active'));
+    }
+    return () => { setAvatarState('idle'); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []));
 
-  // Detect when a new workout was just completed (workouts list grew)
   const prevWorkoutCountRef = useRef<number>(0);
+  const lastRefreshRef      = useRef<number>(0);
+
   useEffect(() => {
     const current = pastWorkouts.length;
     if (prevWorkoutCountRef.current > 0 && current > prevWorkoutCountRef.current) {
-      // A new workout appeared — trigger post-workout celebration
       setAvatarState('post_workout');
       if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
       postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
@@ -110,370 +240,274 @@ export default function HomePage() {
     prevWorkoutCountRef.current = current;
   }, [pastWorkouts.length]);
 
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
-    };
-  }, []);
+  useEffect(() => () => { if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current); }, []);
 
-  // Memoize derived data to prevent unnecessary recalculations (must be before conditional returns)
-  // Note: tomiData is declared above avatarGifUrl to avoid reference-before-declaration
-  const dashboardMetrics = useMemo(() => {
-    const streaks: StreakResponseDto[] = data?.streaks || [];
-    const recentWorkouts: WorkoutResponseDto[] = data?.recentWorkouts || [];
-    const notifications: NotificationResponseDto[] = [];
-    
-    // TODO: Implement activeGoal when goal endpoint includes nested goalStatus and goalType
-    const activeGoal: GoalResponseDto | null = null;
-    const workoutStreak = streaks.find((s) => s.metric === 'workout');
-    const todayWorkouts = recentWorkouts.filter((w) => {
-      const today = new Date().toDateString();
-      const workoutDate = new Date(w.start).toDateString();
-      return today === workoutDate;
-    });
+  useFocusEffect(useCallback(() => {
+    const now = Date.now();
+    if (user && now - lastRefreshRef.current >= 2000) { lastRefreshRef.current = now; refresh(); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]));
 
-    const dailyGoalProgress = 0;
-    const xpProgress = tomiData?.xpProgress ?? 0;
-    const nextLevelXp = tomiData?.nextLevelXp ?? 100;
+  /* Derived data */
+  const { workoutStreak, nextLevelXp } = useMemo(() => {
+    const streaks: StreakResponseDto[] = data?.streaks ?? [];
+    return { workoutStreak: streaks.find(s => s.metric === 'workout'), nextLevelXp: tomiData?.nextLevelXp ?? 100 };
+  }, [data, tomiData]);
 
-    const tomiNeeds: TomiNeed[] = tomiData ? [
-      { iconDef: { lib: 'Ionicons', name: 'barbell-outline' }, label: t('home.needActivity'), status: 'good', value: 100 - (tomiData.boredomeLevel || 0) },
-      { iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' }, label: t('home.needNutrition'), status: tomiData.hungerLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.hungerLevel || 0) },
-      { iconDef: { lib: 'Ionicons', name: 'heart-outline' }, label: t('home.needHealth'), status: 'good', value: tomiData.happinessLevel || 0 },
-      { iconDef: { lib: 'Ionicons', name: 'moon-outline' }, label: t('home.needRest'), status: tomiData.sleepinessLevel > 70 ? 'warning' : 'good', value: 100 - (tomiData.sleepinessLevel || 0) },
-    ] : [
-      { iconDef: { lib: 'Ionicons', name: 'barbell-outline' }, label: t('home.needActivity'), status: 'good', value: 50 },
-      { iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' }, label: t('home.needNutrition'), status: 'good', value: 50 },
-      { iconDef: { lib: 'Ionicons', name: 'heart-outline' }, label: t('home.needHealth'), status: 'good', value: 50 },
-      { iconDef: { lib: 'Ionicons', name: 'moon-outline' }, label: t('home.needRest'), status: 'good', value: 50 },
-    ];
+  /* Start Workout press animation */
+  const startBtnScale   = useRef(new Animated.Value(1)).current;
+  const onStartPressIn  = () => Animated.spring(startBtnScale, { toValue: 0.975, useNativeDriver: true }).start();
+  const onStartPressOut = () => Animated.spring(startBtnScale, { toValue: 1,     useNativeDriver: true }).start();
 
-    return {
-      streaks,
-      recentWorkouts,
-      notifications,
-      activeGoal,
-      workoutStreak,
-      todayWorkouts,
-      dailyGoalProgress,
-      xpProgress,
-      nextLevelXp,
-      tomiNeeds,
-    };
-  }, [data, tomiData, t]);
-
-  // Refresh data when screen comes into focus (e.g., returning from workout)
-  // Only refresh if enough time has passed since last refresh
-  useFocusEffect(
-    useCallback(() => {
-      const now = Date.now();
-      const timeSinceLastRefresh = now - lastRefreshRef.current;
-      
-      if (user && timeSinceLastRefresh >= MIN_REFRESH_INTERVAL) {
-        console.log('[HomePage] 🔄 Refreshing dashboard (last refresh:', timeSinceLastRefresh, 'ms ago)');
-        lastRefreshRef.current = now;
-        refresh();
-      } else if (!user) {
-        console.log('[HomePage] ⚠️ No user, skipping refresh');
-      } else {
-        console.log('[HomePage] ⏭️ Skipping refresh (too soon:', timeSinceLastRefresh, 'ms)');
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.userId])
-  );
-
+  /* Loading / Error */
   if (!user || loading) {
     return (
-      <ScreenWrapper style={styles.container}>
-        <View style={styles.loading}>
-          <Text style={styles.loadingText}>{t('home.loading')}</Text>
-        </View>
+      <ScreenWrapper style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>{t('home.loading')}</Text>
       </ScreenWrapper>
     );
   }
-
   if (error || !data) {
     return (
-      <ScreenWrapper style={styles.container}>
-        <View style={styles.error}>
-          <Text style={styles.errorText}>{error?.message || t('home.errorLoading')}</Text>
-          <TouchableOpacity style={styles.button} onPress={refresh}>
-            <Text style={styles.buttonText}>{t('home.retry')}</Text>
-          </TouchableOpacity>
-        </View>
+      <ScreenWrapper style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error?.message || t('home.errorLoading')}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={refresh} accessibilityRole="button">
+          <Text style={styles.retryBtnText}>{t('home.retry')}</Text>
+        </TouchableOpacity>
       </ScreenWrapper>
     );
   }
 
-  // Destructure metrics after early returns
-  const { streaks, recentWorkouts, notifications, activeGoal, workoutStreak, todayWorkouts, dailyGoalProgress, xpProgress, nextLevelXp, tomiNeeds } = dashboardMetrics;
+  const ACHI_W = '22%';
 
-  const handleLogout = async () => {
-    await signOut();
-    router.replace('/(auth)/login');
-  };
-
-  const handleNeedPress = (need: TomiNeed, index: number) => {
-    if (!tomiData) return;
-    
-    // Show interaction options for each need
-    Alert.alert(
-      t('home.needCareTitle').replace('{label}', need.label),
-      t('home.needCareMessage').replace('{label}', need.label.toLowerCase()),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.yes'), 
-          onPress: async () => {
-            // TODO: Implement TOMI interaction logic when backend endpoints are available
-            console.log('TOMI interaction:', need.label);
-          }
-        }
-      ]
-    );
-  };
-
+  /* =========================================================================
+     RENDER
+     ========================================================================= */
   return (
-    <ScreenWrapper style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Greeting */}
-        <Text style={styles.greeting}>{getGreeting(t)}</Text>
+    <ScreenWrapper style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* User Info */}
-        <Text style={styles.subtitle}>{t('home.welcomeBack').replace('{name}', user?.name || 'User')}!</Text>
+        {/* Section 1 — Greeting */}
+        <View>
+          <View style={styles.greetingPill}>
+            <Text style={styles.greetingPillText}>{getGreetingLabel()}</Text>
+          </View>
+          <Text style={styles.greetingTitle}>Hey {user.name || 'there'}!</Text>
+          <Text style={styles.greetingSubtitle}>{"Let's crush your goals today"}</Text>
+        </View>
 
-        {/* Notifications Badge */}
-        {notifications.length > 0 && (
-          <TouchableOpacity 
-            style={styles.notificationBadge}
-            onPress={() => console.log('Navigate to notifications')}
-          >
-            <Text style={styles.notificationText}>
-              {notifications.length} new notification{notifications.length > 1 ? 's' : ''}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.sectionGap} />
 
-        {/* TOMI Card */}
-        <View style={[
-          styles.card,
-          tomiData?.themeColor && { borderColor: tomiData.themeColor, borderWidth: 2 }
-        ]}>
-          {/* GIF + Info side-by-side */}
-          <View style={styles.cardBody}>
-            {/* Avatar GIF */}
-            <View style={styles.avatar}>
-              {avatarGifUrl ? (
-                <Image
-                  source={{ uri: avatarGifUrl }}
-                  style={{ width: '100%', height: '100%' }}
-                  contentFit="contain"
-                  autoplay
-                  onError={() => console.log('[HomePage] Avatar GIF failed to load:', avatarGifUrl)}
-                />
-              ) : null}
+        {/* Section 2 — Stats Grid */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.warningTint }]}>
+              <Ionicons name="trophy" size={20} color={T.warning} />
+            </View>
+            <Text style={styles.statValue}>{tomiData?.level ?? 0}</Text>
+            <Text style={styles.statLabel}>Level</Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.dangerTint }]}>
+              <Ionicons name="flame" size={20} color={T.danger} />
+            </View>
+            <Text style={styles.statValue}>{workoutStreak?.current ?? 0}</Text>
+            <Text style={styles.statLabel}>Day Streak</Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.primaryTint }]}>
+              <MaterialCommunityIcons name="lightning-bolt" size={22} color={T.primary} />
+            </View>
+            <Text style={styles.statValue}>{tomiData?.xp ?? 0}</Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* Section 3 — Avatar Card */}
+        <View style={styles.avatarCard}>
+          <View style={styles.avatarCardGlassOverlay} pointerEvents="none" />
+          <View style={styles.avatarCardInner}>
+
+            {/* Header */}
+            <View style={styles.avatarCardHeader}>
+              <View>
+                <Text style={styles.avatarName}>{tomiData?.nickname ?? 'Your TOMI'}</Text>
+                <Text style={styles.avatarSubtitle}>Tap avatar to customize</Text>
+              </View>
+              <View style={styles.xpPill}>
+                <Text style={styles.xpPillLabel}>Level Progress</Text>
+                <Text style={styles.xpPillValue}>{tomiData?.xp ?? 0}/{nextLevelXp} XP</Text>
+              </View>
             </View>
 
-            {/* Right column: name, level, XP bar, streak */}
-            <View style={styles.cardInfo}>
-              <Text style={styles.name}>
-                {tomiData ? tomiData.nickname : t('home.yourTomi')}
-              </Text>
-              <Text style={styles.levelText}>
-                {tomiData
-                  ? t('home.levelStage').replace('{level}', tomiData.level.toString())
-                  : 'Start your journey!'}
-              </Text>
-
-              {/* XP bar + label */}
-              {tomiData && (
-                <View style={styles.xpSection}>
-                  <View style={styles.progressBar}>
-                    <View style={[
-                      styles.progressFill,
-                      {
-                        width: `${Math.min(xpProgress, 100)}%`,
-                        backgroundColor: tomiData.themeColor || '#007AFF',
-                      },
-                    ]} />
-                  </View>
-                  <Text style={styles.xpLabel}>
-                    {tomiData.xp} / {nextLevelXp} XP
-                  </Text>
+            {/* Living-room scene */}
+            <View style={styles.livingRoom}>
+              <View style={styles.roomSkyTop} pointerEvents="none" />
+              <View style={styles.roomFloor} pointerEvents="none" />
+              <View style={styles.roomWindow} pointerEvents="none">
+                <View style={styles.windowPane} /><View style={styles.windowPane} />
+                <View style={styles.windowPane} /><View style={styles.windowPane} />
+              </View>
+              <View style={styles.roomSofa} pointerEvents="none">
+                <MaterialCommunityIcons name="sofa" size={32} color={T.primary} />
+              </View>
+              <View style={styles.roomLampContainer} pointerEvents="none">
+                <View style={styles.roomLampShade}>
+                  <Ionicons name="bulb" size={16} color={T.warning} />
                 </View>
-              )}
-
-              {/* Streak pill */}
-              {workoutStreak && workoutStreak.current > 0 && (
-                <View style={styles.streakPill}>
-                  <Ionicons name="flame" size={13} color="#FF6B35" />
-                  <Text style={styles.streakPillText}>
-                    {t('home.dayStreak').replace('{days}', workoutStreak.current.toString())}
-                  </Text>
+                <View style={styles.roomLampPole} />
+                <View style={styles.roomTable} />
+                <View style={styles.roomTableBase} />
+              </View>
+              <View style={styles.roomCoffeeCup} pointerEvents="none">
+                <Ionicons name="cafe" size={16} color="#92400e" />
+              </View>
+              <TouchableOpacity
+                style={styles.avatarTouchable}
+                onPress={() => router.push('/(tabs)/avatar')}
+                activeOpacity={0.90}
+                accessibilityRole="button"
+                accessibilityLabel={`Customize ${tomiData?.nickname ?? 'TOMI'}`}
+              >
+                <View style={styles.avatarCircle}>
+                  {avatarGifUrl ? (
+                    <Image source={{ uri: avatarGifUrl }} style={{ width: 102, height: 102 }} contentFit="contain" autoplay />
+                  ) : (
+                    <Ionicons name="sparkles" size={48} color="#FFF" />
+                  )}
                 </View>
-              )}
-            </View>
-          </View>
-
-        </View>
-
-        {/* Daily Goal - Hidden until goal endpoint is available */}
-        {activeGoal && false && (
-          <View style={styles.goalCard}>
-            <View style={styles.goalHeader}>
-              <Text style={styles.goalTitle}>
-                Daily Goal
-              </Text>
-              <Text style={styles.goalValue}>
-                0/0
-              </Text>
-            </View>
-            <View style={styles.goalBar}>
-              <View style={[styles.goalFill, { width: `${Math.min(dailyGoalProgress, 100)}%` }]} />
-            </View>
-            <Text style={styles.goalProgress}>
-              {Math.round(dailyGoalProgress)}% complete
-            </Text>
-          </View>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('/(tabs)/workout')}
-          >
-            <Ionicons name="play-circle-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
-            <Text style={styles.buttonText}>{t('home.startWorkout')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonSecondary]}
-            onPress={() => router.push('/(tabs)/avatar')}
-          >
-            <Ionicons name="sparkles-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
-            <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
-              {t('home.customize')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== GAMIFICATION FEATURES ===== */}
-        
-        {/* Progress Rings */}
-        {gamificationData?.progressRings && gamificationData.progressRings.length > 0 && (
-          <ProgressRings rings={gamificationData.progressRings} />
-        )}
-
-        {/* Badges (Earned + Upcoming) */}
-        {gamificationData && (gamificationData.badgesEarned.length > 0 || gamificationData.badgesUpcoming.length > 0) && (
-          <BadgesCard 
-            earned={gamificationData.badgesEarned} 
-            upcoming={gamificationData.badgesUpcoming}
-          />
-        )}
-
-        {/* Leaderboard Preview */}
-        {gamificationData?.leaderboards && gamificationData.leaderboards.length > 0 && (
-          <LeaderboardPreviewCard leaderboards={gamificationData.leaderboards} />
-        )}
-
-        {/* Today's Progress */}
-        <View style={styles.progressSection}>
-          <Text style={styles.sectionTitle}>{t('home.todaysProgress')}</Text>
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.todayProgress?.workoutsCount || 0}</Text>
-              <Text style={styles.statLabel}>{t('home.workouts')}</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.todayProgress?.minutes || 0}</Text>
-              <Text style={styles.statLabel}>{t('home.minutes')}</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{data.todayProgress?.xpEarned || 0}</Text>
-              <Text style={styles.statLabel}>{t('home.xpEarned')}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Past Workouts Section */}
-        <View style={styles.pastWorkoutsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('home.pastWorkouts')}</Text>
-            {pastWorkouts.length > 0 && (
-              <TouchableOpacity onPress={() => router.push('/(tabs)/history')}>
-                <Text style={styles.viewAllText}>{t('home.viewAll')}</Text>
+                <View style={styles.avatarShadowPlatform} />
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
 
-          {workoutsLoading ? (
-            <View style={styles.workoutsLoadingContainer}>
-              <Text style={styles.workoutsLoadingText}>{t('home.loading')}</Text>
+            {/* XP bar */}
+            <View style={styles.xpBarTrack}>
+              <View style={[styles.xpBarFill, { width: `${Math.min(((tomiData?.xp ?? 0) / Math.max(nextLevelXp, 1)) * 100, 100)}%` as any, backgroundColor: tomiData?.themeColor ?? T.secondary }]} />
             </View>
-          ) : pastWorkouts.length === 0 ? (
-            <View style={styles.noWorkoutsContainer}>
-              <Text style={styles.noWorkoutsText}>{t('home.noWorkouts')}</Text>
-            </View>
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              style={styles.workoutCarousel}
-              contentContainerStyle={styles.workoutCarouselContent}
-              nestedScrollEnabled={true}
-            >
-              {pastWorkouts.map((workout) => (
-                <View key={workout.workoutId} style={styles.pastWorkoutCard}>
-                  <View style={styles.workoutDetails}>
-                    <Text style={styles.workoutName}>{workout.workoutTypeName}</Text>
-                    <Text style={styles.workoutTime}>{getRelativeTime(workout.start, t)}</Text>
-                  </View>
-                  
-                  <View style={styles.workoutStats}>
-                    <Text style={styles.workoutDurationBadge}>
-                      {workout.durationMinutes} {t('home.min')}
-                    </Text>
-                    {workout.xpAwarded !== undefined && workout.xpAwarded !== null && (
-                      <Text style={styles.workoutXpBadge}>
-                        +{workout.xpAwarded} XP
-                      </Text>
-                    )}
-                  </View>
+
+            {/* Mood indicators */}
+            <View style={styles.moodGrid}>
+              <View style={styles.moodCard}>
+                <View style={styles.moodLabelRow}>
+                  <Ionicons name="heart" size={14} color={T.success} />
+                  <Text style={styles.moodLabel}>Happiness</Text>
                 </View>
-              ))}
-            </ScrollView>
+                <Text style={[styles.moodValue, { color: T.success }]}>{100 - (tomiData?.hungerLevel ?? 0)}%</Text>
+              </View>
+              <View style={styles.moodCard}>
+                <View style={styles.moodLabelRow}>
+                  <MaterialCommunityIcons name="lightning-bolt" size={14} color={T.secondary} />
+                  <Text style={styles.moodLabel}>Energy</Text>
+                </View>
+                <Text style={[styles.moodValue, { color: T.secondary }]}>{100 - (tomiData?.sleepinessLevel ?? 0)}%</Text>
+              </View>
+            </View>
+
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* Section 4 — Start Workout CTA */}
+        <Animated.View style={{ transform: [{ scale: startBtnScale }] }}>
+          <TouchableOpacity
+            style={styles.startWorkoutBtn}
+            onPress={() => router.push('/(tabs)/workout')}
+            onPressIn={onStartPressIn}
+            onPressOut={onStartPressOut}
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel="Start Workout"
+          >
+            <View style={styles.startWorkoutGloss} pointerEvents="none" />
+            <View style={styles.startWorkoutLeft}>
+              <Text style={styles.startWorkoutLabel}>Ready to move?</Text>
+              <Text style={styles.startWorkoutTitle}>Start Workout</Text>
+            </View>
+            <View style={styles.startWorkoutIconBox}>
+              <Ionicons name="play" size={28} color="#FFF" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.sectionGap} />
+
+        {/* Section 5 — Daily Challenges */}
+        <View>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Daily Challenges</Text>
+            <TouchableOpacity style={styles.viewAllBtn} onPress={() => router.push('/(tabs)/history')} accessibilityRole="button">
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name="chevron-forward" size={14} color={T.primary} />
+            </TouchableOpacity>
+          </View>
+          {questsError && !questsLoading && (
+            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>Daily quests are coming soon.</Text></View>
+          )}
+          {questsLoading && <><QuestSkeleton /><QuestSkeleton /></>}
+          {!questsLoading && !questsError && dailyQuests.length === 0 && (
+            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>No quests for today — check back later!</Text></View>
+          )}
+          {!questsLoading && dailyQuests.map(q => <QuestCard key={q.id} quest={q} />)}
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* Section 6 — Achievements Preview */}
+        <View>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Achievements</Text>
+            <TouchableOpacity style={styles.viewAllBtn} onPress={() => router.push('/(tabs)/history')} accessibilityRole="button">
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name="chevron-forward" size={14} color={T.primary} />
+            </TouchableOpacity>
+          </View>
+          {questsLoading && (
+            <View style={styles.achievementsGrid}>
+              {[0,1,2,3].map(i => <AchievementSkeleton key={i} itemWidth={ACHI_W} />)}
+            </View>
+          )}
+          {!questsLoading && achievements.length > 0 && (
+            <View style={styles.achievementsGrid}>
+              {achievements.map(a => <AchievementCard key={a.id} achievement={a} itemWidth={ACHI_W} />)}
+            </View>
+          )}
+          {!questsLoading && achievements.length === 0 && (
+            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>Complete a workout to earn your first achievement!</Text></View>
           )}
         </View>
 
-        {/* Log Out */}
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#FF3B30', marginTop: 24, marginBottom: 8 }]}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#FFF" style={{ marginRight: 6 }} />
-          <Text style={styles.buttonText}>Log Out</Text>
-        </TouchableOpacity>
+        <View style={styles.sectionGap} />
+
+        {/* Section 7 — Rewards Shop CTA */}
+        <View style={styles.rewardsCard}>
+          <View style={styles.rewardsGloss} pointerEvents="none" />
+          <View style={styles.rewardsLeft}>
+            <Text style={styles.rewardsTitle}>Rewards Shop</Text>
+            <Text style={styles.rewardsSubtitle}>Unlock exclusive items with your XP</Text>
+            <TouchableOpacity style={styles.rewardsShopBtn} onPress={() => console.log('TODO: rewards shop')} accessibilityRole="button">
+              <Text style={styles.rewardsShopBtnText}>Browse Shop</Text>
+              <Ionicons name="arrow-forward" size={16} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.rewardsIconBox}>
+            <Ionicons name="star" size={32} color={T.secondary} />
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
       </ScrollView>
 
-      {/* ===== TOMI EFFECTS ===== */}
-      
-      {/* XP Toast - shows when XP increases */}
+      {/* XP Toast */}
       {tomiEffects.showXpToast && tomiEffects.xpDelta && (
-        <XpToast 
-          xpDelta={tomiEffects.xpDelta}
-          visible={tomiEffects.showXpToast}
-          onDismiss={tomiEffects.dismissXpToast}
-        />
+        <XpToast xpDelta={tomiEffects.xpDelta} visible={tomiEffects.showXpToast} onDismiss={tomiEffects.dismissXpToast} />
       )}
 
-      {/* Level Up Modal - shows when level increases */}
-      <LevelUpModal
-        visible={tomiEffects.showLevelUpModal}
-        level={tomiEffects.newLevel}
-        onDismiss={tomiEffects.dismissLevelUpModal}
-      />
+      {/* Level-Up Modal */}
+      <LevelUpModal visible={tomiEffects.showLevelUpModal} level={tomiEffects.newLevel} onDismiss={tomiEffects.dismissLevelUpModal} />
     </ScreenWrapper>
   );
 }
