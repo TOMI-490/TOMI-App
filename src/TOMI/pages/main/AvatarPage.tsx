@@ -66,8 +66,10 @@ export default function AvatarPage() {
   const currentEvo = useMemo(() => getEvolutionStage(avatar?.level ?? 1), [avatar?.level]);
   const nextEvo = useMemo(() => getNextEvolution(avatar?.level ?? 1), [avatar?.level]);
 
-  const happinessPercent = avatar ? avatar.happinessLevel : 0;
-  const energyPercent = avatar ? 100 - avatar.sleepinessLevel : 0;
+  const fullnessPercent   = avatar ? 100 - avatar.hungerLevel : 0;
+  const energyPercent     = avatar ? 100 - avatar.sleepinessLevel : 0;
+  const funPercent        = avatar ? 100 - avatar.boredomeLevel : 0;
+  const happinessPercent  = avatar ? avatar.happinessLevel : 0;
 
   const leaderboard = gamData?.leaderboards?.[0];
   const userRank = leaderboard?.userEntry?.rank ?? 0;
@@ -211,10 +213,10 @@ export default function AvatarPage() {
                 <View style={styles.avatarShadowPlatform} />
                 <View style={styles.avatarContainer}>
                   {avatarGif ? (
-                    <Image source={{ uri: avatarGif }} style={{ width: 110, height: 110 }} contentFit="contain" autoplay />
+                    <Image source={{ uri: avatarGif }} style={{ width: 130, height: 130 }} contentFit="contain" autoplay />
                   ) : (
                     <View style={[styles.avatarPlaceholder, { backgroundColor: themeColor + '33' }]}>
-                      <Ionicons name="sparkles" size={48} color={themeColor} />
+                      <Ionicons name="sparkles" size={52} color={themeColor} />
                     </View>
                   )}
                 </View>
@@ -230,30 +232,54 @@ export default function AvatarPage() {
               <View style={[styles.xpBarFill, { width: `${Math.min(xpPercent, 100)}%` as any, backgroundColor: themeColor }]} />
             </View>
 
-            {/* Mood: Happiness + Energy */}
-            <View style={styles.moodRow}>
-              <View style={styles.moodPill}>
-                <Ionicons name="heart" size={15} color={T.success} style={styles.moodPillIcon} />
-                <Text style={styles.moodPillLabel}>Happiness</Text>
-                <Text style={[styles.moodPillValue, { color: T.success }]}>{happinessPercent}%</Text>
+            {/* Mood stats — 2x2 grid */}
+            <View style={styles.moodGrid}>
+              <View style={styles.moodStat}>
+                <View style={styles.moodStatHeader}>
+                  <Ionicons name="restaurant-outline" size={14} color={T.success} />
+                  <Text style={styles.moodStatLabel}>Fullness</Text>
+                  <Text style={[styles.moodStatValue, { color: T.success }]}>{fullnessPercent}%</Text>
+                </View>
+                <View style={styles.moodBarTrack}>
+                  <View style={[styles.moodBarFill, { width: `${fullnessPercent}%` as any, backgroundColor: T.success }]} />
+                </View>
               </View>
-              <View style={styles.moodPill}>
-                <MaterialCommunityIcons name="lightning-bolt" size={15} color={T.secondary} style={styles.moodPillIcon} />
-                <Text style={styles.moodPillLabel}>Energy</Text>
-                <Text style={[styles.moodPillValue, { color: T.secondary }]}>{energyPercent}%</Text>
+              <View style={styles.moodStat}>
+                <View style={styles.moodStatHeader}>
+                  <MaterialCommunityIcons name="lightning-bolt" size={14} color={T.secondary} />
+                  <Text style={styles.moodStatLabel}>Energy</Text>
+                  <Text style={[styles.moodStatValue, { color: T.secondary }]}>{energyPercent}%</Text>
+                </View>
+                <View style={styles.moodBarTrack}>
+                  <View style={[styles.moodBarFill, { width: `${energyPercent}%` as any, backgroundColor: T.secondary }]} />
+                </View>
+              </View>
+              <View style={styles.moodStat}>
+                <View style={styles.moodStatHeader}>
+                  <Ionicons name="game-controller-outline" size={14} color={T.warning} />
+                  <Text style={styles.moodStatLabel}>Fun</Text>
+                  <Text style={[styles.moodStatValue, { color: T.warning }]}>{funPercent}%</Text>
+                </View>
+                <View style={styles.moodBarTrack}>
+                  <View style={[styles.moodBarFill, { width: `${funPercent}%` as any, backgroundColor: T.warning }]} />
+                </View>
+              </View>
+              <View style={styles.moodStat}>
+                <View style={styles.moodStatHeader}>
+                  <Ionicons name="heart" size={14} color={T.danger} />
+                  <Text style={styles.moodStatLabel}>Happiness</Text>
+                  <Text style={[styles.moodStatValue, { color: T.danger }]}>{happinessPercent}%</Text>
+                </View>
+                <View style={styles.moodBarTrack}>
+                  <View style={[styles.moodBarFill, { width: `${happinessPercent}%` as any, backgroundColor: T.danger }]} />
+                </View>
               </View>
             </View>
 
-            {/* Action buttons */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={[styles.actionBtn, styles.actionBtnFeed]} activeOpacity={0.7}>
-                <Ionicons name="heart" size={18} color={T.success} />
-                <Text style={[styles.actionBtnText, styles.actionBtnTextFeed]}>Feed</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.actionBtnRest]} activeOpacity={0.7}>
-                <Ionicons name="moon" size={18} color={T.secondary} />
-                <Text style={[styles.actionBtnText, styles.actionBtnTextRest]}>Rest</Text>
-              </TouchableOpacity>
+            {/* Workout hint */}
+            <View style={styles.moodHint}>
+              <MaterialCommunityIcons name="dumbbell" size={14} color={T.textMuted} />
+              <Text style={styles.moodHintText}>Complete workouts to boost your TOMI's mood!</Text>
             </View>
 
           </View>
@@ -426,44 +452,57 @@ function EvolutionContent({ level, currentEvo, nextEvo }: {
         <MaterialCommunityIcons name="chart-timeline-variant-shimmer" size={20} color={T.primary} />
         <Text style={styles.sectionTitle}>Evolution Path</Text>
       </View>
-      {EVOLUTION_STAGES.map((stage, i) => {
-        const done = level >= stage.lvlRange[1] + 1 || (i <= currentIdx && i < EVOLUTION_STAGES.length - 1 && level > stage.lvlRange[1]);
-        const isCurrent = stage === currentEvo;
-        const isPast = i < currentIdx;
-        const isLast = i === EVOLUTION_STAGES.length - 1;
+      <View style={styles.evoPathContainer}>
+        {/* Continuous vertical rail */}
+        <View style={[styles.evoPathRail, { backgroundColor: currentIdx > 0 ? T.secondary : '#E0E0E0' }]} />
+        {/* Colored portion of the rail (completed) */}
+        {currentIdx > 0 && (
+          <View style={[styles.evoPathRail, {
+            backgroundColor: T.secondary,
+            bottom: undefined,
+            height: `${Math.min((currentIdx / (EVOLUTION_STAGES.length - 1)) * 100, 100)}%` as any,
+          }]} />
+        )}
 
-        return (
-          <View key={stage.name} style={styles.evoPathItem}>
-            {/* Vertical line + dot */}
-            <View style={{ alignItems: 'center', width: 50 }}>
-              {i > 0 && <View style={[styles.evoPathLine, { height: 14 }, !(isPast || isCurrent) && styles.evoPathLinePending]} />}
-              <View style={[styles.evoPathDot, !(isPast || isCurrent) && styles.evoPathDotPending, { position: 'relative', left: 0, top: 0, marginVertical: 2 }]} />
-              {!isLast && <View style={[styles.evoPathLine, { height: 14, flex: 1 }, !(isPast) && styles.evoPathLinePending]} />}
-            </View>
+        {EVOLUTION_STAGES.map((stage, i) => {
+          const isCurrent = stage === currentEvo;
+          const isPast = i < currentIdx;
+          const completed = isPast || isCurrent;
+          const dotColor = completed ? T.secondary : '#D4D4D4';
 
-            {/* Card */}
-            <View style={styles.evoPathCard}>
-              <View style={[styles.evoPathIconBox, { backgroundColor: stage.bg }]}>
-                <Ionicons name={stage.icon as any} size={20} color={stage.color} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.evoPathName}>{stage.name}</Text>
-                <Text style={styles.evoPathDesc} numberOfLines={1}>{stage.desc}</Text>
-              </View>
-              {(isPast || (isCurrent && i === 0)) ? (
-                <View style={styles.evoPathDone}>
-                  <Ionicons name="checkmark-circle" size={14} color={T.success} />
-                  <Text style={styles.evoPathDoneText}>Done</Text>
+          return (
+            <View key={stage.name} style={styles.evoPathItem}>
+              {/* Dot on the rail */}
+              <View style={styles.evoPathDotWrap}>
+                <View style={[styles.evoPathDotOuter, { backgroundColor: dotColor + '30' }]}>
+                  <View style={[styles.evoPathDotInner, { backgroundColor: dotColor }]} />
                 </View>
-              ) : (
-                <View style={[styles.evoPathBadge, { backgroundColor: stage.color }]}>
-                  <Text style={styles.evoPathBadgeText}>Lv.{stage.lvlRange[0]}</Text>
+              </View>
+
+              {/* Card content */}
+              <View style={styles.evoPathCard}>
+                <View style={[styles.evoPathIconBox, { backgroundColor: stage.bg }]}>
+                  <Ionicons name={stage.icon as any} size={20} color={stage.color} />
                 </View>
-              )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.evoPathName}>{stage.name}</Text>
+                  <Text style={styles.evoPathDesc} numberOfLines={1}>{stage.desc}</Text>
+                </View>
+                {isPast ? (
+                  <View style={styles.evoPathDone}>
+                    <Ionicons name="checkmark-circle" size={16} color={T.success} />
+                    <Text style={styles.evoPathDoneText}>Done</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.evoPathBadge, { backgroundColor: stage.color }]}>
+                    <Text style={styles.evoPathBadgeText}>Lv.{stage.lvlRange[0]}</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </>
   );
 }

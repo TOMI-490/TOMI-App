@@ -241,6 +241,9 @@ export default function HomePage() {
       setAvatarState('post_workout');
       if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current);
       postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
+      // Force an immediate dashboard refresh so XP/level update is visible
+      refresh();
+      avatarStateStore.clearPostWorkoutData();
     } else {
       setAvatarState(prev => (prev === 'post_workout' ? prev : 'active'));
     }
@@ -457,10 +460,10 @@ export default function HomePage() {
             <View style={styles.moodGrid}>
               <View style={styles.moodCard}>
                 <View style={styles.moodLabelRow}>
-                  <Ionicons name="heart" size={14} color={T.success} />
+                  <Ionicons name="heart" size={14} color={T.danger} />
                   <Text style={styles.moodLabel}>Happiness</Text>
                 </View>
-                <Text style={[styles.moodValue, { color: T.success }]}>{100 - (tomiData?.hungerLevel ?? 0)}%</Text>
+                <Text style={[styles.moodValue, { color: T.danger }]}>{tomiData?.happinessLevel ?? 0}%</Text>
               </View>
               <View style={styles.moodCard}>
                 <View style={styles.moodLabelRow}>

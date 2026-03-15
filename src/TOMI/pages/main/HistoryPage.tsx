@@ -1,161 +1,121 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '../../locales/i18n';
-import { historyStyles } from '../../styles/history.styles';
-import { 
-  historyService, 
-  type WeeklySummary, 
-  type WorkoutListItem,
-  type MostFrequentResponse,
-  type XpOverTimeResponse
-} from '../../services/resources/history.service';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
+import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { XpMiniChart } from '../../components/history/XpMiniChart';
+import {
+  historyService,
+  type WeeklySummary,
+  type WorkoutListItem,
+  type CalendarActivity,
+} from '../../services/resources/history.service';
 import { CalendarMonth } from '../../components/history/CalendarMonth';
+import { historyStyles as styles } from '../../styles/history.styles';
+import { TOMI_THEME as T } from '../../constants/theme';
 
-// Skeleton Loading Components
-const SkeletonSummaryCard = () => (
-  <View style={historyStyles.skeletonCard}>
-    <View style={[historyStyles.skeletonLine, { width: '40%', marginBottom: 16 }]} />
-    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 }}>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={historyStyles.skeletonMetricValue} />
-        <View style={historyStyles.skeletonMetricLabel} />
-      </View>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={historyStyles.skeletonMetricValue} />
-        <View style={historyStyles.skeletonMetricLabel} />
-      </View>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={historyStyles.skeletonMetricValue} />
-        <View style={historyStyles.skeletonMetricLabel} />
-      </View>
-    </View>
-    <View style={[historyStyles.skeletonLine, { width: '50%' }]} />
-  </View>
-);
+/* ─── Helpers ──────────────────────────────────────────────────────────── */
+type IconDef =
+  | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
+  | { lib: 'MCI'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
 
-const SkeletonWorkoutCard = () => (
-  <View style={historyStyles.skeletonCard}>
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-      <View style={{ flex: 1 }}>
-        <View style={[historyStyles.skeletonLine, { width: '60%', marginBottom: 8 }]} />
-        <View style={[historyStyles.skeletonLine, { width: '40%', height: 10 }]} />
-      </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        <View style={[historyStyles.skeletonLine, { width: 60, marginBottom: 8 }]} />
-        <View style={[historyStyles.skeletonLine, { width: 50, height: 20, borderRadius: 10 }]} />
-      </View>
-    </View>
-    <View style={{ height: 1, backgroundColor: '#f0f0f0', marginBottom: 12 }} />
-    <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={[historyStyles.skeletonLine, { width: 40, marginBottom: 4 }]} />
-        <View style={[historyStyles.skeletonLine, { width: 30, height: 10 }]} />
-      </View>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={[historyStyles.skeletonLine, { width: 40, marginBottom: 4 }]} />
-        <View style={[historyStyles.skeletonLine, { width: 30, height: 10 }]} />
-      </View>
-      <View style={historyStyles.skeletonMetric}>
-        <View style={[historyStyles.skeletonLine, { width: 40, marginBottom: 4 }]} />
-        <View style={[historyStyles.skeletonLine, { width: 30, height: 10 }]} />
-      </View>
-    </View>
-  </View>
-);
+function getWorkoutIcon(type: string): IconDef {
+  const l = type.toLowerCase();
+  if (l.includes('run'))   return { lib: 'MCI', name: 'run' };
+  if (l.includes('walk'))  return { lib: 'MCI', name: 'walk' };
+  if (l.includes('cycl') || l.includes('bike')) return { lib: 'MCI', name: 'bike' };
+  if (l.includes('swim'))  return { lib: 'MCI', name: 'swim' };
+  if (l.includes('yoga'))  return { lib: 'MCI', name: 'yoga' };
+  if (l.includes('strength') || l.includes('weight')) return { lib: 'Ionicons', name: 'barbell-outline' };
+  if (l.includes('hiit') || l.includes('interval'))   return { lib: 'MCI', name: 'lightning-bolt' };
+  if (l.includes('stretch')) return { lib: 'MCI', name: 'human-handsup' };
+  return { lib: 'Ionicons', name: 'fitness-outline' };
+}
 
+function WIcon({ def, size, color }: { def: IconDef; size: number; color: string }) {
+  if (def.lib === 'Ionicons') return <Ionicons name={def.name as any} size={size} color={color} />;
+  return <MaterialCommunityIcons name={def.name as any} size={size} color={color} />;
+}
+
+function getWorkoutColor(type: string): { color: string; bg: string } {
+  const l = type.toLowerCase();
+  if (l.includes('run') || l.includes('walk') || l.includes('cycl') || l.includes('swim'))
+    return { color: '#F0545C', bg: '#FDEAEA' };
+  if (l.includes('strength') || l.includes('weight'))
+    return { color: '#FF7A3D', bg: '#FFF0E8' };
+  if (l.includes('yoga') || l.includes('stretch'))
+    return { color: '#4E9BE8', bg: '#E8F1FD' };
+  if (l.includes('hiit') || l.includes('interval'))
+    return { color: '#FF7A3D', bg: '#FFF0E8' };
+  return { color: '#FF7A3D', bg: '#FFF0E8' };
+}
+
+function getCategoryLabel(type: string): string {
+  const l = type.toLowerCase();
+  if (l.includes('run') || l.includes('walk') || l.includes('cycl') || l.includes('swim')) return 'cardio';
+  if (l.includes('strength') || l.includes('weight')) return 'strength';
+  if (l.includes('yoga') || l.includes('stretch')) return 'flexibility';
+  if (l.includes('hiit') || l.includes('interval')) return 'cardio';
+  return 'general';
+}
+
+function getCategoryColor(cat: string): string {
+  if (cat === 'cardio')      return '#F0545C';
+  if (cat === 'strength')    return '#FF7A3D';
+  if (cat === 'flexibility') return '#4E9BE8';
+  return T.primary;
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/* ─── Component ────────────────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { t } = useTranslation();
-  const router = useRouter();
-  const { user } = useCurrentUser();
-  
+  const { authId } = useAuth();
+  const { user } = useCurrentUser(authId || undefined);
+
+  const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
+  const [allWorkouts, setAllWorkouts] = useState<WorkoutListItem[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeDates, setActiveDates] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
-  const [mostFrequent, setMostFrequent] = useState<MostFrequentResponse | null>(null);
-  const [xpOverTime, setXpOverTime] = useState<XpOverTimeResponse | null>(null);
-  
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [workoutsLoading, setWorkoutsLoading] = useState(false);
-  const [overviewLoading, setOverviewLoading] = useState(false);
 
-  const MAX_RECENT_WORKOUTS = 3; // Reduced from 5 to show 3-4 recent workouts
+  const getMonthString = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const getDateString = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-  // Format month for API calls
-  const getMonthString = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  };
-
-  // Get date string for a day
-  const getDateString = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  // Load initial data
-  useEffect(() => {
-    if (user?.userId) {
-      loadData();
-    }
-  }, [user?.userId]);
-
-  // Handle month changes separately without full loading screen
-  useEffect(() => {
-    if (user?.userId && !loading) {
-      loadMonthData();
-    }
-  }, [currentMonth]);
+  useEffect(() => { if (user?.userId) loadData(); }, [user?.userId]);
+  useEffect(() => { if (user?.userId && !loading) loadMonthData(); }, [currentMonth]);
 
   const loadData = async () => {
     if (!user?.userId) return;
-    
     setLoading(true);
-    setError(null);
-    
     try {
       const monthStr = getMonthString(currentMonth);
-      
-      // Load weekly summary and calendar in parallel
-      const [summary, calendar] = await Promise.all([
+      const [summary, calendar, workoutsList] = await Promise.all([
         historyService.getWeeklySummary(user.userId),
         historyService.getCalendarActivity(user.userId, monthStr),
+        historyService.getWorkoutsList(user.userId, undefined, 1, 50),
       ]);
-      
       setWeeklySummary(summary);
       setActiveDates(calendar.activeDates);
-      
-      // Auto-select most recent active date or today if active
+      setAllWorkouts(workoutsList.items);
+      setWorkouts(workoutsList.items);
       const today = new Date().toISOString().split('T')[0];
-      let dateToSelect: string | undefined;
-      
-      if (calendar.activeDates.includes(today)) {
-        dateToSelect = today;
-      } else if (calendar.activeDates.length > 0) {
-        // Select most recent active date
-        dateToSelect = calendar.activeDates.sort().reverse()[0];
-      }
-      
-      setSelectedDate(dateToSelect);
-      
-      // Load workouts for selected date
-      if (dateToSelect) {
-        await loadWorkoutsForDate(dateToSelect);
-      } else {
-        setWorkouts([]);
-      }
-      
-      // Load overview data
-      loadOverviewData(monthStr);
+      setSelectedDate(calendar.activeDates.includes(today) ? today : calendar.activeDates.sort().reverse()[0]);
     } catch (err) {
-      console.error('Error loading history data:', err);
-      setError(t('history.errorLoading'));
+      console.error('[HistoryPage] Error loading data:', err);
     } finally {
       setLoading(false);
     }
@@ -163,351 +123,292 @@ export default function HistoryPage() {
 
   const loadMonthData = async () => {
     if (!user?.userId) return;
-    
     try {
       const monthStr = getMonthString(currentMonth);
-      
-      // Load calendar, workouts, and overview for new month
-      const calendar = await historyService.getCalendarActivity(user.userId, monthStr);
+      const [calendar, monthWorkoutsList] = await Promise.all([
+        historyService.getCalendarActivity(user.userId, monthStr),
+        historyService.getWorkoutsList(user.userId, undefined, 1, 200),
+      ]);
       setActiveDates(calendar.activeDates);
-      
-      // Auto-select most recent active date in new month
-      let dateToSelect: string | undefined;
+      setAllWorkouts(monthWorkoutsList.items);
       if (calendar.activeDates.length > 0) {
-        dateToSelect = calendar.activeDates.sort().reverse()[0];
-      }
-      
-      setSelectedDate(dateToSelect);
-      
-      // Load workouts for selected date
-      if (dateToSelect) {
-        await loadWorkoutsForDate(dateToSelect);
+        const most = calendar.activeDates.sort().reverse()[0];
+        setSelectedDate(most);
+        await loadWorkoutsForDate(most);
       } else {
+        setSelectedDate(undefined);
         setWorkouts([]);
       }
-      
-      // Load overview data
-      loadOverviewData(monthStr);
     } catch (err) {
-      console.error('Error loading month data:', err);
+      console.error('[HistoryPage] Error loading month:', err);
     }
   };
 
   const loadWorkoutsForDate = async (date?: string) => {
     if (!user?.userId) return;
-    
     setWorkoutsLoading(true);
     setSelectedDate(date);
-    
     try {
-      const workoutsData = await historyService.getWorkoutsList(
-        user.userId, 
-        date, 
-        1, 
-        date ? 20 : MAX_RECENT_WORKOUTS // More items if filtering by date
-      );
-      setWorkouts(workoutsData.items.slice(0, MAX_RECENT_WORKOUTS));
+      const data = await historyService.getWorkoutsList(user.userId, date, 1, date ? 20 : 10);
+      setWorkouts(data.items);
     } catch (err) {
-      console.error('Error loading workouts for date:', err);
+      console.error('[HistoryPage] Error loading workouts:', err);
     } finally {
       setWorkoutsLoading(false);
     }
   };
 
-  const loadOverviewData = async (monthStr: string) => {
-    if (!user?.userId) return;
-    
-    setOverviewLoading(true);
-    
-    try {
-      const [frequent, xp] = await Promise.all([
-        historyService.getMostFrequent(user.userId, monthStr),
-        historyService.getXpOverTime(user.userId, monthStr),
-      ]);
-      
-      setMostFrequent(frequent);
-      setXpOverTime(xp);
-    } catch (err) {
-      console.error('Error loading overview data:', err);
-    } finally {
-      setOverviewLoading(false);
-    }
+  const handleDatePress = (d: Date) => loadWorkoutsForDate(getDateString(d));
+  const handleMonthChange = (dir: 'prev' | 'next') => {
+    const nm = new Date(currentMonth);
+    nm.setMonth(nm.getMonth() + (dir === 'prev' ? -1 : 1));
+    setCurrentMonth(nm);
   };
 
-  const handleDatePress = (date: Date) => {
-    const dateStr = getDateString(date);
-    loadWorkoutsForDate(dateStr);
-  };
-
-  const handleMonthChange = (direction: 'prev' | 'next') => {
-    const newMonth = new Date(currentMonth);
-    if (direction === 'prev') {
-      newMonth.setMonth(newMonth.getMonth() - 1);
-    } else {
-      newMonth.setMonth(newMonth.getMonth() + 1);
-    }
-    setCurrentMonth(newMonth);
-  };
-
-  const handleWorkoutPress = (workoutId: number) => {
-    router.push(`/(tabs)/workout-detail?id=${workoutId}` as any);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  /* Filter workouts to current week only (Mon-Sun containing today) */
+  const weekWorkouts = useMemo(() => {
+    if (!weeklySummary) return [];
+    const ws = new Date(weeklySummary.weekStart);
+    const we = new Date(weeklySummary.weekEnd);
+    we.setHours(23, 59, 59, 999);
+    return allWorkouts.filter(w => {
+      const d = new Date(w.startedAt);
+      return d >= ws && d <= we;
     });
-  };
+  }, [allWorkouts, weeklySummary]);
 
-  const formatDelta = (delta: number) => {
-    const sign = delta >= 0 ? '+' : '';
-    return `${sign}${delta.toFixed(0)}% ${t('history.fromLastWeek')}`;
-  };
+  /* Weekly bar chart data */
+  const weeklyBars = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const w of weekWorkouts) {
+      const d = new Date(w.startedAt);
+      const dow = d.getDay();
+      counts[dow === 0 ? 6 : dow - 1]++;
+    }
+    const max = Math.max(...counts, 1);
+    return DAY_LABELS.map((label, i) => ({ label, count: counts[i], height: (counts[i] / max) * 100 }));
+  }, [weekWorkouts]);
 
-  // Loading state
+  /* Month aggregates from the active dates + all workouts for stats display */
+  const monthStats = useMemo(() => {
+    const m = currentMonth.getMonth();
+    const y = currentMonth.getFullYear();
+    const monthWorkouts = allWorkouts.filter(w => {
+      const d = new Date(w.startedAt);
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+    return {
+      workouts: monthWorkouts.length,
+      xp: monthWorkouts.reduce((s, w) => s + (w.xpEarned ?? 0), 0),
+      minutes: monthWorkouts.reduce((s, w) => s + (w.durationMinutes ?? 0), 0),
+      calories: monthWorkouts.reduce((s, w) => s + (w.calories ?? 0), 0),
+    };
+  }, [allWorkouts, currentMonth]);
+
+  const weekCalories = useMemo(() =>
+    weekWorkouts.reduce((s, w) => s + (w.calories ?? 0), 0),
+  [weekWorkouts]);
+
+  const displayStats = period === 'week'
+    ? { workouts: weeklySummary?.workoutsCount ?? 0, xp: weeklySummary?.xpTotal ?? 0, minutes: weeklySummary?.minutesTotal ?? 0, calories: weekCalories }
+    : monthStats;
+
   if (loading) {
     return (
-      <View style={historyStyles.container}>
-        <ScrollView style={historyStyles.container} contentContainerStyle={historyStyles.scrollContent}>
-          <SkeletonSummaryCard />
-          <View style={historyStyles.skeletonCard}>
-            <View style={[historyStyles.skeletonLine, { width: '60%', height: 16, marginBottom: 20 }]} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 }}>
-              {[...Array(35)].map((_, i) => (
-                <View key={i} style={{ width: '14.28%', aspectRatio: 1, padding: 8 }}>
-                  <View style={historyStyles.skeletonCircle} />
-                </View>
-              ))}
-            </View>
-          </View>
-          <SkeletonWorkoutCard />
-          <SkeletonWorkoutCard />
-          <SkeletonWorkoutCard />
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <View style={historyStyles.container}>
-        <View style={historyStyles.errorContainer}>
-          <Text style={historyStyles.errorText}>{error}</Text>
-          <TouchableOpacity style={historyStyles.retryButton} onPress={loadData}>
-            <Text style={historyStyles.retryButtonText}>{t('history.retry')}</Text>
-          </TouchableOpacity>
+      <ScreenWrapper style={styles.screen}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={T.primary} />
+          <Text style={styles.loadingText}>Loading history...</Text>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={historyStyles.container}>
-      <ScrollView style={historyStyles.container} contentContainerStyle={historyStyles.scrollContent}>
-        {/* Weekly Summary Card */}
-        {weeklySummary && (
-          <View style={historyStyles.summaryCard}>
-            <View style={historyStyles.summaryHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="calendar-outline" size={20} color="#4CAF50" style={{ marginRight: 8 }} />
-                <Text style={historyStyles.summaryTitle}>{t('history.thisWeek')}</Text>
-              </View>
+    <ScreenWrapper style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── Header ──────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.headerIconBox}>
+            <Ionicons name="calendar" size={26} color={T.success} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>History</Text>
+            <Text style={styles.headerSubtitle}>Your workout journey</Text>
+          </View>
+        </View>
+
+        {/* ── Stats row ───────────────────────────────── */}
+        <View style={styles.statsRow}>
+          <View style={styles.statPill}>
+            <View style={[styles.statIconBox, { backgroundColor: T.dangerTint }]}>
+              <MaterialCommunityIcons name="target" size={16} color={T.danger} />
             </View>
-            <View style={historyStyles.summaryMetrics}>
-              <View style={historyStyles.metricItem}>
-                <Text style={historyStyles.metricValue}>{weeklySummary.workoutsCount}</Text>
-                <Text style={historyStyles.metricLabel}>{t('history.workouts')}</Text>
-              </View>
-              <View style={historyStyles.metricItem}>
-                <Text style={historyStyles.metricValue}>{weeklySummary.minutesTotal}</Text>
-                <Text style={historyStyles.metricLabel}>{t('history.minutes')}</Text>
-              </View>
-              <View style={historyStyles.metricItem}>
-                <Text style={historyStyles.metricValue}>{weeklySummary.xpTotal}</Text>
-                <Text style={historyStyles.metricLabel}>{t('history.totalXP')}</Text>
-              </View>
+            <Text style={styles.statValue}>{displayStats.workouts}</Text>
+            <Text style={styles.statLabel}>Workouts</Text>
+          </View>
+          <View style={styles.statPill}>
+            <View style={[styles.statIconBox, { backgroundColor: T.primaryTint }]}>
+              <MaterialCommunityIcons name="lightning-bolt" size={16} color={T.primary} />
             </View>
-            <Text 
-              style={[
-                historyStyles.deltaText,
-                weeklySummary.deltaPercentFromLastWeek >= 0 
-                  ? historyStyles.deltaPositive 
-                  : historyStyles.deltaNegative
-              ]}
-            >
-              {formatDelta(weeklySummary.deltaPercentFromLastWeek)}
-            </Text>
+            <Text style={styles.statValue}>{displayStats.xp}</Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
+          <View style={styles.statPill}>
+            <View style={[styles.statIconBox, { backgroundColor: T.secondaryTint }]}>
+              <Ionicons name="time-outline" size={16} color={T.secondary} />
+            </View>
+            <Text style={styles.statValue}>{displayStats.minutes}</Text>
+            <Text style={styles.statLabel}>Minutes</Text>
+          </View>
+          <View style={styles.statPill}>
+            <View style={[styles.statIconBox, { backgroundColor: '#FDEAEA' }]}>
+              <Ionicons name="flame-outline" size={16} color="#F0545C" />
+            </View>
+            <Text style={styles.statValue}>{displayStats.calories}</Text>
+            <Text style={styles.statLabel}>Calories</Text>
+          </View>
+        </View>
+
+        {/* ── Period toggle ───────────────────────────── */}
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, period === 'week' && styles.toggleBtnActive]}
+            onPress={() => setPeriod('week')} activeOpacity={0.7}
+          >
+            <Ionicons name="calendar-outline" size={16} color={period === 'week' ? '#FFF' : T.textMuted} />
+            <Text style={[styles.toggleBtnText, period === 'week' && styles.toggleBtnTextActive]}>This Week</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, period === 'month' && styles.toggleBtnActive]}
+            onPress={() => setPeriod('month')} activeOpacity={0.7}
+          >
+            <Ionicons name="calendar-outline" size={16} color={period === 'month' ? '#FFF' : T.textMuted} />
+            <Text style={[styles.toggleBtnText, period === 'month' && styles.toggleBtnTextActive]}>This Month</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Week view: bar chart ────────────────────── */}
+        {period === 'week' && (
+          <View style={styles.activityCard}>
+            <View style={styles.activityHeader}>
+              <MaterialCommunityIcons name="chart-bar" size={20} color={T.primary} />
+              <Text style={styles.activityTitle}>Weekly Activity</Text>
+            </View>
+            <View style={styles.barChartRow}>
+              {weeklyBars.map(b => {
+                const barH = b.count > 0 ? Math.max(b.height * 1.1, 18) : 8;
+                return (
+                  <View key={b.label} style={styles.barCol}>
+                    {b.count > 0 && <Text style={styles.barValue}>{b.count}</Text>}
+                    <View style={[styles.bar, { height: barH }, b.count === 0 && styles.barEmpty]} />
+                    <Text style={styles.barLabel}>{b.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         )}
 
-        {/* Calendar Card */}
-        <CalendarMonth
-          currentMonth={currentMonth}
-          activeDates={activeDates}
-          selectedDate={selectedDate}
-          onMonthChange={handleMonthChange}
-          onDatePress={handleDatePress}
-          emptyMessage={t('history.noWorkoutsThisMonth')}
-        />
-
-        {/* Recent Workouts Section */}
-        <View style={historyStyles.workoutsSection}>
-          <View style={historyStyles.sectionHeader}>
-            <Text style={historyStyles.sectionTitle}>{t('history.recentWorkouts')}</Text>
-            {workouts.length >= MAX_RECENT_WORKOUTS && (
-              <TouchableOpacity 
-                style={historyStyles.sectionAction}
-                onPress={() => {/* Navigate to full workouts list */}}
-              >
-                <Text style={historyStyles.sectionActionText}>{t('history.seeMoreWorkouts')}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#4CAF50" />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {workoutsLoading ? (
-            <>
-              <SkeletonWorkoutCard />
-              <SkeletonWorkoutCard />
-              <SkeletonWorkoutCard />
-            </>
-          ) : workouts.length === 0 ? (
-            <View style={historyStyles.emptyContainer}>
-              <Text style={historyStyles.emptyTitle}>
-                {selectedDate ? t('history.noWorkoutsForDate') : t('history.noWorkoutsTitle')}
-              </Text>
-              {!selectedDate && (
-                <Text style={historyStyles.emptyMessage}>{t('history.noWorkoutsMessage')}</Text>
-              )}
-            </View>
-          ) : (
-            <>
-              {workouts.map((workout) => (
-                <TouchableOpacity
-                  key={workout.id}
-                  style={historyStyles.workoutCard}
-                  activeOpacity={0.7}
-                  onPress={() => handleWorkoutPress(workout.id)}
-                >
-                  <View style={historyStyles.workoutCardHeader}>
-                    <View style={historyStyles.workoutHeaderLeft}>
-                      <Text style={historyStyles.workoutType}>{workout.type}</Text>
-                      <Text style={historyStyles.workoutDate}>{formatDate(workout.startedAt)}</Text>
-                    </View>
-                    <View style={historyStyles.workoutHeaderRight}>
-                      <Text style={historyStyles.workoutDuration}>{workout.durationMinutes} min</Text>
-                      <View style={historyStyles.xpBadge}>
-                        <Text style={historyStyles.xpBadgeText}>{workout.xpEarned} xp</Text>
-                      </View>
-                    </View>
-                  </View>
-                  
-                  <View style={historyStyles.workoutStats}>
-                    <View style={historyStyles.statItem}>
-                      <Text style={[historyStyles.statValue, !workout.calories && historyStyles.statValueMuted]}>
-                        {workout.calories ?? '--'}
-                      </Text>
-                      <Text style={historyStyles.statLabel}>{t('history.calories')}</Text>
-                    </View>
-                    <View style={historyStyles.statItem}>
-                      <Text style={[historyStyles.statValue, !workout.avgHr && historyStyles.statValueMuted]}>
-                        {workout.avgHr ?? '--'}
-                      </Text>
-                      <Text style={historyStyles.statLabel}>{t('history.avgHR')}</Text>
-                    </View>
-                    <View style={historyStyles.statItem}>
-                      <Text style={[historyStyles.statValue, !workout.exercisesCount && historyStyles.statValueMuted]}>
-                        {workout.exercisesCount ?? '--'}
-                      </Text>
-                      <Text style={historyStyles.statLabel}>{t('history.exercises')}</Text>
-                    </View>
-                  </View>
+        {/* ── Month view: calendar ────────────────────── */}
+        {period === 'month' && (
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeader}>
+              <View style={styles.calendarTitleRow}>
+                <Ionicons name="calendar" size={18} color={T.primary} />
+                <Text style={styles.calendarTitle}>
+                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </Text>
+              </View>
+              <View style={styles.calendarNav}>
+                <TouchableOpacity style={styles.calendarNavBtn} onPress={() => handleMonthChange('prev')}>
+                  <Ionicons name="chevron-back" size={16} color={T.textMuted} />
                 </TouchableOpacity>
-              ))}
-            </>
-          )}
-        </View>
-
-        {/* History Overview */}
-        <View style={historyStyles.sectionHeader}>
-          <Text style={historyStyles.sectionTitle}>{t('history.historyOverview')}</Text>
-        </View>
-        
-        <View style={historyStyles.overviewGrid}>
-          {/* Most Frequent Workouts */}
-          <View style={historyStyles.overviewCard}>
-            <Text style={historyStyles.overviewTitle}>{t('history.mostFrequentWorkouts')}</Text>
-            {overviewLoading ? (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#4CAF50" />
+                <TouchableOpacity style={styles.calendarNavBtn} onPress={() => handleMonthChange('next')}>
+                  <Ionicons name="chevron-forward" size={16} color={T.textMuted} />
+                </TouchableOpacity>
               </View>
-            ) : mostFrequent && mostFrequent.items.length > 0 ? (
-              <>
-                {mostFrequent.items.map((item, idx) => (
-                  <View 
-                    key={idx} 
-                    style={[
-                      historyStyles.frequentItem,
-                      idx === mostFrequent.items.length - 1 && historyStyles.frequentItemLast
-                    ]}
-                  >
-                    <Text style={historyStyles.frequentWorkoutName}>{item.name}</Text>
-                    <Text style={historyStyles.frequentWorkoutCount}>{item.count}</Text>
-                  </View>
-                ))}
-              </>
-            ) : (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <Text style={historyStyles.emptyText}>{t('history.noData')}</Text>
+            </View>
+            <CalendarMonth
+              currentMonth={currentMonth}
+              activeDates={activeDates}
+              selectedDate={selectedDate}
+              onMonthChange={handleMonthChange}
+              onDatePress={handleDatePress}
+              emptyMessage="No workouts this month"
+            />
+            <View style={styles.calendarLegend}>
+              <Text style={styles.legendText}>Less</Text>
+              <View style={styles.legendDots}>
+                <View style={[styles.legendDot, { backgroundColor: '#D0F5E3' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#B8F0D2' }]} />
+                <View style={[styles.legendDot, { backgroundColor: T.success }]} />
               </View>
-            )}
+              <Text style={styles.legendText}>More</Text>
+            </View>
           </View>
+        )}
 
-          {/* XP Over Time */}
-          <View style={historyStyles.overviewCard}>
-            <Text style={historyStyles.overviewTitle}>{t('history.xpOverTime')}</Text>
-            {overviewLoading ? (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#4CAF50" />
-              </View>
-            ) : xpOverTime && xpOverTime.series.length > 0 ? (
-              <>
-                <XpMiniChart 
-                  data={xpOverTime.series} 
-                  width={280}
-                  height={140}
-                  maxXp={xpOverTime.maxXp}
-                  rangeLabel={t('history.thisMonth')}
-                  showLabels={true}
-                />
-                <View style={historyStyles.xpMetrics}>
-                  <View style={historyStyles.xpMetricItem}>
-                    <Text style={historyStyles.xpMetricValue}>{xpOverTime.totalXp}</Text>
-                    <Text style={historyStyles.xpMetricLabel}>{t('history.total')}</Text>
-                  </View>
-                  <View style={historyStyles.xpMetricItem}>
-                    <Text style={historyStyles.xpMetricValue}>{xpOverTime.workoutsCount}</Text>
-                    <Text style={historyStyles.xpMetricLabel}>{t('history.workouts')}</Text>
-                  </View>
-                  <View style={historyStyles.xpMetricItem}>
-                    <Text style={historyStyles.xpMetricValue}>{xpOverTime.avgXpPerWorkout}</Text>
-                    <Text style={historyStyles.xpMetricLabel}>{t('history.avgPerWorkout')}</Text>
+        {/* ── Recent Workouts ─────────────────────────── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <MaterialCommunityIcons name="history" size={20} color={T.primary} />
+            <Text style={styles.sectionTitle}>Recent Workouts</Text>
+          </View>
+        </View>
+
+        {workoutsLoading ? (
+          <ActivityIndicator size="small" color={T.primary} style={{ marginVertical: 20 }} />
+        ) : workouts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="fitness-outline" size={40} color={T.textMuted} />
+            <Text style={styles.emptyTitle}>No workouts yet</Text>
+            <Text style={styles.emptyMessage}>Complete a workout to see it here!</Text>
+          </View>
+        ) : (
+          workouts.slice(0, 5).map(w => {
+            const icon = getWorkoutIcon(w.type);
+            const wc = getWorkoutColor(w.type);
+            const cat = getCategoryLabel(w.type);
+            const catColor = getCategoryColor(cat);
+            return (
+              <View key={w.id} style={styles.workoutCard}>
+                <View style={[styles.workoutAccent, { backgroundColor: wc.color }]} />
+                <View style={[styles.workoutIconBox, { backgroundColor: wc.bg }]}>
+                  <WIcon def={icon} size={22} color={wc.color} />
+                </View>
+                <View style={styles.workoutInfo}>
+                  <Text style={styles.workoutType}>{w.type}</Text>
+                  <Text style={styles.workoutDate}>{formatDate(w.startedAt)}</Text>
+                  <View style={styles.workoutMetaRow}>
+                    <View style={styles.workoutMetaItem}>
+                      <Ionicons name="time-outline" size={12} color={T.textMuted} />
+                      <Text style={styles.workoutMetaText}>{w.durationMinutes} min</Text>
+                    </View>
+                    {w.calories != null && w.calories > 0 && (
+                      <View style={styles.workoutMetaItem}>
+                        <Ionicons name="flame-outline" size={12} color={T.textMuted} />
+                        <Text style={styles.workoutMetaText}>{w.calories} cal</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
-              </>
-            ) : (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <Text style={historyStyles.emptyText}>{t('history.noData')}</Text>
+                <View style={styles.workoutRight}>
+                  <View style={styles.xpBadge}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={13} color={T.primary} />
+                    <Text style={styles.xpBadgeText}>+{w.xpEarned}</Text>
+                  </View>
+                  <View style={[styles.categoryTag, { backgroundColor: catColor }]}>
+                    <Text style={styles.categoryTagText}>{cat}</Text>
+                  </View>
+                </View>
               </View>
-            )}
-          </View>
-        </View>
+            );
+          })
+        )}
+
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }

@@ -22,4 +22,10 @@ export const userAvatarService = {
 
   delete: (id: Id) =>
     httpClient.delete<void>(`/api/v1/userAvatars/${id}`).then(r => r.data),
+
+  feed: (userId: Id) =>
+    httpClient.post<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}/feed`).then(r => r.data),
+
+  rest: (userId: Id) =>
+    httpClient.post<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}/rest`).then(r => r.data),
 };

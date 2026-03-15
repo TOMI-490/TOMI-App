@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse
 from typing import List
 import logging
 
 from ...Core.Entity.UserAvatarEntity import UserAvatarEntity
 from ...Core.DTO.UserAvatarDTO import UserAvatarCreateDTO, UserAvatarUpdateDTO, UserAvatarResponseDTO, UserAvatarWithDetailsResponseDTO
 from ...Core.Utils.xp_utils import calculate_xp_progression
+from ...Core.Services.MoodService import MoodService, CooldownError
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
 from ...Infrastructure.Repository.AvatarRepository import AvatarRepository
 
@@ -12,6 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 userAvatarRepo = UserAvatarRepository()
 avatarRepo = AvatarRepository()
+moodService = MoodService(userAvatarRepo)
 
 # Get all user avatars
 @router.get("/", response_model=List[UserAvatarResponseDTO])
@@ -100,6 +103,42 @@ async def updateUserAvatar(avatar_id: int, avatar_data: UserAvatarUpdateDTO):
     except Exception as e:
         logger.error(f"Error updating avatar {avatar_id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# Feed the avatar (reduces hunger, boosts happiness)
+@router.post("/user/{user_id}/feed", response_model=UserAvatarResponseDTO)
+async def feedAvatar(user_id: int):
+    try:
+        updated_data = moodService.feed(user_id)
+        return UserAvatarResponseDTO(**updated_data)
+    except CooldownError as e:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": str(e), "remainingSeconds": e.remaining_seconds},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error feeding avatar for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Rest the avatar (reduces sleepiness, boosts happiness)
+@router.post("/user/{user_id}/rest", response_model=UserAvatarResponseDTO)
+async def restAvatar(user_id: int):
+    try:
+        updated_data = moodService.rest(user_id)
+        return UserAvatarResponseDTO(**updated_data)
+    except CooldownError as e:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": str(e), "remainingSeconds": e.remaining_seconds},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error resting avatar for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Delete a user avatar
 @router.delete("/{avatar_id}", status_code=status.HTTP_204_NO_CONTENT)

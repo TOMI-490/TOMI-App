@@ -1,6 +1,9 @@
 /**
  * useDashboard Hook
  * Fetches and manages dashboard data from backend
+ *
+ * Uses stale-while-revalidate: the last-known dashboard data is shown
+ * instantly, and a background fetch updates it silently.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,9 +14,13 @@ import { StreakResponseDto } from '../models/dto/Streak.dto';
 import { WorkoutResponseDto } from '../models/dto/Workout.dto';
 import { userService } from '../services/resources/user.service';
 
-// Simple in-memory cache for dashboard data
 const dashboardCache = new Map<number, { data: DashboardData; timestamp: number }>();
-const CACHE_DURATION = 15000; // 15 seconds
+const CACHE_DURATION = 15_000; // 15 seconds
+
+/** Mark cache as stale so the next read refreshes in background (data stays visible) */
+export function invalidateDashboardCache() {
+  dashboardCache.forEach(entry => { entry.timestamp = 0; });
+}
 
 export interface TodayProgressDto {
   workoutsCount: number;
@@ -37,14 +44,11 @@ export interface UseDashboardResult {
   refresh: () => Promise<void>;
 }
 
-/**
- * Hook to fetch dashboard data for a user
- * Returns user + profile + active TOMI avatar (if available)
- */
 export function useDashboard(user: UserResponseDto | null): UseDashboardResult {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+  const fetchingRef = useRef(false);
 
   const fetchDashboard = async (forceRefresh = false) => {
     if (!user) {
@@ -53,38 +57,36 @@ export function useDashboard(user: UserResponseDto | null): UseDashboardResult {
       return;
     }
 
-    // Check cache first (unless forcing refresh)
-    if (!forceRefresh) {
-      const cached = dashboardCache.get(user.userId);
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        console.log('[useDashboard] 💾 Using cached dashboard data');
-        setData(cached.data);
+    const cached = dashboardCache.get(user.userId);
+
+    // Always serve cached data immediately (stale-while-revalidate)
+    if (cached) {
+      setData(cached.data);
+      if (!forceRefresh && Date.now() - cached.timestamp < CACHE_DURATION) {
         setLoading(false);
         return;
       }
     }
 
-    try {
-      setLoading(true);
-      setError(null);
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
 
-      console.log('[useDashboard] 📊 Fetching fresh dashboard data...');
+    // Only block the UI with a loading state when there's no cached data to show
+    if (!cached) setLoading(true);
+
+    try {
+      setError(null);
       const dashboardData = await userService.getDashboard(user.userId);
-      console.log('[useDashboard] ✓ Dashboard data received');
-      console.log('[useDashboard]   - TOMI XP:', dashboardData.tomi?.xp || 'N/A');
-      console.log('[useDashboard]   - TOMI Level:', dashboardData.tomi?.level || 'N/A');
-      console.log('[useDashboard]   - Today Progress:', dashboardData.todayProgress);
-      
-      // Cache the dashboard data
+
       dashboardCache.set(user.userId, { data: dashboardData, timestamp: Date.now() });
-      
       setData(dashboardData);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch dashboard data');
-      setError(error);
-      console.error('[useDashboard] ❌ Error fetching dashboard:', error);
+      const e = err instanceof Error ? err : new Error('Failed to fetch dashboard data');
+      setError(e);
+      console.error('[useDashboard] Error:', e);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
@@ -93,10 +95,5 @@ export function useDashboard(user: UserResponseDto | null): UseDashboardResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]);
 
-  return {
-    data,
-    loading,
-    error,
-    refresh: () => fetchDashboard(true), // Force refresh when explicitly called
-  };
+  return { data, loading, error, refresh: () => fetchDashboard(true) };
 }

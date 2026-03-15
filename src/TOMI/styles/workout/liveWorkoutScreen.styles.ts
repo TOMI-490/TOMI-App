@@ -1,113 +1,143 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { TOMI_THEME as T } from '../../constants/theme';
+import { F } from '../../constants/fonts';
+
+const { height: SCREEN_H } = Dimensions.get('window');
+
+const shadowSm = {
+  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
+} as const;
+
+const shadowMd = {
+  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.20, shadowRadius: 14, elevation: 6,
+} as const;
+
+const card = { backgroundColor: '#FFFFFF', borderRadius: 22, ...shadowSm } as const;
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
+  screen: { flex: 1, backgroundColor: '#EDEAE3' },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EDEAE3',
   },
-  mapContainer: {
-    height: '40%',
-    width: '100%',
+
+  /* ── Header ──────────────────────────────────────── */
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 54 : 34, paddingBottom: 14,
   },
-  map: {
-    flex: 1,
+  headerIconBox: {
+    width: 48, height: 48, borderRadius: 16,
+    backgroundColor: T.primaryTint, justifyContent: 'center', alignItems: 'center',
   },
+  headerTitle: { fontSize: 24, fontFamily: F.headline, color: '#1A1A1A', letterSpacing: -0.6 },
+  headerStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusText: { fontSize: 12, fontFamily: F.semiBold },
+
+  /* ── Map card ────────────────────────────────────── */
+  mapCard: {
+    marginHorizontal: 18, borderRadius: 22, overflow: 'hidden',
+    height: SCREEN_H * 0.3,
+    ...shadowMd,
+  },
+  map: { flex: 1 },
   noMapPlaceholder: {
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
+    flex: 1, backgroundColor: '#F5F2ED', borderRadius: 22,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  placeholderAvatar: { width: 130, height: 130 },
+  placeholderTypeName: {
+    fontSize: 17, fontFamily: F.headlineMd, color: T.textMuted, marginTop: 8,
+  },
+  mapOverlay: {
+    position: 'absolute', bottom: 12, left: 14, right: 14,
+    flexDirection: 'row', justifyContent: 'space-between',
+  },
+  mapPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 16,
+    paddingHorizontal: 14, paddingVertical: 10,
+    ...shadowSm,
+  },
+  mapPillValue: { fontSize: 17, fontFamily: F.black, color: T.textPrimary },
+  mapPillUnit: { fontSize: 9, fontFamily: F.bold, color: T.textMuted, textTransform: 'uppercase' },
+
+  /* ── Content area ────────────────────────────────── */
+  content: { flex: 1, paddingHorizontal: 18 },
+  contentScroll: { paddingTop: 18, paddingBottom: 8 },
+
+  /* ── Timer card ──────────────────────────────────── */
+  timerCard: {
+    borderRadius: 22, backgroundColor: T.primary,
+    paddingVertical: 20, paddingHorizontal: 16, alignItems: 'center',
+    marginBottom: 16,
+    ...shadowMd, shadowColor: T.primary, shadowOpacity: 0.35,
+  },
+  timerLabel: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  timerLabelText: {
+    fontSize: 10, fontFamily: F.bold, color: 'rgba(255,255,255,0.75)',
+    textTransform: 'uppercase', letterSpacing: 1.2,
+  },
+  timerRow: { flexDirection: 'row', alignItems: 'center' },
+  timerBlock: { alignItems: 'center', minWidth: 60 },
+  timerDigit: { fontSize: 46, fontFamily: F.black, color: '#FFFFFF', letterSpacing: -1 },
+  timerUnit: { fontSize: 9, fontFamily: F.semiBold, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginTop: -4 },
+  timerColon: { fontSize: 38, fontFamily: F.black, color: 'rgba(255,255,255,0.45)', marginHorizontal: 2, marginTop: -6 },
+
+  /* ── Stats row ───────────────────────────────────── */
+  statsRow: { flexDirection: 'row', gap: 14, marginBottom: 16 },
+  statCard: {
+    flex: 1, ...card, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 14,
     alignItems: 'center',
   },
-  noMapText: {
-    fontSize: 60,
-    marginBottom: 10,
+  statCardIconBox: {
+    width: 40, height: 40, borderRadius: 20,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 8,
   },
-  trackingText: {
-    fontSize: 16,
-    color: '#4A90E2',
-    marginTop: 10,
+  statCardLabel: {
+    fontSize: 9, fontFamily: F.bold, color: T.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
   },
-  workoutTypeName: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#333',
-  },
-  statsContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
-  },
+  statCardValue: { fontSize: 28, fontFamily: F.black, color: T.textPrimary, letterSpacing: -0.6 },
+  statCardUnit: { fontSize: 11, fontFamily: F.medium, color: T.textMuted, marginTop: 2 },
+
+  /* ── XP inline row ───────────────────────────────── */
   xpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 10,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#FFB74D',
+    ...card, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16,
   },
-  xpLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F57C00',
+  xpIconBox: {
+    width: 40, height: 40, borderRadius: 13,
+    backgroundColor: T.primaryTint, justifyContent: 'center', alignItems: 'center',
   },
-  xpValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#E65100',
+  xpLabel: { fontSize: 12, fontFamily: F.semiBold, color: T.textMuted },
+  xpValue: { fontSize: 22, fontFamily: F.black, color: T.primary, letterSpacing: -0.3 },
+  xpSpacer: { flex: 1 },
+  xpBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: T.primaryTint, justifyContent: 'center', alignItems: 'center',
   },
-  statusRow: {
-    alignItems: 'center',
-    marginTop: 20,
+
+  /* ── Controls ────────────────────────────────────── */
+  controlsRow: {
+    flexDirection: 'row', gap: 12, alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 34 : 18,
   },
-  statusText: {
-    fontSize: 18,
-    color: '#4A90E2',
-    fontWeight: '600',
+  pauseBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingVertical: 17, borderRadius: 20,
+    backgroundColor: T.primary,
+    ...shadowMd, shadowColor: T.primary, shadowOpacity: 0.35,
   },
-  controlsContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  controlButton: {
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  pauseButton: {
-    backgroundColor: '#FF9800',
-  },
-  endButton: {
-    backgroundColor: '#E74C3C',
-  },
-  controlButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
+  pauseBtnText: { fontSize: 17, fontFamily: F.bold, color: '#FFFFFF' },
+  endBtn: {
+    width: 56, height: 56, borderRadius: 18,
+    backgroundColor: '#FFF', borderWidth: 2, borderColor: T.danger,
+    justifyContent: 'center', alignItems: 'center',
+    ...shadowSm,
   },
 });

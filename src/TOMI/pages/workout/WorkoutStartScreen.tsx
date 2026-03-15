@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { Device } from 'react-native-ble-plx';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../locales/i18n';
@@ -9,11 +8,8 @@ import { workoutService } from '../../services/resources/workout.service';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePastWorkouts } from '../../hooks/usePastWorkouts';
-import useBLE, { ConnectionStatus } from '../../hooks/useBLE';
-import { smartwatchBleConfig } from '../../config/smartwatchBleConfig';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
-import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
 import { styles } from '../../styles/workout/workoutStartScreen.styles';
 import { TOMI_THEME as T } from '../../constants/theme';
 
@@ -123,24 +119,7 @@ const WorkoutStartScreen = () => {
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingId, setStartingId] = useState<number | null>(null);
-  const [bleCountdown, setBleCountdown] = useState<number | null>(null);
   const startingRef = useRef(false);
-  const devicesRef = useRef<Device[]>([]);
-  const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
-  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const {
-    requestPermissions, bluetoothState, startScan, connectToDevice,
-    devices, connectionStatus, connectedDevice,
-  } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
-
-  useEffect(() => { devicesRef.current = devices; }, [devices]);
-  useEffect(() => { connectionStatusRef.current = connectionStatus; }, [connectionStatus]);
-  useEffect(() => {
-    if (connectedDevice && (connectedDevice.name ?? connectedDevice.localName ?? '').toUpperCase().includes('XIAO') && !devicesRef.current.some(d => d.id === connectedDevice.id)) {
-      devicesRef.current = [connectedDevice, ...devicesRef.current];
-    }
-  }, [connectedDevice]);
 
   useEffect(() => { loadWorkoutTypes(); }, []);
 
@@ -162,57 +141,22 @@ const WorkoutStartScreen = () => {
       startingRef.current = true;
       setStartingId(workoutTypeId);
 
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) {
-        Alert.alert(t('workout.bluetoothRequired'), t('workout.bluetoothMessage'), [{ text: t('workout.ok') }]);
-        setStartingId(null);
-        return;
-      }
-
-      const BLE_TIMEOUT_SECS = 15;
-      if (connectionStatusRef.current !== 'connected') startScan();
-
-      setBleCountdown(BLE_TIMEOUT_SECS);
-      const scanStartTime = Date.now();
-      countdownTimerRef.current = setInterval(() => {
-        const remaining = Math.max(0, BLE_TIMEOUT_SECS - Math.floor((Date.now() - scanStartTime) / 1000));
-        setBleCountdown(remaining);
-      }, 1000);
-
-      const bleConnected = await new Promise<boolean>(resolve => {
-        let resolved = false;
-        let connectAttempted = false;
-        let poll: ReturnType<typeof setInterval>;
-        const doResolve = (val: boolean) => { if (resolved) return; resolved = true; clearInterval(poll); clearTimeout(timer); if (countdownTimerRef.current) { clearInterval(countdownTimerRef.current); countdownTimerRef.current = null; } setBleCountdown(null); resolve(val); };
-        const timer = setTimeout(() => doResolve(false), BLE_TIMEOUT_SECS * 1000);
-        poll = setInterval(async () => {
-          if (resolved) { clearInterval(poll); return; }
-          if (connectionStatusRef.current === 'connected') { doResolve(true); return; }
-          if (!connectAttempted && devicesRef.current.length > 0) {
-            const xiao = devicesRef.current.find(d => (d.name ?? d.localName ?? '').toUpperCase().includes('XIAO'));
-            if (!xiao) return;
-            connectAttempted = true;
-            try { await connectToDevice(xiao); doResolve(true); } catch { connectAttempted = false; }
-          }
-        }, 500);
+      const wt = workoutTypes.find(t => t.workoutTypeId === workoutTypeId);
+      const meta = WORKOUT_META[wt?.name.toLowerCase() ?? ''] ?? { xp: 70 };
+      const workout = await workoutService.startWorkout({
+        userId: user.userId, workoutTypeId, deviceId: 1, xpAwarded: meta.xp,
       });
-
-      if (!bleConnected) {
-        Alert.alert(t('workout.bluetoothDeviceNotFound'), t('workout.bluetoothDeviceMessage'), [{ text: t('workout.ok') }]);
-        setStartingId(null);
-        return;
-      }
-
-      const workout = await workoutService.startWorkout({ userId: user.userId, workoutTypeId, deviceId: 1, xpAwarded: 0 });
-      router.push({ pathname: '/workout-live', params: { workoutId: workout.workoutId.toString(), workoutTypeId: workout.workoutTypeId.toString() } });
+      router.push({ pathname: '/workout-live', params: {
+        workoutId: workout.workoutId.toString(),
+        workoutTypeId: workout.workoutTypeId.toString(),
+        expectedXp: meta.xp.toString(),
+      }});
     } catch (error) {
       console.error('Error starting workout:', error);
       Alert.alert(t('common.error'), t('workout.errorStarting'));
     } finally {
       startingRef.current = false;
       setStartingId(null);
-      if (countdownTimerRef.current) { clearInterval(countdownTimerRef.current); countdownTimerRef.current = null; }
-      setBleCountdown(null);
     }
   };
 
@@ -296,8 +240,8 @@ const WorkoutStartScreen = () => {
             </View>
           </View>
           <TouchableOpacity style={styles.quickStartBtn} onPress={handleQuickStart} disabled={startingId !== null}>
-            {startingId !== null && bleCountdown !== null ? (
-              <><ActivityIndicator color="#FFF" size="small" /><Text style={styles.quickStartBtnText}>{bleCountdown}s</Text></>
+            {startingId !== null ? (
+              <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <><Ionicons name="play" size={14} color="#FFF" /><Text style={styles.quickStartBtnText}>Start</Text></>
             )}
@@ -376,7 +320,7 @@ const WorkoutStartScreen = () => {
                   </View>
                   <TouchableOpacity style={styles.startBtn} onPress={() => handleStartWorkout(fw.id)} disabled={startingId !== null}>
                     {startingId === fw.id ? (
-                      <><ActivityIndicator color="#FFF" size="small" />{bleCountdown !== null && <Text style={styles.startBtnText}>{bleCountdown}s</Text>}</>
+                      <ActivityIndicator color="#FFF" size="small" />
                     ) : (
                       <><Ionicons name="play" size={16} color="#FFF" /><Text style={styles.startBtnText}>Start Workout</Text></>
                     )}

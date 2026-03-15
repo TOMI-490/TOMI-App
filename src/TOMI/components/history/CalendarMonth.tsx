@@ -79,42 +79,21 @@ export const CalendarMonth: React.FC<CalendarMonthProps> = ({
   };
 
   return (
-    <View style={historyStyles.calendarCard}>
-      {/* Calendar Header */}
-      <View style={historyStyles.calendarHeader}>
-        <TouchableOpacity 
-          style={historyStyles.calendarNavButton} 
-          onPress={() => onMonthChange('prev')}
-        >
-          <Ionicons name="chevron-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={historyStyles.calendarTitle}>
-          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </Text>
-        <TouchableOpacity 
-          style={historyStyles.calendarNavButton} 
-          onPress={() => onMonthChange('next')}
-        >
-          <Ionicons name="chevron-forward" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-
+    <View>
       {/* Calendar Grid */}
       <View style={historyStyles.calendarGrid}>
-        {/* Weekday Headers */}
         <View style={historyStyles.calendarWeekdays}>
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
             <Text key={idx} style={historyStyles.weekdayText}>{day}</Text>
           ))}
         </View>
 
-        {/* Calendar Days */}
         <View style={historyStyles.calendarDays}>
           {getCalendarGrid().map((day, idx) => {
             const isActive = day ? isDateActive(day) : false;
             const isSelected = day ? selectedDate === getDateString(day) : false;
             const isToday = day ? isDateToday(day) : false;
-            
+
             return (
               <TouchableOpacity
                 key={idx}
@@ -155,8 +134,7 @@ export const CalendarMonth: React.FC<CalendarMonthProps> = ({
           })}
         </View>
       </View>
-      
-      {/* Empty State */}
+
       {activeDates.length === 0 && (
         <View style={historyStyles.emptyCalendar}>
           <Text style={historyStyles.emptyText}>{emptyMessage}</Text>
