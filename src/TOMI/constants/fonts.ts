@@ -3,12 +3,12 @@
  *
  * Typefaces
  * ─────────
- * SangBleu   → commercial serif, loaded from assets/fonts/SangBleu-*.otf
- *              Until those files are placed in assets/fonts/, the app falls
- *              back to the best available system serif per platform:
- *                iOS    → 'Georgia'  (classic serif)
- *                Android → 'serif'   (Noto Serif / Roboto Slab)
- * Montserrat → open-source, always available via @expo-google-fonts/montserrat
+ * SangBleu   → commercial serif. Place .otf files in assets/fonts/ and set
+ *              SANGBLEU_READY = true to activate them. Until then, Playfair
+ *              Display (Google Fonts) is used as the headline serif — it shares
+ *              SangBleu's high-contrast, elegant character.
+ *
+ * Montserrat → open-source, always available via @expo-google-fonts/montserrat.
  *
  * Usage
  * ─────
@@ -17,22 +17,29 @@
  *
  * Activating SangBleu
  * ───────────────────
- * 1. Place font files in src/TOMI/assets/fonts/  (see README there)
+ * 1. Place font files in src/TOMI/assets/fonts/
+ *    – SangBleu-Regular.otf, SangBleu-Medium.otf, SangBleu-Bold.otf, SangBleu-Black.otf
  * 2. Uncomment the four 'SangBleu-*' entries in FONT_MAP below
- * 3. Change SANGBLEU_READY to true
+ * 3. Set SANGBLEU_READY = true
  * 4. Rebuild the app (fonts are bundled at build time)
  */
 
-import { Platform } from 'react-native';
 import {
   Montserrat_400Regular,
+  Montserrat_400Regular_Italic,
   Montserrat_500Medium,
   Montserrat_600SemiBold,
   Montserrat_700Bold,
   Montserrat_800ExtraBold,
   Montserrat_900Black,
-  Montserrat_400Regular_Italic,
 } from '@expo-google-fonts/montserrat';
+
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_500Medium,
+  PlayfairDisplay_700Bold,
+  PlayfairDisplay_900Black,
+} from '@expo-google-fonts/playfair-display';
 
 /* ─── Toggle to true once SangBleu .otf files are in assets/fonts/ ──────── */
 const SANGBLEU_READY = false;
@@ -48,6 +55,12 @@ export const FONT_MAP = {
   'Montserrat-ExtraBold': Montserrat_800ExtraBold,
   'Montserrat-Black':     Montserrat_900Black,
 
+  /* Playfair Display — serif headline stand-in for SangBleu */
+  'PlayfairDisplay-Regular': PlayfairDisplay_400Regular,
+  'PlayfairDisplay-Medium':  PlayfairDisplay_500Medium,
+  'PlayfairDisplay-Bold':    PlayfairDisplay_700Bold,
+  'PlayfairDisplay-Black':   PlayfairDisplay_900Black,
+
   /* SangBleu — uncomment after adding files to assets/fonts/ */
   // 'SangBleu-Regular': require('../assets/fonts/SangBleu-Regular.otf'),
   // 'SangBleu-Medium':  require('../assets/fonts/SangBleu-Medium.otf'),
@@ -55,19 +68,17 @@ export const FONT_MAP = {
   // 'SangBleu-Black':   require('../assets/fonts/SangBleu-Black.otf'),
 } as const;
 
-/* ─── Platform-aware serif fallback used until SangBleu files exist ──────── */
-const SERIF_FALLBACK = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })!;
-
+/* ─── Headline serif resolver ────────────────────────────────────────────── */
 function sangbleu(weight: 'Regular' | 'Medium' | 'Bold' | 'Black'): string {
-  return SANGBLEU_READY ? `SangBleu-${weight}` : SERIF_FALLBACK;
+  return SANGBLEU_READY ? `SangBleu-${weight}` : `PlayfairDisplay-${weight}`;
 }
 
 /* ─── Semantic font-family tokens ─────────────────────────────────────────── */
 export const F = {
-  /* Headlines — SangBleu (serif) */
-  headline:  sangbleu('Black'),   // "Hey thomas mejia!"
-  headlineMd: sangbleu('Bold'),   // Section titles: "Buddy", "Daily Challenges"
-  headlineSm: sangbleu('Medium'), // Avatar name, card titles
+  /* Headlines — SangBleu (or Playfair Display fallback) */
+  headline:   sangbleu('Black'),    // "Hey thomas mejia!"
+  headlineMd: sangbleu('Bold'),     // Section titles: "Buddy", "Daily Challenges"
+  headlineSm: sangbleu('Medium'),   // Avatar name, card titles
 
   /* UI / Body — Montserrat (sans-serif) */
   black:     'Montserrat-Black'     as string,

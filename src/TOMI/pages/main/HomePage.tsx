@@ -31,13 +31,15 @@ import { useDashboard } from '../../hooks/useDashboardData';
 import { useTomiEffects } from '../../hooks/useTomiEffects';
 import { usePastWorkouts } from '../../hooks/usePastWorkouts';
 import { useHomeQuests } from '../../hooks/useHomeQuests';
+import { useGamification } from '../../hooks/useGamification';
 import { useTranslation } from '../../locales/i18n';
 import { StreakResponseDto } from '../../models/dto/Streak.dto';
 import { homePageStyles as styles } from '../../styles/home/homePage.styles';
 import { TOMI_THEME as T } from '../../constants/theme';
 import { avatarStateStore } from '../../utils/avatarStateStore';
 import { XpToast, LevelUpModal } from '../../components/gamification';
-import { DailyQuest, Achievement } from '../../services/resources/homeScreen.service';
+import { DailyQuest } from '../../services/resources/homeScreen.service';
+import { EarnedBadge, UpcomingBadge } from '../../services/gamification';
 
 /* ---------------------------------------------------------------------------
    Icon registry
@@ -167,16 +169,34 @@ function QuestCard({ quest }: { quest: DailyQuest }) {
 }
 
 /* ---------------------------------------------------------------------------
-   AchievementCard
+   BadgeCard (replaces AchievementCard — uses real gamification API data)
    --------------------------------------------------------------------------- */
-function AchievementCard({ achievement, itemWidth }: { achievement: Achievement; itemWidth: string }) {
-  const iconColor = achievement.unlocked ? resolveQuestColor(achievement.color_token) : T.textMuted;
+function getBadgeIcon(achievement: string): { lib: 'Ionicons' | 'MaterialCommunityIcons'; name: string; color: string; bg: string } {
+  const a = (achievement || '').toLowerCase();
+  if (a.includes('step'))     return { lib: 'MaterialCommunityIcons', name: 'shoe-print',           color: '#7C3AED', bg: '#EDE9FE' };
+  if (a.includes('run'))      return { lib: 'MaterialCommunityIcons', name: 'run',                  color: '#EA580C', bg: '#FFF0E6' };
+  if (a.includes('workout_1') && !a.includes('10') && !a.includes('100'))
+                              return { lib: 'Ionicons',               name: 'checkmark-circle',      color: '#16A34A', bg: '#DCFCE7' };
+  if (a.includes('workout'))  return { lib: 'MaterialCommunityIcons', name: 'dumbbell',             color: '#2563EB', bg: '#DBEAFE' };
+  if (a.includes('streak'))   return { lib: 'Ionicons',               name: 'flame',                color: '#FF6B35', bg: '#FFF0E8' };
+  if (a.includes('distance')) return { lib: 'MaterialCommunityIcons', name: 'map-marker-distance',  color: '#0891B2', bg: '#E0F7FA' };
+  if (a.includes('level'))    return { lib: 'Ionicons',               name: 'star',                 color: '#D97706', bg: '#FEF3C7' };
+  if (a.includes('social') || a.includes('friend'))
+                              return { lib: 'Ionicons',               name: 'people',               color: '#DB2777', bg: '#FCE7F3' };
+  return                             { lib: 'Ionicons',               name: 'ribbon',               color: '#7C3AED', bg: '#EDE9FE' };
+}
+
+function BadgeCard({ badge, itemWidth }: { badge: EarnedBadge; itemWidth: string }) {
+  const icon = getBadgeIcon(badge.achievement);
   return (
-    <View style={[styles.achievementCard, achievement.unlocked ? styles.achievementCardUnlocked : styles.achievementCardLocked, { width: itemWidth as unknown as number }]}>
-      <View style={[styles.achievementIconBox, achievement.unlocked ? styles.achievementIconBoxUnlocked : styles.achievementIconBoxLocked]}>
-        <RegistryIcon name={achievement.icon_name} size={20} color={iconColor} />
+    <View style={[styles.achievementCard, styles.achievementCardUnlocked, { width: itemWidth as unknown as number }]}>
+      <View style={[styles.achievementIconBox, { backgroundColor: icon.bg }]}>
+        {icon.lib === 'Ionicons'
+          ? <Ionicons name={icon.name as React.ComponentProps<typeof Ionicons>['name']} size={20} color={icon.color} />
+          : <MaterialCommunityIcons name={icon.name as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={20} color={icon.color} />
+        }
       </View>
-      <Text style={styles.achievementLabel} numberOfLines={2}>{achievement.name}</Text>
+      <Text style={styles.achievementLabel} numberOfLines={2}>{badge.name}</Text>
     </View>
   );
 }
@@ -197,7 +217,8 @@ export default function HomePage() {
 
   const { data, loading, error, refresh } = useDashboard(user);
   const { workouts: pastWorkouts }        = usePastWorkouts(user?.userId, 5);
-  const { dailyQuests, achievements, loading: questsLoading, error: questsError } = useHomeQuests(user?.userId);
+  const { dailyQuests, loading: questsLoading, error: questsError } = useHomeQuests(user?.userId);
+  const { data: gamificationData, loading: gamLoading } = useGamification(user?.userId);
   const { t } = useTranslation();
 
   /* Avatar animation */
@@ -259,26 +280,8 @@ export default function HomePage() {
   const onStartPressIn  = () => Animated.spring(startBtnScale, { toValue: 0.975, useNativeDriver: true }).start();
   const onStartPressOut = () => Animated.spring(startBtnScale, { toValue: 1,     useNativeDriver: true }).start();
 
-  /* Loading / Error */
-  if (!user || loading) {
-    return (
-      <ScreenWrapper style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>{t('home.loading')}</Text>
-      </ScreenWrapper>
-    );
-  }
-  if (error || !data) {
-    return (
-      <ScreenWrapper style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error?.message || t('home.errorLoading')}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={refresh} accessibilityRole="button">
-          <Text style={styles.retryBtnText}>{t('home.retry')}</Text>
-        </TouchableOpacity>
-      </ScreenWrapper>
-    );
-  }
-
   const ACHI_W = '22%';
+  const userName = user?.name || 'there';
 
   /* =========================================================================
      RENDER
@@ -290,11 +293,18 @@ export default function HomePage() {
         {/* Section 1 — Greeting */}
         <View>
           <View style={styles.greetingPill}>
+            <View style={styles.greetingPillDot} />
             <Text style={styles.greetingPillText}>{getGreetingLabel()}</Text>
           </View>
-          <Text style={styles.greetingTitle}>Hey {user.name || 'there'}!</Text>
+          <Text style={styles.greetingTitle}>Hey {userName}!</Text>
           <Text style={styles.greetingSubtitle}>{"Let's crush your goals today"}</Text>
         </View>
+
+        {error && !loading && (
+          <TouchableOpacity style={styles.inlineErrorPill} onPress={refresh} activeOpacity={0.7}>
+            <Text style={styles.inlineErrorText}>Couldn't load data — tap to retry</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.sectionGap} />
 
@@ -344,26 +354,82 @@ export default function HomePage() {
 
             {/* Living-room scene */}
             <View style={styles.livingRoom}>
-              <View style={styles.roomSkyTop} pointerEvents="none" />
+              {/* Wall */}
+              <View style={styles.roomWall} pointerEvents="none" />
+              {/* Wainscoting trim */}
+              <View style={styles.roomWainscoting} pointerEvents="none" />
+              {/* Floor */}
               <View style={styles.roomFloor} pointerEvents="none" />
+
+              {/* Window with curtains */}
               <View style={styles.roomWindow} pointerEvents="none">
-                <View style={styles.windowPane} /><View style={styles.windowPane} />
-                <View style={styles.windowPane} /><View style={styles.windowPane} />
+                <View style={styles.windowCurtainLeft} />
+                <View style={styles.windowGlass}>
+                  <View style={styles.windowSky} />
+                  <View style={styles.windowCloud} />
+                </View>
+                <View style={styles.windowCurtainRight} />
+                <View style={styles.windowSill} />
               </View>
+
+              {/* Picture frame on wall */}
+              <View style={styles.roomPictureFrame} pointerEvents="none">
+                <View style={styles.pictureInner}>
+                  <Ionicons name="heart" size={14} color="#E8A87C" />
+                </View>
+              </View>
+
+              {/* Rug under avatar */}
+              <View style={styles.roomRug} pointerEvents="none" />
+
+              {/* Cozy sofa */}
               <View style={styles.roomSofa} pointerEvents="none">
-                <MaterialCommunityIcons name="sofa" size={32} color={T.primary} />
+                <View style={styles.sofaBack} />
+                <View style={styles.sofaSeat} />
+                <View style={styles.sofaCushionLeft} />
+                <View style={styles.sofaCushionRight} />
+                <View style={styles.sofaArmLeft} />
+                <View style={styles.sofaArmRight} />
               </View>
+
+              {/* Floor lamp */}
               <View style={styles.roomLampContainer} pointerEvents="none">
+                <View style={styles.roomLampGlow} />
                 <View style={styles.roomLampShade}>
-                  <Ionicons name="bulb" size={16} color={T.warning} />
+                  <Ionicons name="bulb" size={12} color="#FBBF24" />
                 </View>
                 <View style={styles.roomLampPole} />
-                <View style={styles.roomTable} />
-                <View style={styles.roomTableBase} />
+                <View style={styles.roomLampBase} />
               </View>
-              <View style={styles.roomCoffeeCup} pointerEvents="none">
-                <Ionicons name="cafe" size={16} color="#92400e" />
+
+              {/* Side table with coffee */}
+              <View style={styles.roomSideTable} pointerEvents="none">
+                <View style={styles.sideTableTop}>
+                  <Ionicons name="cafe" size={13} color="#92400e" />
+                </View>
+                <View style={styles.sideTableLeg} />
               </View>
+
+              {/* Small plant */}
+              <View style={styles.roomPlant} pointerEvents="none">
+                <View style={styles.plantLeaves}>
+                  <Ionicons name="leaf" size={16} color="#4ADE80" />
+                </View>
+                <View style={styles.plantPot} />
+              </View>
+
+              {/* Bookshelf */}
+              <View style={styles.roomBookshelf} pointerEvents="none">
+                <View style={styles.bookshelfShelf} />
+                <View style={styles.bookRow}>
+                  <View style={[styles.book, { backgroundColor: '#F87171', height: 16 }]} />
+                  <View style={[styles.book, { backgroundColor: '#60A5FA', height: 18 }]} />
+                  <View style={[styles.book, { backgroundColor: '#FBBF24', height: 14 }]} />
+                  <View style={[styles.book, { backgroundColor: '#34D399', height: 17 }]} />
+                </View>
+              </View>
+
+              {/* Avatar */}
               <TouchableOpacity
                 style={styles.avatarTouchable}
                 onPress={() => router.push('/(tabs)/avatar')}
@@ -371,14 +437,14 @@ export default function HomePage() {
                 accessibilityRole="button"
                 accessibilityLabel={`Customize ${tomiData?.nickname ?? 'TOMI'}`}
               >
-                <View style={styles.avatarCircle}>
+                <View style={styles.avatarShadowPlatform} />
+                <View style={styles.avatarContainer}>
                   {avatarGifUrl ? (
-                    <Image source={{ uri: avatarGifUrl }} style={{ width: 102, height: 102 }} contentFit="contain" autoplay />
+                    <Image source={{ uri: avatarGifUrl }} style={{ width: 110, height: 110 }} contentFit="contain" autoplay />
                   ) : (
-                    <Ionicons name="sparkles" size={48} color="#FFF" />
+                    <Ionicons name="sparkles" size={48} color={T.primary} />
                   )}
                 </View>
-                <View style={styles.avatarShadowPlatform} />
               </TouchableOpacity>
             </View>
 
@@ -437,10 +503,13 @@ export default function HomePage() {
         {/* Section 5 — Daily Challenges */}
         <View>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Daily Challenges</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleAccent} />
+              <Text style={styles.sectionTitle}>Daily Challenges</Text>
+            </View>
             <TouchableOpacity style={styles.viewAllBtn} onPress={() => router.push('/(tabs)/history')} accessibilityRole="button">
               <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="chevron-forward" size={14} color={T.primary} />
+              <Ionicons name="chevron-forward" size={13} color={T.primary} />
             </TouchableOpacity>
           </View>
           {questsError && !questsLoading && (
@@ -455,27 +524,34 @@ export default function HomePage() {
 
         <View style={styles.sectionGap} />
 
-        {/* Section 6 — Achievements Preview */}
+        {/* Section 6 — Badges (from gamification API) */}
         <View>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Achievements</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleAccent} />
+              <Text style={styles.sectionTitle}>Badges</Text>
+            </View>
             <TouchableOpacity style={styles.viewAllBtn} onPress={() => router.push('/(tabs)/history')} accessibilityRole="button">
               <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="chevron-forward" size={14} color={T.primary} />
+              <Ionicons name="chevron-forward" size={13} color={T.primary} />
             </TouchableOpacity>
           </View>
-          {questsLoading && (
+          {gamLoading && (
             <View style={styles.achievementsGrid}>
               {[0,1,2,3].map(i => <AchievementSkeleton key={i} itemWidth={ACHI_W} />)}
             </View>
           )}
-          {!questsLoading && achievements.length > 0 && (
+          {!gamLoading && (gamificationData?.badgesEarned?.length ?? 0) > 0 && (
             <View style={styles.achievementsGrid}>
-              {achievements.map(a => <AchievementCard key={a.id} achievement={a} itemWidth={ACHI_W} />)}
+              {(gamificationData!.badgesEarned).slice(0, 4).map(b => (
+                <BadgeCard key={b.id} badge={b} itemWidth={ACHI_W} />
+              ))}
             </View>
           )}
-          {!questsLoading && achievements.length === 0 && (
-            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>Complete a workout to earn your first achievement!</Text></View>
+          {!gamLoading && (gamificationData?.badgesEarned?.length ?? 0) === 0 && (
+            <View style={styles.inlineErrorPill}>
+              <Text style={styles.inlineErrorText}>Complete a workout to earn your first badge!</Text>
+            </View>
           )}
         </View>
 

@@ -8,374 +8,436 @@ import { workoutTypeService } from '../../services/resources/workoutType.service
 import { workoutService } from '../../services/resources/workout.service';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePastWorkouts } from '../../hooks/usePastWorkouts';
 import useBLE, { ConnectionStatus } from '../../hooks/useBLE';
 import { smartwatchBleConfig } from '../../config/smartwatchBleConfig';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
 import { styles } from '../../styles/workout/workoutStartScreen.styles';
+import { TOMI_THEME as T } from '../../constants/theme';
 
-type WorkoutIconDef =
+/* ─── Icon helpers ──────────────────────────────────────────────────────── */
+type IconDef =
   | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
-  | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] }
-  | { lib: 'FontAwesome5'; name: React.ComponentProps<typeof FontAwesome5>['name'] };
+  | { lib: 'MCI'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] }
+  | { lib: 'FA5'; name: React.ComponentProps<typeof FontAwesome5>['name'] };
 
-function getWorkoutIcon(typeName: string): WorkoutIconDef {
-  const lower = typeName.toLowerCase();
-  if (lower.includes('run'))      return { lib: 'MaterialCommunityIcons', name: 'run' };
-  if (lower.includes('walk'))     return { lib: 'MaterialCommunityIcons', name: 'walk' };
-  if (lower.includes('cycl') || lower.includes('bike')) return { lib: 'MaterialCommunityIcons', name: 'bike' };
-  if (lower.includes('swim'))     return { lib: 'MaterialCommunityIcons', name: 'swim' };
-  if (lower.includes('yoga'))     return { lib: 'MaterialCommunityIcons', name: 'yoga' };
-  if (lower.includes('strength') || lower.includes('weight')) return { lib: 'Ionicons', name: 'barbell-outline' };
-  if (lower.includes('hiit') || lower.includes('interval'))   return { lib: 'MaterialCommunityIcons', name: 'lightning-bolt' };
-  if (lower.includes('stretch') || lower.includes('flex'))    return { lib: 'MaterialCommunityIcons', name: 'human-handsup' };
-  if (lower.includes('box') || lower.includes('martial'))     return { lib: 'MaterialCommunityIcons', name: 'boxing-glove' };
-  if (lower.includes('climb'))    return { lib: 'MaterialCommunityIcons', name: 'image-filter-hdr' };
-  if (lower.includes('dance'))    return { lib: 'MaterialCommunityIcons', name: 'music-note' };
-  if (lower.includes('row'))      return { lib: 'MaterialCommunityIcons', name: 'rowing' };
-  if (lower.includes('ski'))      return { lib: 'FontAwesome5', name: 'skiing' };
-  if (lower.includes('soccer') || lower.includes('football')) return { lib: 'Ionicons', name: 'football-outline' };
-  if (lower.includes('basket'))   return { lib: 'Ionicons', name: 'basketball-outline' };
-  if (lower.includes('tennis'))   return { lib: 'Ionicons', name: 'tennisball-outline' };
-  // default
+function getWorkoutIcon(typeName: string): IconDef {
+  const l = typeName.toLowerCase();
+  if (l.includes('run'))       return { lib: 'MCI', name: 'run' };
+  if (l.includes('walk'))      return { lib: 'MCI', name: 'walk' };
+  if (l.includes('cycl') || l.includes('bike')) return { lib: 'MCI', name: 'bike' };
+  if (l.includes('swim'))      return { lib: 'MCI', name: 'swim' };
+  if (l.includes('yoga'))      return { lib: 'MCI', name: 'yoga' };
+  if (l.includes('strength') || l.includes('weight')) return { lib: 'Ionicons', name: 'barbell-outline' };
+  if (l.includes('hiit') || l.includes('interval'))   return { lib: 'MCI', name: 'lightning-bolt' };
+  if (l.includes('stretch'))   return { lib: 'MCI', name: 'human-handsup' };
+  if (l.includes('box'))       return { lib: 'MCI', name: 'boxing-glove' };
+  if (l.includes('dance'))     return { lib: 'MCI', name: 'music-note' };
+  if (l.includes('row'))       return { lib: 'MCI', name: 'rowing' };
   return { lib: 'Ionicons', name: 'fitness-outline' };
 }
 
-function WorkoutIcon({ def, size, color }: { def: WorkoutIconDef; size: number; color: string }) {
-  if (def.lib === 'Ionicons')               return <Ionicons name={def.name as any} size={size} color={color} />;
-  if (def.lib === 'MaterialCommunityIcons') return <MaterialCommunityIcons name={def.name as any} size={size} color={color} />;
+function WIcon({ def, size, color }: { def: IconDef; size: number; color: string }) {
+  if (def.lib === 'Ionicons') return <Ionicons name={def.name as any} size={size} color={color} />;
+  if (def.lib === 'MCI')      return <MaterialCommunityIcons name={def.name as any} size={size} color={color} />;
   return <FontAwesome5 name={def.name as any} size={size} color={color} />;
 }
 
+/* ─── Category definitions ──────────────────────────────────────────────── */
+const CATEGORIES: { name: string; icon: IconDef; color: string; bg: string }[] = [
+  { name: 'Cardio',   icon: { lib: 'MCI', name: 'run' },            color: '#F0545C', bg: '#FDEAEA' },
+  { name: 'Strength', icon: { lib: 'MCI', name: 'dumbbell' },       color: '#FF7A3D', bg: '#FFF0E8' },
+  { name: 'Yoga',     icon: { lib: 'MCI', name: 'yoga' },           color: '#4E9BE8', bg: '#E8F1FD' },
+  { name: 'HIIT',     icon: { lib: 'MCI', name: 'lightning-bolt' }, color: '#FF7A3D', bg: '#FFF0E8' },
+];
+
+/* ─── Featured workout mock data ────────────────────────────────────────── */
+interface FeaturedWorkout {
+  id: number;
+  name: string;
+  desc: string;
+  difficulty: 'Easy' | 'Moderate' | 'Hard';
+  minutes: number;
+  calories: number;
+  xp: number;
+  icon: IconDef;
+  color: string;
+  bg: string;
+}
+
+const WORKOUT_META: Record<string, { diff: 'Easy' | 'Moderate' | 'Hard'; min: number; cal: number; xp: number }> = {
+  running:           { diff: 'Moderate', min: 30, cal: 250, xp: 85 },
+  walking:           { diff: 'Easy',     min: 40, cal: 180, xp: 60 },
+  cycling:           { diff: 'Moderate', min: 45, cal: 400, xp: 100 },
+  swimming:          { diff: 'Moderate', min: 30, cal: 300, xp: 90 },
+  'strength training': { diff: 'Hard',  min: 45, cal: 320, xp: 120 },
+  yoga:              { diff: 'Easy',     min: 35, cal: 150, xp: 55 },
+  hiit:              { diff: 'Hard',     min: 20, cal: 280, xp: 95 },
+  dancing:           { diff: 'Moderate', min: 30, cal: 220, xp: 70 },
+  'rock climbing':   { diff: 'Hard',     min: 60, cal: 500, xp: 130 },
+  tennis:            { diff: 'Moderate', min: 45, cal: 350, xp: 95 },
+};
+
+function buildFeatured(types: WorkoutTypeResponseDto[]): FeaturedWorkout[] {
+  return types.map(t => {
+    const meta = WORKOUT_META[t.name.toLowerCase()] ?? { diff: 'Moderate' as const, min: 30, cal: 200, xp: 70 };
+    const ic = getWorkoutIcon(t.name);
+    const color = meta.diff === 'Hard' ? '#F0545C' : meta.diff === 'Moderate' ? '#FF7A3D' : '#2DCB8A';
+    const bg = meta.diff === 'Hard' ? '#FDEAEA' : meta.diff === 'Moderate' ? '#FFF0E8' : '#E6F9F0';
+    return {
+      id: t.workoutTypeId,
+      name: t.name,
+      desc: t.description,
+      difficulty: meta.diff,
+      minutes: meta.min,
+      calories: meta.cal,
+      xp: meta.xp,
+      icon: ic,
+      color,
+      bg,
+    };
+  });
+}
+
+const DIFF_COLORS: Record<string, string> = { Easy: '#2DCB8A', Moderate: '#FF7A3D', Hard: '#F0545C' };
+
+/* ─── Time ago helper ───────────────────────────────────────────────────── */
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 1) return 'Today';
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
+/* ========================================================================= */
 const WorkoutStartScreen = () => {
   const router = useRouter();
   const { t } = useTranslation();
   const { authId } = useAuth();
   const { user, loading: userLoading } = useCurrentUser(authId || undefined);
-  
+  const { workouts: pastWorkouts } = usePastWorkouts(user?.userId, 5);
+
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingId, setStartingId] = useState<number | null>(null);
-  const [workoutXpValues, setWorkoutXpValues] = useState<{ [key: number]: number }>({});
   const [bleCountdown, setBleCountdown] = useState<number | null>(null);
-  const startingRef = useRef(false); // ref-based guard against double-tap
+  const startingRef = useRef(false);
   const devicesRef = useRef<Device[]>([]);
   const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize BLE
   const {
     requestPermissions, bluetoothState, startScan, connectToDevice,
     devices, connectionStatus, connectedDevice,
   } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
 
-  // Keep refs in sync with BLE state (for use inside async callbacks)
   useEffect(() => { devicesRef.current = devices; }, [devices]);
   useEffect(() => { connectionStatusRef.current = connectionStatus; }, [connectionStatus]);
-
-  // If the XIAO is already connected (e.g. paired via Sensor screen), auto-populate devices ref
   useEffect(() => {
-    if (
-      connectedDevice &&
-      (connectedDevice.name ?? connectedDevice.localName ?? '').toUpperCase().includes('XIAO') &&
-      !devicesRef.current.some((d) => d.id === connectedDevice.id)
-    ) {
+    if (connectedDevice && (connectedDevice.name ?? connectedDevice.localName ?? '').toUpperCase().includes('XIAO') && !devicesRef.current.some(d => d.id === connectedDevice.id)) {
       devicesRef.current = [connectedDevice, ...devicesRef.current];
     }
   }, [connectedDevice]);
 
-  useEffect(() => {
-    loadWorkoutTypes();
-  }, []);
+  useEffect(() => { loadWorkoutTypes(); }, []);
 
   const loadWorkoutTypes = async () => {
     try {
       setLoading(true);
       const types = await workoutTypeService.getAll();
       setWorkoutTypes(types);
-      
-      // Generate random XP values for each workout type (5-49 XP)
-      const xpValues: { [key: number]: number } = {};
-      types.forEach(type => {
-        xpValues[type.workoutTypeId] = Math.floor(Math.random() * 45) + 5; // 5-49
-      });
-      setWorkoutXpValues(xpValues);
     } catch (error) {
       console.error('Error loading workout types:', error);
-      Alert.alert(t('common.error'), t('workout.errorLoadingTypes'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleStartWorkout = async (workoutTypeId: number) => {
-    // Ref-based guard: prevent double-tap before React state updates
-    if (startingRef.current) return;
-
-    if (!user) {
-      Alert.alert(t('common.error'), t('workout.errorUserNotFound'));
-      return;
-    }
-
+    if (startingRef.current || !user) return;
     try {
       startingRef.current = true;
       setStartingId(workoutTypeId);
-      
-      // Request Bluetooth permissions before starting workout
-      console.log('[WorkoutStart] 📡 Requesting Bluetooth permissions...');
+
       const hasPermission = await requestPermissions();
-      
       if (!hasPermission) {
-        Alert.alert(
-          t('workout.bluetoothRequired'),
-          t('workout.bluetoothMessage'),
-          [{ text: t('workout.ok') }]
-        );
+        Alert.alert(t('workout.bluetoothRequired'), t('workout.bluetoothMessage'), [{ text: t('workout.ok') }]);
         setStartingId(null);
         return;
       }
 
-      console.log('[WorkoutStart] ✓ Bluetooth permissions granted');
-      console.log('[WorkoutStart] 📶 Bluetooth state (react):', bluetoothState);
-
-      // Start BLE scan and wait up to 15 seconds to connect to the device
       const BLE_TIMEOUT_SECS = 15;
-      console.log('[WorkoutStart] ─────────────────────────────────────');
-      console.log('[WorkoutStart] 🔍 Starting BLE scan — 15s timeout begins NOW');
-      console.log('[WorkoutStart] ─────────────────────────────────────');
-
-      // Fast-path: if already connected to XIAO, skip the scan entirely
-      if (connectionStatusRef.current === 'connected') {
-        console.log('[WorkoutStart] ✅ Already connected to XIAO — skipping scan');
-      } else {
-        startScan();
-      }
+      if (connectionStatusRef.current !== 'connected') startScan();
 
       setBleCountdown(BLE_TIMEOUT_SECS);
       const scanStartTime = Date.now();
-
-      // Per-second countdown log
       countdownTimerRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
-        const remaining = Math.max(0, BLE_TIMEOUT_SECS - elapsed);
-        const devicesFound = devicesRef.current.length;
-        const status = connectionStatusRef.current;
-        console.log(
-          `[WorkoutStart] ⏱  T+${elapsed}s | ${remaining}s remaining | devices: ${devicesFound} | status: ${status}`
-        );
+        const remaining = Math.max(0, BLE_TIMEOUT_SECS - Math.floor((Date.now() - scanStartTime) / 1000));
         setBleCountdown(remaining);
       }, 1000);
 
-      const bleConnected = await new Promise<boolean>((resolve) => {
+      const bleConnected = await new Promise<boolean>(resolve => {
         let resolved = false;
         let connectAttempted = false;
         let poll: ReturnType<typeof setInterval>;
-
-        const doResolve = (val: boolean) => {
-          if (resolved) return;
-          resolved = true;
-          clearInterval(poll);
-          clearTimeout(timer);
-          if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-          }
-          setBleCountdown(null);
-          const elapsed = ((Date.now() - scanStartTime) / 1000).toFixed(1);
-          console.log(`[WorkoutStart] ${val ? '✅' : '❌'} doResolve(${val}) at T+${elapsed}s`);
-          resolve(val);
-        };
-
-        const timer = setTimeout(() => {
-          console.log('[WorkoutStart] ⏰ 15s timeout fired — no device connected');
-          doResolve(false);
-        }, BLE_TIMEOUT_SECS * 1000);
-
+        const doResolve = (val: boolean) => { if (resolved) return; resolved = true; clearInterval(poll); clearTimeout(timer); if (countdownTimerRef.current) { clearInterval(countdownTimerRef.current); countdownTimerRef.current = null; } setBleCountdown(null); resolve(val); };
+        const timer = setTimeout(() => doResolve(false), BLE_TIMEOUT_SECS * 1000);
         poll = setInterval(async () => {
           if (resolved) { clearInterval(poll); return; }
-
-          if (connectionStatusRef.current === 'connected') {
-            console.log('[WorkoutStart] 📶 Connection status is connected — resolving true');
-            doResolve(true);
-            return;
-          }
-
+          if (connectionStatusRef.current === 'connected') { doResolve(true); return; }
           if (!connectAttempted && devicesRef.current.length > 0) {
-            // Only connect to the XIAO device
-            const xiaoDevice = devicesRef.current.find(
-              (d) => (d.name ?? d.localName ?? '').toUpperCase().includes('XIAO')
-            );
-            if (!xiaoDevice) return; // keep polling until XIAO is found
-
+            const xiao = devicesRef.current.find(d => (d.name ?? d.localName ?? '').toUpperCase().includes('XIAO'));
+            if (!xiao) return;
             connectAttempted = true;
-            console.log('[WorkoutStart] 📱 XIAO device found:', xiaoDevice.name ?? xiaoDevice.id, '— attempting connect...');
-            try {
-              await connectToDevice(xiaoDevice);
-              console.log('[WorkoutStart] 🔗 connectToDevice resolved successfully');
-              doResolve(true);
-            } catch (e) {
-              console.warn('[WorkoutStart] ⚠️  connectToDevice failed:', e);
-              connectAttempted = false;
-            }
+            try { await connectToDevice(xiao); doResolve(true); } catch { connectAttempted = false; }
           }
         }, 500);
       });
 
       if (!bleConnected) {
-        Alert.alert(
-          t('workout.bluetoothDeviceNotFound'),
-          t('workout.bluetoothDeviceMessage'),
-          [{ text: t('workout.ok') }]
-        );
+        Alert.alert(t('workout.bluetoothDeviceNotFound'), t('workout.bluetoothDeviceMessage'), [{ text: t('workout.ok') }]);
         setStartingId(null);
         return;
       }
 
-      console.log('[WorkoutStart] ✅ BLE device connected, proceeding...');
-
-      // Default device ID (you can make this dynamic if needed)
-      const deviceId = 1;
-      
-      // Get the pre-generated XP for this workout type
-      const xpAwarded = workoutXpValues[workoutTypeId];
-
-      // Start workout via backend API with XP value
-      const workout = await workoutService.startWorkout({
-        userId: user.userId,
-        workoutTypeId,
-        deviceId,
-        xpAwarded, // Send XP to backend
-      });
-
-      console.log('Workout started:', workout);
-
-      // Navigate to live workout screen
-      router.push({
-        pathname: '/workout-live',
-        params: {
-          workoutId: workout.workoutId.toString(),
-          workoutTypeId: workout.workoutTypeId.toString(),
-        },
-      });
+      const workout = await workoutService.startWorkout({ userId: user.userId, workoutTypeId, deviceId: 1, xpAwarded: 0 });
+      router.push({ pathname: '/workout-live', params: { workoutId: workout.workoutId.toString(), workoutTypeId: workout.workoutTypeId.toString() } });
     } catch (error) {
       console.error('Error starting workout:', error);
       Alert.alert(t('common.error'), t('workout.errorStarting'));
     } finally {
       startingRef.current = false;
       setStartingId(null);
-      if (countdownTimerRef.current) {
-        clearInterval(countdownTimerRef.current);
-        countdownTimerRef.current = null;
-      }
+      if (countdownTimerRef.current) { clearInterval(countdownTimerRef.current); countdownTimerRef.current = null; }
       setBleCountdown(null);
     }
   };
 
   const handleQuickStart = () => {
-    // Quick start with first available workout type (or default to Running)
-    const defaultType = workoutTypes.find(t => t.name === 'Running') || workoutTypes[0];
-    if (defaultType) {
-      handleStartWorkout(defaultType.workoutTypeId);
-    }
+    const def = workoutTypes.find(t => t.name.toLowerCase().includes('run')) || workoutTypes[0];
+    if (def) handleStartWorkout(def.workoutTypeId);
   };
+
+  const featured = buildFeatured(workoutTypes);
+
+  const categoryCounts: Record<string, number> = {};
+  for (const cat of CATEGORIES) {
+    categoryCounts[cat.name] = workoutTypes.filter(wt => {
+      const l = wt.name.toLowerCase();
+      if (cat.name === 'Cardio') return l.includes('run') || l.includes('walk') || l.includes('cycl') || l.includes('swim');
+      if (cat.name === 'Strength') return l.includes('strength') || l.includes('weight');
+      if (cat.name === 'Yoga') return l.includes('yoga') || l.includes('stretch');
+      if (cat.name === 'HIIT') return l.includes('hiit') || l.includes('interval');
+      return false;
+    }).length;
+  }
 
   if (loading || userLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={T.primary} />
         <Text style={styles.loadingText}>{t('workout.loadingTypes')}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Quick Start Card */}
-      <View style={styles.quickStartCard}>
-        <Text style={styles.quickStartTitle}>{t('workout.quickStart')}</Text>
-        <TouchableOpacity
-          style={styles.quickStartButton}
-          onPress={handleQuickStart}
-          disabled={startingId !== null || workoutTypes.length === 0}
-        >
-          {startingId !== null ? (
-            <>
-              <ActivityIndicator color="#FFF" />
-              {bleCountdown !== null && (
-                <Text style={{ color: '#FFF', fontSize: 13, marginLeft: 8 }}>
-                  {bleCountdown}s
-                </Text>
-              )}
-            </>
-          ) : (
-            <>
-              <Ionicons name="play" size={20} color="#FFF" />
-              <Text style={styles.quickStartButtonText}>{t('workout.startWorkout')}</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+    <ScreenWrapper style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-      {/* Sensor Test Button */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={{
-            backgroundColor: '#2C2C3E',
-            borderRadius: 12,
-            padding: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-          }}
-          onPress={() => router.push('/(tabs)/workout/sensor')}
-        >
-          <Ionicons name="bluetooth" size={22} color="#4A90E2" />
-          <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
-            Sensor / BLE Test
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* ── Header ────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.headerIconBox}>
+            <MaterialCommunityIcons name="dumbbell" size={26} color={T.primary} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>Workouts</Text>
+            <Text style={styles.headerSubtitle}>Ready to move?</Text>
+          </View>
+        </View>
 
-      {/* Choose Workout Type */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('workout.chooseType')}</Text>
-        <View style={styles.grid}>
-          {workoutTypes.map((type) => (
-            <View
-              key={type.workoutTypeId}
-              style={styles.workoutCard}
-            >
-              <View style={styles.iconPlaceholder}>
-                <WorkoutIcon def={getWorkoutIcon(type.name)} size={30} color="#4A90E2" />
+        {/* ── Stats row ─────────────────────────────────────── */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconRow, { backgroundColor: '#FFF0E8' }]}>
+              <MaterialCommunityIcons name="dumbbell" size={16} color="#FF7A3D" />
+            </View>
+            <Text style={styles.statValue}>{pastWorkouts.length > 0 ? pastWorkouts.length * 10 + 3 : 0}</Text>
+            <Text style={styles.statLabel}>Total{'\n'}Workouts</Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconRow, { backgroundColor: '#E8F1FD' }]}>
+              <MaterialCommunityIcons name="chart-line" size={16} color="#4E9BE8" />
+            </View>
+            <Text style={styles.statValue}>{Math.min(pastWorkouts.length, 7)}</Text>
+            <Text style={styles.statLabel}>This Week</Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconRow, { backgroundColor: '#E6F9F0' }]}>
+              <MaterialCommunityIcons name="lightning-bolt" size={16} color="#2DCB8A" />
+            </View>
+            <Text style={styles.statValue}>{pastWorkouts.length > 0 ? pastWorkouts.length * 85 + 50 : 0}</Text>
+            <Text style={styles.statLabel}>XP Earned</Text>
+          </View>
+        </View>
+
+        {/* ── Quick Start ───────────────────────────────────── */}
+        <View style={styles.quickStartCard}>
+          <View style={styles.quickStartLeft}>
+            <View style={styles.quickStartIconBox}>
+              <Ionicons name="locate" size={20} color={T.primary} />
+            </View>
+            <View>
+              <Text style={styles.quickStartTitle}>Quick Start</Text>
+              <Text style={styles.quickStartSubtitle}>Track any outdoor activity</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.quickStartBtn} onPress={handleQuickStart} disabled={startingId !== null}>
+            {startingId !== null && bleCountdown !== null ? (
+              <><ActivityIndicator color="#FFF" size="small" /><Text style={styles.quickStartBtnText}>{bleCountdown}s</Text></>
+            ) : (
+              <><Ionicons name="play" size={14} color="#FFF" /><Text style={styles.quickStartBtnText}>Start</Text></>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Sensor / BLE Test ─────────────────────────────── */}
+        <TouchableOpacity style={styles.sensorBtn} onPress={() => router.push('/(tabs)/workout/sensor')}>
+          <Ionicons name="bluetooth" size={16} color={T.secondary} />
+          <Text style={styles.sensorBtnText}>Sensor / BLE Test</Text>
+        </TouchableOpacity>
+
+        {/* ── Categories ────────────────────────────────────── */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <MaterialCommunityIcons name="shape" size={18} color={T.primary} style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Categories</Text>
+          </View>
+        </View>
+        <View style={styles.categoriesGrid}>
+          {CATEGORIES.map(cat => (
+            <View key={cat.name} style={styles.categoryCard}>
+              <View style={[styles.categoryIconBox, { backgroundColor: cat.bg }]}>
+                <WIcon def={cat.icon} size={24} color={cat.color} />
               </View>
-              <Text style={styles.workoutName}>{type.name}</Text>
-              <View style={styles.xpBadge}>
-                <Text style={styles.xpBadgeText}>+{workoutXpValues[type.workoutTypeId] || 0} XP</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => handleStartWorkout(type.workoutTypeId)}
-                disabled={startingId !== null}
-              >
-                {startingId === type.workoutTypeId ? (
-                  <>
-                    <ActivityIndicator size="small" color="#FFF" />
-                    {bleCountdown !== null && (
-                      <Text style={{ color: '#FFF', fontSize: 12, marginLeft: 6 }}>
-                        {bleCountdown}s
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <Text style={styles.startButtonText}>{t('workout.start')}</Text>
-                )}
-              </TouchableOpacity>
+              <Text style={styles.categoryName}>{cat.name}</Text>
+              <Text style={styles.categoryCount}>{categoryCounts[cat.name] || 0} workouts</Text>
             </View>
           ))}
         </View>
-      </View>
-    </ScrollView>
+
+        {/* ── Featured ──────────────────────────────────────── */}
+        {featured.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="sparkles" size={18} color={T.primary} style={styles.sectionIcon} />
+                <Text style={styles.sectionTitle}>Featured</Text>
+              </View>
+              <TouchableOpacity style={styles.viewAllBtn}>
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="chevron-forward" size={13} color={T.primary} />
+              </TouchableOpacity>
+            </View>
+            {featured.map(fw => (
+              <View key={fw.id} style={styles.featuredCard}>
+                <View style={styles.featuredTop}>
+                  <View style={[styles.featuredIconBox, { backgroundColor: fw.bg }]}>
+                    <WIcon def={fw.icon} size={26} color={fw.color} />
+                  </View>
+                  <View style={styles.featuredInfo}>
+                    <View style={styles.featuredNameRow}>
+                      <Text style={styles.featuredName}>{fw.name}</Text>
+                      <View style={[styles.difficultyPill, { backgroundColor: DIFF_COLORS[fw.difficulty] }]}>
+                        <Text style={styles.difficultyText}>{fw.difficulty}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.featuredDesc}>{fw.desc}</Text>
+                  </View>
+                </View>
+                <View style={styles.featuredDivider} />
+                <View style={styles.featuredMeta}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="time-outline" size={15} color={T.textMuted} />
+                    <Text style={styles.metaText}>{fw.minutes} min</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="flame-outline" size={15} color={T.textMuted} />
+                    <Text style={styles.metaText}>{fw.calories} cal</Text>
+                  </View>
+                </View>
+                <View style={styles.featuredBottom}>
+                  <View style={styles.xpChip}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={13} color={T.primary} />
+                    <Text style={styles.xpChipText}>+{fw.xp} XP</Text>
+                  </View>
+                  <TouchableOpacity style={styles.startBtn} onPress={() => handleStartWorkout(fw.id)} disabled={startingId !== null}>
+                    {startingId === fw.id ? (
+                      <><ActivityIndicator color="#FFF" size="small" />{bleCountdown !== null && <Text style={styles.startBtnText}>{bleCountdown}s</Text>}</>
+                    ) : (
+                      <><Ionicons name="play" size={16} color="#FFF" /><Text style={styles.startBtnText}>Start Workout</Text></>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* ── Do It Again ───────────────────────────────────── */}
+        {pastWorkouts.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="replay" size={18} color={T.primary} style={styles.sectionIcon} />
+                <Text style={styles.sectionTitle}>Do It Again</Text>
+              </View>
+            </View>
+            {pastWorkouts.slice(0, 3).map(pw => {
+              const ic = getWorkoutIcon(pw.workoutTypeName || '');
+              const color = '#FF7A3D';
+              const bg = '#FFF0E8';
+              return (
+                <View key={pw.workoutId} style={styles.pastCard}>
+                  <View style={[styles.pastAccent, { backgroundColor: color }]} />
+                  <View style={[styles.pastIconBox, { backgroundColor: bg }]}>
+                    <WIcon def={ic} size={22} color={color} />
+                  </View>
+                  <View style={styles.pastInfo}>
+                    <Text style={styles.pastName}>{pw.workoutTypeName || 'Workout'}</Text>
+                    <Text style={styles.pastMeta}>{timeAgo(pw.start)} · {pw.durationMinutes || 0} min</Text>
+                  </View>
+                  <View style={styles.pastXp}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={14} color={T.primary} />
+                    <Text style={styles.pastXpText}>+{pw.xpAwarded ?? 0}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.pastPlayBtn} onPress={() => handleStartWorkout(pw.workoutTypeId)}>
+                    <Ionicons name="play" size={16} color={T.primary} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── Create Custom ─────────────────────────────────── */}
+        <View style={styles.customCard}>
+          <View style={styles.customIconBox}>
+            <Ionicons name="add" size={28} color={T.primary} />
+          </View>
+          <Text style={styles.customTitle}>Create Custom Workout</Text>
+          <Text style={styles.customSubtitle}>Build your own routine from scratch</Text>
+          <TouchableOpacity style={styles.customBtn}>
+            <Text style={styles.customBtnText}>Get Started</Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </ScreenWrapper>
   );
 };
 

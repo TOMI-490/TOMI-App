@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,251 +7,535 @@ import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAvatarPage } from '../../hooks/useAvatarPage';
+import { useGamification } from '../../hooks/useGamification';
+import { avatarService } from '../../services/resources/avatar.service';
+import type { AvatarResponseDto } from '../../models/dto/Avatar.dto';
 import { avatarPageStyles as styles } from '../../styles/home/avatarPage.styles';
+import { TOMI_THEME as T } from '../../constants/theme';
 
-// ── Mood bar config ───────────────────────────────────────────────────────────
-// For hunger/sleepiness/boredom a HIGH value is BAD, so we invert the bar fill.
-// For happiness a HIGH value is GOOD — fill directly.
-type MoodIconDef =
-  | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
-  | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
+type TabId = 'customize' | 'evolution' | 'stats' | 'shop';
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'customize', label: 'Customize' },
+  { id: 'evolution',  label: 'Evolution' },
+  { id: 'stats',      label: 'Stats' },
+  { id: 'shop',       label: 'Shop' },
+];
 
-interface MoodMetric {
-  iconDef: MoodIconDef;
-  labelKey: string;
-  value: number;        // raw 0–100 from backend
-  fillValue: number;    // 0–100 used for bar width
-  color: string;
-  statusKey: string;
+/* ── Evolution definitions ──────────────────────────────────────────── */
+const EVOLUTION_STAGES = [
+  { name: 'Hatchling', desc: 'A brand new companion...', lvlRange: [1, 4],   icon: 'egg-outline' as const,             color: '#2DCB8A', bg: '#E6F9F0' },
+  { name: 'Sprout',    desc: 'Growing stronger with you.',  lvlRange: [5, 10],  icon: 'leaf-outline' as const,            color: '#4E9BE8', bg: '#E8F1FD' },
+  { name: 'Warrior',   desc: 'Ready for any challenge.',    lvlRange: [11, 15], icon: 'shield-checkmark-outline' as const, color: '#FF7A3D', bg: '#FFF0E8' },
+  { name: 'Hero',      desc: 'Inspiring others to move.',   lvlRange: [16, 20], icon: 'flash-outline' as const,            color: '#F4A623', bg: '#FEF6E0' },
+  { name: 'Champion',  desc: 'Elite athlete with incredible discipline.', lvlRange: [21, 29], icon: 'trophy-outline' as const, color: '#FF7A3D', bg: '#FFF0E8' },
+  { name: 'Legend',    desc: 'A true fitness legend. The pinnacle.', lvlRange: [30, 99], icon: 'star-outline' as const, color: '#7C3AED', bg: '#EDE9FE' },
+];
+
+function getEvolutionStage(level: number) {
+  return EVOLUTION_STAGES.find(s => level >= s.lvlRange[0] && level <= s.lvlRange[1]) ?? EVOLUTION_STAGES[0];
 }
 
-function getMoodMetrics(avatar: {
-  hungerLevel: number;
-  sleepinessLevel: number;
-  boredomeLevel: number;
-  happinessLevel: number;
-}): MoodMetric[] {
-  const hunger     = avatar.hungerLevel;
-  const sleepiness = avatar.sleepinessLevel;
-  const boredom    = avatar.boredomeLevel;
-  const happiness  = avatar.happinessLevel;
-
-  const statusKeyFor = (val: number, inverted: boolean) => {
-    // inverted metrics (hunger/sleepiness/boredom): high val = bad → low goodness
-    // non-inverted (happiness): high val = good → high goodness
-    const effective = inverted ? 100 - val : val;
-    if (effective < 30) return 'avatar.moodCritical';
-    if (effective < 60) return 'avatar.moodNeedsCare';
-    return 'avatar.moodGood';
-  };
-
-  // Bar fill = wellness (low = bad, high = good)
-  // For inverted metrics: fillValue = 100 - raw  (high hunger → low bar)
-  // For happiness:        fillValue = raw         (high happiness → high bar)
-  const fillFor = (raw: number, inverted: boolean) => inverted ? 100 - raw : raw;
-  const colorFor = (fill: number) =>
-    fill < 30 ? '#FF3B30' : fill < 60 ? '#FF9500' : '#34C759';
-
-  const hFill  = fillFor(hunger, true);
-  const sFill  = fillFor(sleepiness, true);
-  const bFill  = fillFor(boredom, true);
-  const hpFill = fillFor(happiness, false);
-
-  return [
-    {
-      iconDef: { lib: 'MaterialCommunityIcons', name: 'food-fork-drink' } as MoodIconDef,
-      labelKey: 'avatar.moodHunger',
-      value: hunger,
-      fillValue: hFill,
-      color: colorFor(hFill),
-      statusKey: statusKeyFor(hunger, true),
-    },
-    {
-      iconDef: { lib: 'Ionicons', name: 'moon-outline' } as MoodIconDef,
-      labelKey: 'avatar.moodSleepiness',
-      value: sleepiness,
-      fillValue: sFill,
-      color: colorFor(sFill),
-      statusKey: statusKeyFor(sleepiness, true),
-    },
-    {
-      iconDef: { lib: 'Ionicons', name: 'game-controller-outline' } as MoodIconDef,
-      labelKey: 'avatar.moodBoredom',
-      value: boredom,
-      fillValue: bFill,
-      color: colorFor(bFill),
-      statusKey: statusKeyFor(boredom, true),
-    },
-    {
-      iconDef: { lib: 'Ionicons', name: 'heart-outline' } as MoodIconDef,
-      labelKey: 'avatar.moodHappiness',
-      value: happiness,
-      fillValue: hpFill,
-      color: colorFor(hpFill),
-      statusKey: statusKeyFor(happiness, false),
-    },
-  ];
+function getNextEvolution(level: number) {
+  const idx = EVOLUTION_STAGES.findIndex(s => level >= s.lvlRange[0] && level <= s.lvlRange[1]);
+  return idx < EVOLUTION_STAGES.length - 1 ? EVOLUTION_STAGES[idx + 1] : null;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+/* ── Accessory placeholders ─────────────────────────────────────────── */
+const ACCESSORIES = [
+  { id: 'crown',   name: 'Crown',    icon: 'crown' as const,               unlocked: true },
+  { id: 'star_bg', name: 'Star B.',   icon: 'star-four-points' as const,    unlocked: false },
+  { id: 'sparkle', name: 'Sparkle',  icon: 'shimmer' as const,             unlocked: false },
+  { id: 'trophy',  name: 'Trophy',   icon: 'trophy' as const,              unlocked: false },
+];
+
 export default function AvatarPage() {
   const { t } = useTranslation();
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
   const { avatar, loading, error, refresh } = useAvatarPage(user?.userId);
+  const { data: gamData } = useGamification(user?.userId);
 
-  const moodMetrics = useMemo(
-    () =>
-      avatar
-        ? getMoodMetrics({
-            hungerLevel:    avatar.hungerLevel,
-            sleepinessLevel: avatar.sleepinessLevel,
-            boredomeLevel:  avatar.boredomeLevel,
-            happinessLevel: avatar.happinessLevel,
-          })
-        : [],
-    [avatar]
-  );
+  const [activeTab, setActiveTab] = useState<TabId>('customize');
+  const [avatarTemplates, setAvatarTemplates] = useState<AvatarResponseDto[]>([]);
 
-  const xpPercent = avatar?.xpProgress ?? 0;
-  const themeColor = avatar?.themeColor ?? '#007AFF';
+  useEffect(() => {
+    avatarService.getAll().then(setAvatarTemplates).catch(() => {});
+  }, []);
 
-  // ── Loading ─────────────────────────────────────────────────────
-  if (loading) {
+  const themeColor = avatar?.themeColor ?? T.primary;
+  const currentEvo = useMemo(() => getEvolutionStage(avatar?.level ?? 1), [avatar?.level]);
+  const nextEvo = useMemo(() => getNextEvolution(avatar?.level ?? 1), [avatar?.level]);
+
+  const happinessPercent = avatar ? avatar.happinessLevel : 0;
+  const energyPercent = avatar ? 100 - avatar.sleepinessLevel : 0;
+
+  const leaderboard = gamData?.leaderboards?.[0];
+  const userRank = leaderboard?.userEntry?.rank ?? 0;
+
+  if (loading && !avatar) {
     return (
-      <ScreenWrapper style={styles.container}>
+      <ScreenWrapper style={styles.screen}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={T.primary} />
           <Text style={styles.loadingText}>{t('avatar.loading')}</Text>
         </View>
       </ScreenWrapper>
     );
   }
 
-  // ── Error ───────────────────────────────────────────────────────
-  if (error || !avatar) {
+  if (error && !avatar) {
     return (
-      <ScreenWrapper style={styles.container}>
+      <ScreenWrapper style={styles.screen}>
         <View style={styles.centered}>
-          <Text style={styles.errorText}>
-            {error?.message ?? t('avatar.noAvatarFound')}
-          </Text>
-          {error && (
-            <TouchableOpacity style={styles.retryButton} onPress={refresh}>
-              <Text style={styles.retryText}>{t('avatar.retry')}</Text>
-            </TouchableOpacity>
-          )}
+          <Text style={styles.errorText}>{error.message ?? t('avatar.noAvatarFound')}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refresh}>
+            <Text style={styles.retryText}>{t('avatar.retry')}</Text>
+          </TouchableOpacity>
         </View>
       </ScreenWrapper>
     );
   }
 
-  // ── Render ──────────────────────────────────────────────────────
+  const nickname = avatar?.nickname ?? 'Buddy';
+  const level = avatar?.level ?? 1;
+  const xp = avatar?.xp ?? 0;
+  const nextLevelXp = avatar?.nextLevelXp ?? 100;
+  const xpPercent = avatar?.xpProgress ?? 0;
+  const ageDays = avatar?.ageDays ?? 0;
+  const avatarGif = avatar?.animationActiveUrl || avatar?.animationIdleUrl;
+
   return (
-    <ScreenWrapper style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScreenWrapper style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('avatar.title')}</Text>
+        {/* ── Header ─────────────────────────────────────── */}
+        <View style={styles.companionPill}>
+          <MaterialCommunityIcons name="paw" size={14} color={T.success} />
+          <Text style={styles.companionPillText}>My Companion</Text>
         </View>
+        <Text style={styles.headerTitle}>{nickname}'s Room</Text>
+        <Text style={styles.headerSubtitle}>Your cozy little companion lives here</Text>
 
-        {/* ── Avatar card ─────────────────────────────────────── */}
-        <View style={[styles.avatarCard, { borderWidth: 2, borderColor: themeColor }]}>
+        {/* ── Avatar Card ────────────────────────────────── */}
+        <View style={styles.avatarCard}>
+          <View style={styles.avatarCardInner}>
 
-          {/* GIF */}
-          <View style={styles.gifContainer}>
-            {avatar.animationActiveUrl ? (
-              <Image
-                source={{ uri: avatar.animationActiveUrl }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="contain"
-                autoplay
-              />
-            ) : (
-              <View style={[styles.gifPlaceholder, { backgroundColor: themeColor + '33' }]} />
-            )}
-          </View>
+            {/* Top row: name + level badge */}
+            <View style={styles.avatarTopRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.avatarNickname}>{nickname}</Text>
+                <Text style={styles.avatarMeta}>{ageDays} days old · {currentEvo.name}</Text>
+              </View>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelBadgeLabel}>Level</Text>
+                <Text style={styles.levelBadgeValue}>{level}</Text>
+              </View>
+            </View>
 
-          {/* Name & level */}
-          <Text style={styles.nickname}>{avatar.nickname}</Text>
-          <Text style={styles.levelLabel}>{t('avatar.levelLabel').replace('{level}', String(avatar.level))}</Text>
+            {/* Living room scene — matches Home page */}
+            <View style={styles.livingRoom}>
+              <View style={styles.roomWall} pointerEvents="none" />
+              <View style={styles.roomWainscoting} pointerEvents="none" />
+              <View style={styles.roomFloor} pointerEvents="none" />
 
-          {/* XP bar */}
-          <View style={styles.xpSection}>
+              {/* Window with curtains */}
+              <View style={styles.roomWindow} pointerEvents="none">
+                <View style={styles.windowCurtainLeft} />
+                <View style={styles.windowGlass}>
+                  <View style={styles.windowSky} />
+                  <View style={styles.windowCloud} />
+                </View>
+                <View style={styles.windowCurtainRight} />
+                <View style={styles.windowSill} />
+              </View>
+
+              {/* Picture frame */}
+              <View style={styles.roomPictureFrame} pointerEvents="none">
+                <View style={styles.pictureInner}>
+                  <Ionicons name="heart" size={14} color="#E8A87C" />
+                </View>
+              </View>
+
+              {/* Rug */}
+              <View style={styles.roomRug} pointerEvents="none" />
+
+              {/* Sofa */}
+              <View style={styles.roomSofa} pointerEvents="none">
+                <View style={styles.sofaBack} />
+                <View style={styles.sofaSeat} />
+                <View style={styles.sofaCushionLeft} />
+                <View style={styles.sofaCushionRight} />
+                <View style={styles.sofaArmLeft} />
+                <View style={styles.sofaArmRight} />
+              </View>
+
+              {/* Floor lamp */}
+              <View style={styles.roomLampContainer} pointerEvents="none">
+                <View style={styles.roomLampGlow} />
+                <View style={styles.roomLampShade}>
+                  <Ionicons name="bulb" size={12} color="#FBBF24" />
+                </View>
+                <View style={styles.roomLampPole} />
+                <View style={styles.roomLampBase} />
+              </View>
+
+              {/* Side table with coffee */}
+              <View style={styles.roomSideTable} pointerEvents="none">
+                <View style={styles.sideTableTop}>
+                  <Ionicons name="cafe" size={13} color="#92400e" />
+                </View>
+                <View style={styles.sideTableLeg} />
+              </View>
+
+              {/* Plant */}
+              <View style={styles.roomPlant} pointerEvents="none">
+                <View style={styles.plantLeaves}>
+                  <Ionicons name="leaf" size={16} color="#4ADE80" />
+                </View>
+                <View style={styles.plantPot} />
+              </View>
+
+              {/* Bookshelf */}
+              <View style={styles.roomBookshelf} pointerEvents="none">
+                <View style={styles.bookshelfShelf} />
+                <View style={styles.bookRow}>
+                  <View style={[styles.book, { backgroundColor: '#F87171', height: 16 }]} />
+                  <View style={[styles.book, { backgroundColor: '#60A5FA', height: 18 }]} />
+                  <View style={[styles.book, { backgroundColor: '#FBBF24', height: 14 }]} />
+                  <View style={[styles.book, { backgroundColor: '#34D399', height: 17 }]} />
+                </View>
+              </View>
+
+              {/* Avatar */}
+              <View style={styles.avatarTouchable}>
+                <View style={styles.avatarShadowPlatform} />
+                <View style={styles.avatarContainer}>
+                  {avatarGif ? (
+                    <Image source={{ uri: avatarGif }} style={{ width: 110, height: 110 }} contentFit="contain" autoplay />
+                  ) : (
+                    <View style={[styles.avatarPlaceholder, { backgroundColor: themeColor + '33' }]}>
+                      <Ionicons name="sparkles" size={48} color={themeColor} />
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* XP Progress */}
             <View style={styles.xpRow}>
-              <Text style={styles.xpLabel}>{t('avatar.xpLabel')}</Text>
-              <Text style={styles.xpValue}>
-                {avatar.xp} / {avatar.nextLevelXp ?? '?'}
-              </Text>
+              <Text style={styles.xpLabel}>XP Progress</Text>
+              <Text style={styles.xpValue}>{xp}/{nextLevelXp}</Text>
             </View>
             <View style={styles.xpBarTrack}>
-              <View
-                style={[
-                  styles.xpBarFill,
-                  { width: `${Math.min(xpPercent, 100)}%`, backgroundColor: themeColor },
-                ]}
-              />
+              <View style={[styles.xpBarFill, { width: `${Math.min(xpPercent, 100)}%` as any, backgroundColor: themeColor }]} />
             </View>
-          </View>
 
-          {/* Age */}
-          <View style={styles.ageBadge}>
-            <Ionicons name="calendar-outline" size={13} color="#8E8E93" style={{ marginRight: 4 }} />
-            <Text style={styles.ageBadgeText}>
-              {avatar.ageDays !== 1
-                ? t('avatar.daysOldPlural').replace('{days}', String(avatar.ageDays))
-                : t('avatar.daysOld').replace('{days}', String(avatar.ageDays))}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Quick stats ──────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>{t('avatar.statsTitle')}</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Ionicons name="ribbon-outline" size={24} color="#FF9500" />
-            <Text style={styles.statValue}>{avatar.level}</Text>
-            <Text style={styles.statLabel}>{t('avatar.statLevel')}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="flash-outline" size={24} color="#FF9500" />
-            <Text style={styles.statValue}>{avatar.xp}</Text>
-            <Text style={styles.statLabel}>{t('avatar.statTotalXp')}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={24} color="#8E8E93" />
-            <Text style={styles.statValue}>{avatar.ageDays}</Text>
-            <Text style={styles.statLabel}>{t('avatar.statDaysOld')}</Text>
-          </View>
-        </View>
-
-        {/* ── Mood ─────────────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>{t('avatar.moodTitle')}</Text>
-        <View style={styles.moodGrid}>
-          {moodMetrics.map((m) => (
-            <View key={m.labelKey} style={styles.moodCard}>
-              {m.iconDef.lib === 'Ionicons' ? (
-                <Ionicons name={m.iconDef.name as React.ComponentProps<typeof Ionicons>['name']} size={24} color="#8E8E93" />
-              ) : (
-                <MaterialCommunityIcons name={m.iconDef.name as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={24} color="#8E8E93" />
-              )}
-              <Text style={styles.moodLabel}>{t(m.labelKey)}</Text>
-              <View style={styles.moodBarTrack}>
-                <View
-                  style={[
-                    styles.moodBarFill,
-                    { width: `${m.fillValue}%`, backgroundColor: m.color },
-                  ]}
-                />
+            {/* Mood: Happiness + Energy */}
+            <View style={styles.moodRow}>
+              <View style={styles.moodPill}>
+                <Ionicons name="heart" size={15} color={T.success} style={styles.moodPillIcon} />
+                <Text style={styles.moodPillLabel}>Happiness</Text>
+                <Text style={[styles.moodPillValue, { color: T.success }]}>{happinessPercent}%</Text>
               </View>
-              <Text style={[styles.moodValue, { color: m.color }]}>{t(m.statusKey)}</Text>
+              <View style={styles.moodPill}>
+                <MaterialCommunityIcons name="lightning-bolt" size={15} color={T.secondary} style={styles.moodPillIcon} />
+                <Text style={styles.moodPillLabel}>Energy</Text>
+                <Text style={[styles.moodPillValue, { color: T.secondary }]}>{energyPercent}%</Text>
+              </View>
             </View>
+
+            {/* Action buttons */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.actionBtn, styles.actionBtnFeed]} activeOpacity={0.7}>
+                <Ionicons name="heart" size={18} color={T.success} />
+                <Text style={[styles.actionBtnText, styles.actionBtnTextFeed]}>Feed</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, styles.actionBtnRest]} activeOpacity={0.7}>
+                <Ionicons name="moon" size={18} color={T.secondary} />
+                <Text style={[styles.actionBtnText, styles.actionBtnTextRest]}>Rest</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </View>
+
+        {/* ── Tab Bar ─────────────────────────────────────── */}
+        <View style={styles.tabBar}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
+            </TouchableOpacity>
           ))}
         </View>
+
+        {/* ── Tab Content ─────────────────────────────────── */}
+        {activeTab === 'customize' && (
+          <CustomizeContent
+            avatarTemplates={avatarTemplates}
+            currentAvatarId={avatar?.avatarId}
+          />
+        )}
+        {activeTab === 'evolution' && (
+          <EvolutionContent level={level} currentEvo={currentEvo} nextEvo={nextEvo} />
+        )}
+        {activeTab === 'stats' && (
+          <StatsContent xp={xp} level={level} ageDays={ageDays} rank={userRank} nextLevelXp={nextLevelXp} xpPercent={xpPercent} />
+        )}
+        {activeTab === 'shop' && <ShopContent />}
 
       </ScrollView>
     </ScreenWrapper>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Tab content components
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function CustomizeContent({ avatarTemplates, currentAvatarId }: { avatarTemplates: AvatarResponseDto[]; currentAvatarId?: number }) {
+  return (
+    <>
+      {/* Choose Avatar */}
+      <View style={styles.sectionHeader}>
+        <Ionicons name="happy-outline" size={20} color={T.primary} />
+        <Text style={styles.sectionTitle}>Choose Avatar</Text>
+      </View>
+      <View style={styles.avatarGrid}>
+        {avatarTemplates.map(a => {
+          const selected = a.avatarId === currentAvatarId;
+          return (
+            <TouchableOpacity
+              key={a.avatarId}
+              style={[styles.avatarOption, selected && styles.avatarOptionSelected]}
+              activeOpacity={0.7}
+            >
+              {a.imageURL ? (
+                <Image source={{ uri: a.imageURL }} style={styles.avatarOptionImage} contentFit="contain" />
+              ) : (
+                <Ionicons name="sparkles" size={28} color={selected ? T.primary : T.textMuted} />
+              )}
+              <Text style={styles.avatarOptionName} numberOfLines={1}>{a.name}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Accessories */}
+      <View style={styles.sectionHeader}>
+        <MaterialCommunityIcons name="creation" size={20} color={T.primary} />
+        <Text style={styles.sectionTitle}>Accessories</Text>
+      </View>
+      <View style={styles.accessoryGrid}>
+        {ACCESSORIES.map(acc => (
+          <TouchableOpacity
+            key={acc.id}
+            style={[styles.accessoryOption, !acc.unlocked && styles.accessoryLocked]}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name={acc.icon as any} size={26} color={acc.unlocked ? T.primary : T.textMuted} />
+            {!acc.unlocked && (
+              <View style={styles.lockOverlay}>
+                <Ionicons name="lock-closed" size={16} color={T.textMuted} />
+              </View>
+            )}
+            <Text style={styles.accessoryName}>{acc.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </>
+  );
+}
+
+function EvolutionContent({ level, currentEvo, nextEvo }: {
+  level: number;
+  currentEvo: (typeof EVOLUTION_STAGES)[number];
+  nextEvo: (typeof EVOLUTION_STAGES)[number] | null;
+}) {
+  const currentIdx = EVOLUTION_STAGES.indexOf(currentEvo);
+  const CURRENT_PERKS: Record<string, string[]> = {
+    Hatchling: ['Beginner avatar unlocked'],
+    Sprout:    ['Sprout avatar unlocked', 'Basic accessories'],
+    Warrior:   ['Warrior avatar unlocked', 'Battle accessories'],
+    Hero:      ['Hero avatar unlocked', 'XP multiplier x1.5'],
+    Champion:  ['Champion avatar unlocked', 'Leaderboard title', 'XP multiplier x2'],
+    Legend:    ['Legend avatar unlocked', 'All accessories unlocked', 'XP multiplier x3'],
+  };
+
+  return (
+    <>
+      {/* Current Form */}
+      <View style={styles.evolutionCurrentCard}>
+        <Text style={styles.evolutionCurrentLabel}>Current Form</Text>
+        <View style={styles.evolutionCurrentRow}>
+          <View style={[styles.evolutionIconBox, { backgroundColor: currentEvo.bg }]}>
+            <Ionicons name={currentEvo.icon as any} size={26} color={currentEvo.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.evolutionName, { color: currentEvo.color }]}>{currentEvo.name}</Text>
+            <Text style={styles.evolutionDesc}>{currentEvo.desc}</Text>
+          </View>
+        </View>
+        <View style={styles.evolutionPerksList}>
+          {(CURRENT_PERKS[currentEvo.name] ?? []).map(p => (
+            <View key={p} style={styles.evolutionPerk}>
+              <View style={[styles.evolutionPerkDot, { backgroundColor: currentEvo.color }]} />
+              <Text style={styles.evolutionPerkText}>{p}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Next Evolution */}
+      {nextEvo && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="sparkles" size={18} color={T.primary} />
+            <Text style={styles.sectionTitle}>Next Evolution</Text>
+            <View style={[styles.nextEvoBadge, { marginLeft: 'auto' as any }]}>
+              <Text style={styles.nextEvoBadgeText}>Lvl {nextEvo.lvlRange[0]}</Text>
+            </View>
+          </View>
+          <View style={styles.nextEvoCard}>
+            <View style={[styles.evoPathIconBox, { backgroundColor: nextEvo.bg }]}>
+              <Ionicons name={nextEvo.icon as any} size={22} color={nextEvo.color} />
+            </View>
+            <View style={styles.nextEvoInfo}>
+              <Text style={styles.nextEvoLabel}>{nextEvo.name}</Text>
+              <Text style={styles.nextEvoSubtitle}>{nextEvo.desc}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                <Text style={styles.nextEvoLevelRange}>Lvl {level} → Lvl {nextEvo.lvlRange[0]}</Text>
+                <Text style={styles.nextEvoLevelsToGo}>{nextEvo.lvlRange[0] - level} levels to go</Text>
+              </View>
+              <View style={styles.nextEvoProgress}>
+                <View style={[styles.nextEvoProgressFill, {
+                  width: `${Math.min(((level - currentEvo.lvlRange[0]) / (nextEvo.lvlRange[0] - currentEvo.lvlRange[0])) * 100, 100)}%` as any,
+                }]} />
+              </View>
+            </View>
+          </View>
+        </>
+      )}
+
+      {/* Evolution Path */}
+      <View style={styles.evoPathTitle}>
+        <MaterialCommunityIcons name="chart-timeline-variant-shimmer" size={20} color={T.primary} />
+        <Text style={styles.sectionTitle}>Evolution Path</Text>
+      </View>
+      {EVOLUTION_STAGES.map((stage, i) => {
+        const done = level >= stage.lvlRange[1] + 1 || (i <= currentIdx && i < EVOLUTION_STAGES.length - 1 && level > stage.lvlRange[1]);
+        const isCurrent = stage === currentEvo;
+        const isPast = i < currentIdx;
+        const isLast = i === EVOLUTION_STAGES.length - 1;
+
+        return (
+          <View key={stage.name} style={styles.evoPathItem}>
+            {/* Vertical line + dot */}
+            <View style={{ alignItems: 'center', width: 50 }}>
+              {i > 0 && <View style={[styles.evoPathLine, { height: 14 }, !(isPast || isCurrent) && styles.evoPathLinePending]} />}
+              <View style={[styles.evoPathDot, !(isPast || isCurrent) && styles.evoPathDotPending, { position: 'relative', left: 0, top: 0, marginVertical: 2 }]} />
+              {!isLast && <View style={[styles.evoPathLine, { height: 14, flex: 1 }, !(isPast) && styles.evoPathLinePending]} />}
+            </View>
+
+            {/* Card */}
+            <View style={styles.evoPathCard}>
+              <View style={[styles.evoPathIconBox, { backgroundColor: stage.bg }]}>
+                <Ionicons name={stage.icon as any} size={20} color={stage.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.evoPathName}>{stage.name}</Text>
+                <Text style={styles.evoPathDesc} numberOfLines={1}>{stage.desc}</Text>
+              </View>
+              {(isPast || (isCurrent && i === 0)) ? (
+                <View style={styles.evoPathDone}>
+                  <Ionicons name="checkmark-circle" size={14} color={T.success} />
+                  <Text style={styles.evoPathDoneText}>Done</Text>
+                </View>
+              ) : (
+                <View style={[styles.evoPathBadge, { backgroundColor: stage.color }]}>
+                  <Text style={styles.evoPathBadgeText}>Lv.{stage.lvlRange[0]}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      })}
+    </>
+  );
+}
+
+function StatsContent({ xp, level, ageDays, rank, nextLevelXp, xpPercent }: {
+  xp: number; level: number; ageDays: number; rank: number; nextLevelXp: number; xpPercent: number;
+}) {
+  const nextMilestoneLvl = Math.ceil(level / 5) * 5;
+  const milestonePct = nextMilestoneLvl > 0 ? Math.min((level / nextMilestoneLvl) * 100, 100) : 0;
+
+  return (
+    <>
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: T.primaryTint }]}>
+            <MaterialCommunityIcons name="lightning-bolt" size={24} color={T.primary} />
+          </View>
+          <Text style={styles.statValue}>{xp.toLocaleString()}</Text>
+          <Text style={styles.statLabel}>Total XP</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: T.successTint }]}>
+            <MaterialCommunityIcons name="chart-line" size={24} color={T.success} />
+          </View>
+          <Text style={styles.statValue}>{ageDays}</Text>
+          <Text style={styles.statLabel}>Days Active</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: T.warningTint }]}>
+            <Ionicons name="trophy" size={22} color={T.warning} />
+          </View>
+          <Text style={styles.statValue}>{level}</Text>
+          <Text style={styles.statLabel}>Level</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: T.secondaryTint }]}>
+            <Ionicons name="star" size={22} color={T.secondary} />
+          </View>
+          <Text style={styles.statValue}>#{rank || '—'}</Text>
+          <Text style={styles.statLabel}>Rank</Text>
+        </View>
+      </View>
+
+      {/* Next Milestone */}
+      <View style={styles.milestoneCard}>
+        <View style={styles.milestoneHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="trophy" size={18} color={T.primary} />
+            <Text style={styles.milestoneTitle}>Next Milestone</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+          <Text style={styles.milestoneTitle}>Level {nextMilestoneLvl} Reward</Text>
+          <Text style={styles.milestoneLvl}>Lvl {level}/{nextMilestoneLvl}</Text>
+        </View>
+        <View style={styles.milestoneBar}>
+          <View style={[styles.milestoneBarFill, { width: `${milestonePct}%` as any, backgroundColor: T.primary }]} />
+        </View>
+        <View style={styles.milestoneDesc}>
+          <Ionicons name="trophy-outline" size={18} color={T.primary} />
+          <Text style={styles.milestoneDescText}>Unlock exclusive champion avatar at Level {nextMilestoneLvl}</Text>
+        </View>
+      </View>
+    </>
+  );
+}
+
+function ShopContent() {
+  return (
+    <View style={styles.shopEmpty}>
+      <Ionicons name="storefront-outline" size={48} color={T.textMuted} />
+      <Text style={styles.shopEmptyText}>Shop coming soon!{'\n'}Spend your XP on exclusive items.</Text>
+    </View>
+  );
+}

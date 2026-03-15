@@ -10,35 +10,48 @@
 
 export const TOMI_THEME = {
   /* ── Brand ────────────────────────────────────────────────────────── */
-  primary:         '#ff8c42',
-  primaryPressed:  '#ff7324',
-  secondary:       '#4a90e2',
+  primary:         '#FF7A3D',
+  primaryLight:    '#FF9A6B',
+  primaryPressed:  '#E8622A',
+  secondary:       '#4E9BE8',
+  secondaryLight:  '#73B3F0',
 
   /* ── Text ─────────────────────────────────────────────────────────── */
-  textPrimary:     '#1a202c',
-  textMuted:       '#718096',
+  textPrimary:     '#1C1E27',
+  textSecondary:   '#3D3F4C',
+  textMuted:       '#8891A5',
+  textLight:       '#B0B9CC',
 
   /* ── Semantic ─────────────────────────────────────────────────────── */
-  warning:         '#f59e0b',
-  danger:          '#ef4444',
-  success:         '#10b981',
+  warning:         '#F4A623',
+  danger:          '#F0545C',
+  success:         '#2DCB8A',
+  successLight:    '#45DDA0',
 
   /* ── Surface ──────────────────────────────────────────────────────── */
-  background:      '#fefefe',
+  background:      '#F7F5F0',
+  cardBg:          '#FFFFFF',
+  cardBgAlt:       '#FAFAF8',
 
   /* ── Glass helpers ────────────────────────────────────────────────── */
-  glassBg:         'rgba(255,255,255,0.70)',
-  glassBgStrong:   'rgba(255,255,255,0.80)',
+  glassBg:         'rgba(255,255,255,0.72)',
+  glassBgStrong:   'rgba(255,255,255,0.85)',
   glassBgSubtle:   'rgba(255,255,255,0.50)',
-  glassBorder:     'rgba(255,255,255,0.60)',
+  glassBorder:     'rgba(255,255,255,0.65)',
   glassBorderWeak: 'rgba(255,255,255,0.40)',
 
   /* ── Overlay tints (for icon containers) ─────────────────────────── */
-  warningTint:  'rgba(245,158,11,0.20)',
-  dangerTint:   'rgba(239,68,68,0.20)',
-  primaryTint:  'rgba(255,140,66,0.20)',
-  secondaryTint:'rgba(74,144,226,0.20)',
-  successTint:  'rgba(16,185,129,0.20)',
+  warningTint:     'rgba(244,166,35,0.14)',
+  dangerTint:      'rgba(240,84,92,0.12)',
+  primaryTint:     'rgba(255,122,61,0.12)',
+  primaryTintMed:  'rgba(255,122,61,0.22)',
+  secondaryTint:   'rgba(78,155,232,0.12)',
+  secondaryTintMed:'rgba(78,155,232,0.22)',
+  successTint:     'rgba(45,203,138,0.12)',
+
+  /* ── Divider / border ─────────────────────────────────────────────── */
+  borderLight:     'rgba(0,0,0,0.055)',
+  borderSubtle:    'rgba(0,0,0,0.035)',
 } as const;
 
 export type TomiTheme = typeof TOMI_THEME;
