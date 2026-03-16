@@ -1,206 +1,622 @@
 import { StyleSheet } from 'react-native';
+import { TOMI_THEME as T } from '../constants/theme';
+import { F } from '../constants/fonts';
+
+const shadowXs = {
+  shadowColor:   '#8891A5',
+  shadowOffset:  { width: 0, height: 2 },
+  shadowOpacity: 0.18,
+  shadowRadius:  6,
+  elevation:     3,
+} as const;
+
+const shadowSm = {
+  shadowColor:   '#8891A5',
+  shadowOffset:  { width: 0, height: 3 },
+  shadowOpacity: 0.22,
+  shadowRadius:  10,
+  elevation:     5,
+} as const;
+
+const shadowMd = {
+  shadowColor:   '#8891A5',
+  shadowOffset:  { width: 0, height: 6 },
+  shadowOpacity: 0.28,
+  shadowRadius:  16,
+  elevation:     8,
+} as const;
+
+const card = {
+  backgroundColor: T.cardBg,
+  borderRadius:    20,
+} as const;
 
 export const communityStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },  
-  // Tab control
+    backgroundColor: '#EDEAE3',
+  },
+
+  // ─── Header ───
+  headerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: T.secondaryTint,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontFamily: F.headline,
+    fontSize: 28,
+    color: T.textPrimary,
+    letterSpacing: -0.8,
+  },
+  headerSubtitle: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 13,
+    color: T.textMuted,
+    marginTop: 2,
+  },
+
+  // ─── Tab Control ───
   tabContainer: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    paddingBottom: 6,
   },
   tabControl: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    gap: 10,
   },
   tabButton: {
-    flex: 1,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 22,
+    gap: 6,
   },
   tabButtonActive: {
-    borderBottomColor: '#4A90E2',
+    backgroundColor: T.secondary,
+    borderWidth: 2,
+    borderColor: T.primary,
+  },
+  tabButtonInactive: {
+    backgroundColor: 'transparent',
   },
   tabButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6C757D',
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 15,
   },
   tabButtonTextActive: {
-    color: '#4A90E2',
+    color: '#FFFFFF',
+  },
+  tabButtonTextInactive: {
+    color: T.textMuted,
   },
 
-  // Content
+  // ─── Content Scroll ───
   content: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 108,
   },
 
-  // Community Summary Card (Compact)
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: '#495057',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  summaryPills: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  summaryPill: {
+  // ─── Add New Friend ───
+  addNewFriendButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    ...card,
     borderRadius: 16,
-    gap: 4,
+    marginBottom: 20,
+    gap: 8,
+    ...shadowXs,
   },
-  summaryPillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#495057',
-  },
-  summaryPillCount: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#4A90E2',
-  },
-  viewRequestsButton: {
-    marginTop: 8,
-    paddingVertical: 4,
-  },
-  viewRequestsButtonText: {
-    fontSize: 13,
-    color: '#4A90E2',
-    fontWeight: '600',
+  addNewFriendButtonText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    color: T.primary,
   },
 
-  // Search
-  searchCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
+  // ─── Your Squad ───
+  sectionAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+    backgroundColor: T.primary,
+  },
+  requestSubheading: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.textMuted,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+
+  squadSection: {
+    marginBottom: 20,
+  },
+  squadHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  squadTitle: {
+    fontFamily: F.headlineMd,
+    fontSize: 20,
+    color: T.textPrimary,
+    letterSpacing: -0.3,
+  },
+
+  // ─── Squad Cards ───
+  squadCard: {
+    ...card,
+    padding: 16,
+    marginBottom: 12,
+    ...shadowSm,
+  },
+  squadCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  squadCardContent: {
+    flex: 1,
+  },
+  squadCardMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 14,
+  },
+  squadCardMetric: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  squadCardMetricText: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.textMuted,
+  },
+  squadCardMetricLevel: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.primary,
+  },
+  squadCardMetricBadge: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.danger,
+  },
+  squadCardProgress: {
+    height: 5,
+    backgroundColor: 'rgba(0,0,0,0.055)',
+    borderRadius: 3,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  squadCardProgressFill: {
+    height: '100%',
+    backgroundColor: T.primary,
+    borderRadius: 3,
+  },
+  squadCardXpText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    color: T.textMuted,
+    marginTop: 5,
+  },
+  squadCardRank: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: T.cardBgAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.borderLight,
+    marginLeft: 10,
+  },
+  squadCardRankCrown: {
+    backgroundColor: T.warningTint,
+    borderColor: T.warning,
+  },
+
+  // ─── Friend Name ───
+  friendName: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 17,
+    color: T.textPrimary,
+    letterSpacing: -0.2,
+  },
+
+  // ─── Find More Friends ───
+  findMoreFriendsCard: {
+    ...card,
+    borderRadius: 24,
+    padding: 28,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    alignItems: 'center',
+    ...shadowMd,
+  },
+  findMoreFriendsIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: T.primaryTint,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  findMoreFriendsTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 18,
+    color: T.textPrimary,
+    marginBottom: 6,
+  },
+  findMoreFriendsSubtitle: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 14,
+    color: T.textMuted,
+    marginBottom: 18,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  browseUsersButton: {
+    backgroundColor: T.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    ...shadowSm,
+    shadowColor: T.primary,
+    shadowOpacity: 0.32,
+  },
+  browseUsersButtonText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+
+  // ─── Leaderboard Header ───
+  leaderboardWeeklyCard: {
+    ...card,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    alignItems: 'center',
+    ...shadowMd,
+  },
+  leaderboardTrophyCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: T.warningTint,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(244,166,35,0.28)',
+  },
+  leaderboardWeeklyTitle: {
+    fontFamily: F.headline,
+    fontSize: 24,
+    color: T.textPrimary,
+    marginTop: 4,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  leaderboardWeeklySubtitle: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 13,
+    color: T.textMuted,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+
+  // ─── Podium ───
+  leaderboardTop3: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginTop: 8,
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  leaderboardPodiumCard: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    flex: 1,
+    marginHorizontal: 4,
+    ...card,
+  },
+  leaderboardPodiumFirst: {
+    backgroundColor: T.primaryTint,
+    borderWidth: 2,
+    borderColor: T.secondary,
+    marginBottom: 14,
+    paddingVertical: 18,
+    ...shadowMd,
+  },
+  leaderboardPodiumSecond: {
+    backgroundColor: T.cardBg,
+    ...shadowSm,
+  },
+  leaderboardPodiumThird: {
+    backgroundColor: T.cardBg,
+    ...shadowSm,
+  },
+
+  // ─── Divider ───
+  leaderboardDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  leaderboardDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: T.borderLight,
+  },
+  leaderboardDividerText: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 11,
+    color: T.textLight,
+    marginHorizontal: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  podiumAvatarWrap: {
+    position: 'relative',
+  },
+  podiumFirstAvatarContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: T.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  podiumBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  podiumBadgeGold: {
+    backgroundColor: T.primary,
+  },
+  podiumBadgeSilver: {
+    backgroundColor: T.textMuted,
+  },
+  podiumBadgeBronze: {
+    backgroundColor: T.warning,
+  },
+  podiumName: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.textPrimary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  podiumXp: {
+    fontFamily: 'Montserrat-Black',
+    fontSize: 18,
+    color: T.textPrimary,
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  podiumXpFirst: {
+    fontFamily: 'Montserrat-Black',
+    fontSize: 20,
+    color: T.primary,
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  podiumXpLabel: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    color: T.textMuted,
+  },
+
+  // ─── Leaderboard Rows ───
+  leaderboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    paddingVertical: 12,
+    ...card,
+    borderRadius: 18,
+    marginBottom: 10,
+    ...shadowSm,
+  },
+  leaderboardRowCurrent: {
+    backgroundColor: T.primaryTint,
+    borderWidth: 1.5,
+    borderColor: T.primaryTintMed,
+  },
+  leaderboardRankText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 15,
+    color: T.textMuted,
+    minWidth: 24,
+    textAlign: 'center',
+    marginRight: 12,
+  },
+  leaderboardYouAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 11,
+    backgroundColor: T.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    marginRight: 12,
+  },
+  leaderboardInfo: {
+    flex: 1,
+  },
+  leaderboardName: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 15,
+    color: T.textPrimary,
+  },
+  leaderboardLevel: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    color: T.textMuted,
+    marginTop: 2,
+  },
+  leaderboardXp: {
+    fontFamily: 'Montserrat-Black',
+    fontSize: 16,
+    color: T.textPrimary,
+    letterSpacing: -0.3,
+  },
+  leaderboardXpColumn: {
+    alignItems: 'flex-end',
+  },
+  leaderboardXpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  leaderboardXpLabel: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 11,
+    color: T.textMuted,
+    textAlign: 'right',
+    marginTop: 1,
+  },
+  leaderboardYouPill: {
+    backgroundColor: T.primaryTint,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 5,
+  },
+  leaderboardYouPillText: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 11,
+    color: T.primary,
+  },
+
+  // ─── Search ───
+  searchCard: {
+    ...card,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    ...shadowXs,
   },
   searchLabel: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 13,
-    fontWeight: '600',
-    color: '#6C757D',
+    color: T.textMuted,
     marginBottom: 8,
   },
   searchInput: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    backgroundColor: '#EDEAE3',
+    borderRadius: 12,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    fontFamily: 'Montserrat-Regular',
     fontSize: 15,
-    color: '#1A1A1A',
+    color: T.textPrimary,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: T.borderLight,
   },
   searchResults: {
-    marginTop: 8,
-    gap: 8,
+    marginTop: 10,
   },
   searchResultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    padding: 10,
+    backgroundColor: T.cardBgAlt,
+    borderRadius: 12,
+    marginBottom: 8,
     gap: 12,
-  },
-  searchResultAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchResultAvatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   searchResultInfo: {
     flex: 1,
   },
   searchResultName: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    color: T.textPrimary,
   },
   searchResultLevel: {
+    fontFamily: 'Montserrat-Regular',
     fontSize: 12,
-    color: '#6C757D',
+    color: T.textMuted,
     marginTop: 2,
   },
   searchResultAction: {
     paddingVertical: 6,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 10,
     minWidth: 70,
     alignItems: 'center',
   },
   searchResultActionPrimary: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: T.secondary,
   },
   searchResultActionSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: T.borderLight,
   },
   searchResultActionDisabled: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#EDEAE3',
   },
   searchResultActionText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 13,
-    fontWeight: '600',
   },
   searchResultActionTextPrimary: {
     color: '#FFFFFF',
   },
   searchResultActionTextSecondary: {
-    color: '#6C757D',
+    color: T.textMuted,
   },
 
-  // Friend Requests (Collapsible Section)
+  // ─── Friend Requests ───
   requestsSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    ...card,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...shadowXs,
   },
   requestsHeader: {
     flexDirection: 'row',
@@ -209,50 +625,37 @@ export const communityStyles = StyleSheet.create({
     marginBottom: 12,
   },
   requestsTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    color: T.textPrimary,
   },
   requestsCount: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4A90E2',
+    color: T.secondary,
   },
-  requestsList: {
-    gap: 8,
-  },
+  requestsList: {},
   requestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    padding: 10,
+    backgroundColor: T.cardBgAlt,
+    borderRadius: 12,
+    marginBottom: 8,
     gap: 12,
-  },
-  requestAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  requestAvatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   requestInfo: {
     flex: 1,
   },
   requestName: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    color: T.textPrimary,
   },
   requestLevel: {
+    fontFamily: 'Montserrat-Regular',
     fontSize: 12,
-    color: '#6C757D',
+    color: T.textMuted,
     marginTop: 2,
   },
   requestActions: {
@@ -262,284 +665,104 @@ export const communityStyles = StyleSheet.create({
   requestButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   requestButtonPrimary: {
-    backgroundColor: '#28A745',
+    backgroundColor: T.success,
   },
   requestButtonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#DC3545',
+    borderColor: T.danger,
   },
   requestButtonText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 12,
-    fontWeight: '600',
   },
   requestButtonTextPrimary: {
     color: '#FFFFFF',
   },
   requestButtonTextSecondary: {
-    color: '#DC3545',
+    color: T.danger,
   },
 
-  // Friends List (Clean Rows)
-  friendsSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  friendsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  friendsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  friendsCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6C757D',
-  },
-  friendsList: {
-    gap: 1,
-  },
-  friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8F9FA',
-  },
-  friendRowLast: {
-    borderBottomWidth: 0,
-  },
-  friendAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  friendAvatarText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  friendInfo: {
-    flex: 1,
-  },
-  friendName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  friendLevel: {
-    fontSize: 13,
-    color: '#6C757D',
-    marginTop: 2,
-  },
-  friendVisitButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  friendVisitButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4A90E2',
-  },
-
-  // Empty States
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyStateText: {
-    fontSize: 15,
-    color: '#6C757D',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  // Leaderboard
-  leaderboardControls: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
-  },
-  leaderboardTitle: {
-    fontSize: 14,
-    color: '#495057',
-    marginBottom: 12,
-  },
+  // ─── Leaderboard Filters ───
   leaderboardFilters: {
     flexDirection: 'row',
-    gap: 8,
     flexWrap: 'wrap',
+    gap: 8,
   },
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    backgroundColor: T.cardBg,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: T.borderLight,
   },
   filterButtonActive: {
-    backgroundColor: '#4A90E2',
-    borderColor: '#4A90E2',
+    backgroundColor: T.secondary,
+    borderColor: T.secondary,
   },
   filterButtonText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 13,
-    fontWeight: '600',
-    color: '#6C757D',
+    color: T.textMuted,
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
   },
-  leaderboardList: {
-    gap: 1,
-  },
-  leaderboardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8F9FA',
-    gap: 12,
-  },
-  leaderboardRowCurrent: {
-    backgroundColor: '#F0F8FF',
-  },
-  leaderboardRowLast: {
-    borderBottomWidth: 0,
-  },
-  leaderboardRank: {
-    width: 32,
-    alignItems: 'center',
-  },
-  leaderboardRankText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#6C757D',
-  },
-  leaderboardRankTop: {
-    color: '#FFD700',
-  },
-  leaderboardAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  leaderboardAvatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  leaderboardInfo: {
-    flex: 1,
-  },
-  leaderboardName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  leaderboardLevel: {
-    fontSize: 12,
-    color: '#6C757D',
-    marginTop: 2,
-  },
-  leaderboardXp: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#4A90E2',
-  },
-  yourPositionCard: {
-    backgroundColor: '#F0F8FF',
-    padding: 16,
-    margin: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#4A90E2',
-  },
-  yourPositionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4A90E2',
-    marginBottom: 8,
-  },
-  yourPositionStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  yourPositionRank: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  yourPositionXp: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#4A90E2',
-  },
 
-  // Loading & Error States
+  // ─── Empty / Loading / Error ───
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 15,
+    color: T.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 12,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#EDEAE3',
   },
   loadingText: {
+    fontFamily: 'Montserrat-Medium',
     marginTop: 16,
     fontSize: 16,
-    color: '#6C757D',
+    color: T.textMuted,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    backgroundColor: '#EDEAE3',
   },
   errorText: {
+    fontFamily: 'Montserrat-Medium',
     fontSize: 16,
-    color: '#DC3545',
+    color: T.danger,
     textAlign: 'center',
     marginBottom: 16,
+    lineHeight: 22,
   },
   errorRetryButton: {
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
+    backgroundColor: T.primary,
+    borderRadius: 14,
+    ...shadowSm,
   },
   errorRetryButtonText: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
     color: '#FFFFFF',
-    fontWeight: '600',
   },
-
 });

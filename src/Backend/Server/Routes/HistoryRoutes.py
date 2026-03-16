@@ -111,10 +111,11 @@ async def getCalendarActivity(
 async def getWorkoutsList(
     user_id: int = Query(..., description="User ID to get workouts for"),
     date: Optional[str] = Query(None, description="Filter by specific date (YYYY-MM-DD)"),
+    month: Optional[str] = Query(None, description="Filter by month (YYYY-MM); ignored if date is set"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=50, description="Items per page")
+    page_size: int = Query(10, ge=1, le=200, description="Items per page")
 ):
-    # Get paginated list of workouts for a user, optionally filtered by date.
+    # Get paginated list of workouts for a user, optionally filtered by date or month.
     # Returns workout details with computed stats (duration, calories, etc.).
     # Sorted by most recent first.
     try:
@@ -123,6 +124,8 @@ async def getWorkoutsList(
             filter_date = datetime.strptime(date, "%Y-%m-%d").date()
             start_date = filter_date
             end_date = filter_date
+        elif month:
+            start_date, end_date = HistoryService.parse_month_string(month)
         else:
             # Default: last 30 days
             end_date = datetime.now().date()

@@ -43,7 +43,8 @@ class LeaderboardService:
                         "user_id": uid,
                         "name": user_info["user"].name,
                         "level": user_info["level"],
-                        "xp": user_info["xp"]
+                        "xp": user_info["xp"],
+                        "avatarUrl": user_info.get("avatarUrl")
                     })
             
             # Sort by XP descending
@@ -60,7 +61,7 @@ class LeaderboardService:
                     displayName=user_score["name"],
                     level=user_score["level"],
                     xp=user_score["xp"],
-                    avatarUrl=None  # Low-fidelity: no avatars
+                    avatarUrl=user_score.get("avatarUrl")
                 )
                 entries.append(entry)
                 
@@ -68,11 +69,8 @@ class LeaderboardService:
                 if user_score["user_id"] == user_id:
                     current_user_entry = CurrentUserLeaderboardDTO(
                         rank=rank,
-                        userId=user_score["user_id"],
-                        displayName=user_score["name"],
                         level=user_score["level"],
-                        xp=user_score["xp"],
-                        avatarUrl=None
+                        xp=user_score["xp"]
                     )
             
             return LeaderboardResponseDTO(

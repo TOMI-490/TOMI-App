@@ -14,6 +14,9 @@ from ...Infrastructure.Repository.FriendRepository import FriendRepository
 from ...Infrastructure.Repository.FriendStatusRepository import FriendStatusRepository
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
+from ...Infrastructure.Repository.AvatarRepository import AvatarRepository
+from ...Infrastructure.Repository.UserBadgeRepository import UserBadgeRepository
+from ...Core.Utils.xp_utils import calculate_xp_progression
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,8 @@ class FriendshipService:
         self.friend_status_repo = FriendStatusRepository()
         self.user_repo = UserRepository()
         self.user_avatar_repo = UserAvatarRepository()
+        self.avatar_repo = AvatarRepository()
+        self.user_badge_repo = UserBadgeRepository()
     
     def get_status_id_by_name(self, status_name: str) -> Optional[int]:
         """Get status ID by status name."""
@@ -36,7 +41,7 @@ class FriendshipService:
             logger.error(f"Error fetching status ID for {status_name}: {e}")
             return None
     
-    def get_user_display_info(self, user_id: int) -> dict:
+    def get_user_display_info(self, user_id: int, include_gamification: bool = False) -> dict:
         """Get user display information for friend lists."""
         try:
             user = self.user_repo.fetchUserById(user_id)
@@ -45,12 +50,44 @@ class FriendshipService:
             
             # Get active avatar and level
             active_avatar = self.user_avatar_repo.fetchAvatarByUserId(user_id)
+            avatar_url = None
+            xp = None
+            level = active_avatar.level if active_avatar else None
+            current_xp = None
+            next_level_xp = None
+            xp_progress = None
+            badges_count = None
             
-            return {
+            if active_avatar:
+                avatar_entity = self.avatar_repo.fetchAvatarById(active_avatar.avatar_id)
+                if avatar_entity and avatar_entity.image_url:
+                    avatar_url = avatar_entity.image_url
+                xp = active_avatar.xp
+                if include_gamification and level and xp is not None:
+                    prog = calculate_xp_progression(level, xp)
+                    current_xp = xp
+                    next_level_xp = prog["next_level_xp"]
+                    xp_progress = prog["xp_progress"]
+            
+            if include_gamification:
+                try:
+                    badges = self.user_badge_repo.fetchBadgesByUserId(user_id)
+                    badges_count = len(badges)
+                except Exception:
+                    badges_count = 0
+            
+            result = {
                 "displayName": user.name,
-                "level": active_avatar.level if active_avatar else None,
-                "avatarUrl": None  # Low-fidelity: placeholder
+                "level": level,
+                "avatarUrl": avatar_url
             }
+            if include_gamification:
+                result["xp"] = xp
+                result["badgesCount"] = badges_count
+                result["currentXp"] = current_xp
+                result["nextLevelXp"] = next_level_xp
+                result["xpProgress"] = xp_progress
+            return result
         except Exception as e:
             logger.error(f"Error getting display info for user {user_id}: {e}")
             return {"displayName": "Unknown User", "level": None, "avatarUrl": None}
@@ -107,10 +144,9 @@ class FriendshipService:
             # Process initiator friendships
             for friendship in friendships:
                 if friendship.friend_user_id not in seen_user_ids:
-                    display_info = self.get_user_display_info(friendship.friend_user_id)
+                    display_info = self.get_user_display_info(friendship.friend_user_id, include_gamification=True)
                     friends_list.append(FriendListItemDTO(
                         userId=friendship.friend_user_id,
-                        friendshipDate=friendship.friendship_date,
                         **display_info
                     ))
                     seen_user_ids.add(friendship.friend_user_id)
@@ -118,10 +154,9 @@ class FriendshipService:
             # Process recipient friendships
             for friendship in recipient_friendships:
                 if friendship.user_id not in seen_user_ids:
-                    display_info = self.get_user_display_info(friendship.user_id)
+                    display_info = self.get_user_display_info(friendship.user_id, include_gamification=True)
                     friends_list.append(FriendListItemDTO(
                         userId=friendship.user_id,
-                        friendshipDate=friendship.friendship_date,
                         **display_info
                     ))
                     seen_user_ids.add(friendship.user_id)

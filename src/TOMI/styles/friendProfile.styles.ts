@@ -1,19 +1,41 @@
 import { StyleSheet } from 'react-native';
+import { TOMI_THEME as T } from '../constants/theme';
+import { F } from '../constants/fonts';
+
+const shadowSm = {
+  shadowColor:   '#8891A5',
+  shadowOffset:  { width: 0, height: 3 },
+  shadowOpacity: 0.22,
+  shadowRadius:  10,
+  elevation:     5,
+} as const;
+
+const shadowMd = {
+  shadowColor:   '#8891A5',
+  shadowOffset:  { width: 0, height: 6 },
+  shadowOpacity: 0.28,
+  shadowRadius:  16,
+  elevation:     8,
+} as const;
+
+const card = {
+  backgroundColor: T.cardBg,
+  borderRadius:    20,
+} as const;
 
 export const friendProfileStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#EDEAE3',
   },
+
+  // ─── Header ───
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
     minHeight: 56,
   },
   backButton: {
@@ -25,14 +47,15 @@ export const friendProfileStyles = StyleSheet.create({
     minWidth: 44,
   },
   backButtonText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 16,
-    color: '#4A90E2',
-    fontWeight: '600',
+    color: T.secondary,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontFamily: F.headlineMd,
+    fontSize: 18,
+    color: T.textPrimary,
+    letterSpacing: -0.3,
   },
   removeButton: {
     paddingVertical: 8,
@@ -40,377 +63,120 @@ export const friendProfileStyles = StyleSheet.create({
     minHeight: 44,
   },
   removeButtonText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarInitials: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  displayName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  levelText: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  bioSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E9ECEF',
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6C757D',
-    marginBottom: 4,
-  },
-  bioText: {
-    fontSize: 14,
-    color: '#495057',
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  sectionHeaderAction: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4A90E2',
-  },
-  // Two-column preview container
-  previewRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  previewColumn: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  previewColumnTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 8,
-  },
-  previewBox: {
-    backgroundColor: '#E9ECEF',
-    borderRadius: 8,
-    height: 140,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewBoxTall: {
-    backgroundColor: '#E9ECEF',
-    borderRadius: 8,
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarPreviewCard: {
-    backgroundColor: '#E9ECEF',
-    borderRadius: 8,
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  placeholderAvatarIcon: {
-    marginBottom: 8,
-  },
-  placeholderHomeIcon: {
-    marginBottom: 8,
-  },
-  placeholderText: {
-    fontSize: 48,
-  },
-  placeholderLabel: {
-    fontSize: 14,
-    color: '#6C757D',
-    textAlign: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6C757D',
-    textAlign: 'center',
-  },
-  overallStats: {
-    gap: 12,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  statRowLabel: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  statRowValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  workoutsList: {
-    gap: 12,
-  },
-  workoutCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    padding: 12,
-  },
-  workoutHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  workoutType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  workoutDate: {
-    fontSize: 12,
-    color: '#6C757D',
-  },
-  workoutStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  workoutStat: {
-    flex: 1,
-  },
-  workoutStatLabel: {
-    fontSize: 11,
-    color: '#6C757D',
-    marginBottom: 2,
-  },
-  workoutStatValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  emptyWorkouts: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyWorkoutsText: {
-    fontSize: 14,
-    color: '#6C757D',
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6C757D',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: T.danger,
   },
 
-  // Dashboard-style Buddy Card
+  // ─── Scroll ───
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 108,
+  },
+
+  // ─── Buddy Card ───
   buddyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    position: 'relative',
+    ...card,
+    borderRadius: 24,
+    padding: 0,
+    marginBottom: 18,
     overflow: 'hidden',
+    position: 'relative',
+    ...shadowMd,
   },
   progressBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
-    backgroundColor: '#E9ECEF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: 5,
+    backgroundColor: 'rgba(0,0,0,0.055)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    zIndex: 10,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
-    borderTopLeftRadius: 20,
+    borderTopLeftRadius: 24,
   },
   buddyAvatar: {
-    width: 180,
-    height: 180,
+    width: 160,
+    height: 160,
     alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: 24,
+    marginBottom: 8,
   },
   buddyIdentity: {
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   buddyName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontFamily: F.headline,
+    fontSize: 26,
+    color: T.textPrimary,
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   buddySubtitle: {
-    fontSize: 14,
-    color: '#6C757D',
-    marginBottom: 4,
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 13,
+    color: T.textMuted,
+    marginBottom: 6,
   },
   buddyLevel: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
-    fontWeight: '600',
-    color: '#4A90E2',
+    color: T.secondary,
     marginBottom: 4,
   },
   buddyXpText: {
+    fontFamily: 'Montserrat-Medium',
     fontSize: 13,
-    color: '#6C757D',
+    color: T.textMuted,
   },
+
+  // ─── Streak Badge ───
   streakBadge: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: 20,
+    backgroundColor: T.warningTint,
+    borderRadius: 100,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(244,166,35,0.28)',
   },
   streakIcon: {
     fontSize: 20,
     marginRight: 6,
   },
   streakText: {
+    fontFamily: 'Montserrat-SemiBold',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#856404',
+    color: T.warning,
   },
+
+  // ─── This Week ───
   thisWeekSection: {
     borderTopWidth: 1,
-    borderTopColor: '#E9ECEF',
-    paddingTop: 16,
+    borderTopColor: T.borderLight,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   thisWeekTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6C757D',
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 10,
+    color: T.textMuted,
     textTransform: 'uppercase',
-    marginBottom: 12,
+    marginBottom: 14,
     textAlign: 'center',
+    letterSpacing: 1,
   },
   thisWeekGrid: {
     flexDirection: 'row',
@@ -422,14 +188,171 @@ export const friendProfileStyles = StyleSheet.create({
     alignItems: 'center',
   },
   thisWeekValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    fontFamily: 'Montserrat-Black',
+    fontSize: 26,
+    color: T.textPrimary,
+    marginBottom: 3,
+    letterSpacing: -0.8,
   },
   thisWeekLabel: {
-    fontSize: 11,
-    color: '#6C757D',
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 10,
+    color: T.textMuted,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
+
+  // ─── Section Container ───
+  section: {
+    ...card,
+    padding: 18,
+    marginBottom: 16,
+    ...shadowSm,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  sectionHeaderTitle: {
+    fontFamily: F.headlineMd,
+    fontSize: 17,
+    color: T.textPrimary,
+    letterSpacing: -0.3,
+  },
+  sectionHeaderAction: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: T.primary,
+  },
+
+  // ─── Workout Cards ───
+  workoutsList: {
+    gap: 10,
+  },
+  workoutCard: {
+    backgroundColor: T.cardBgAlt,
+    borderRadius: 14,
+    padding: 14,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  workoutType: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    color: T.textPrimary,
+  },
+  workoutDate: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    color: T.textMuted,
+  },
+  workoutStats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  workoutStat: {
+    flex: 1,
+  },
+  workoutStatLabel: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 10,
+    color: T.textMuted,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  workoutStatValue: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 15,
+    color: T.textPrimary,
+  },
+  emptyWorkouts: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyWorkoutsText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 14,
+    color: T.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  // ─── Loading / Error ───
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#EDEAE3',
+  },
+  loadingText: {
+    fontFamily: 'Montserrat-Medium',
+    marginTop: 16,
+    fontSize: 16,
+    color: T.textMuted,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#EDEAE3',
+  },
+  errorText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 16,
+    color: T.danger,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: T.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 14,
+    ...shadowSm,
+  },
+  retryButtonText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+
+  // Legacy styles kept for compatibility
+  profileHeader: { alignItems: 'center', marginBottom: 16 },
+  avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: T.secondary, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
+  avatarInitials: { fontSize: 32, fontWeight: 'bold', color: '#FFFFFF' },
+  displayName: { fontFamily: 'Montserrat-Bold', fontSize: 20, color: T.textPrimary, marginBottom: 4 },
+  levelText: { fontFamily: 'Montserrat-Regular', fontSize: 14, color: T.textMuted },
+  bioSection: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: T.borderLight },
+  sectionLabel: { fontFamily: 'Montserrat-SemiBold', fontSize: 14, color: T.textMuted, marginBottom: 4 },
+  bioText: { fontFamily: 'Montserrat-Regular', fontSize: 14, color: T.textSecondary, lineHeight: 20 },
+  sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, color: T.textPrimary, marginBottom: 12 },
+  previewRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  previewColumn: { flex: 1, ...card, padding: 12 },
+  previewColumnTitle: { fontFamily: 'Montserrat-SemiBold', fontSize: 14, color: T.textPrimary, marginBottom: 8 },
+  previewBox: { backgroundColor: T.cardBgAlt, borderRadius: 8, height: 140, justifyContent: 'center', alignItems: 'center' },
+  previewBoxTall: { backgroundColor: T.cardBgAlt, borderRadius: 8, height: 200, justifyContent: 'center', alignItems: 'center' },
+  avatarPreviewCard: { backgroundColor: T.cardBgAlt, borderRadius: 8, height: 200, justifyContent: 'center', alignItems: 'center' },
+  previewImage: { width: '100%', height: '100%', borderRadius: 8 },
+  placeholderAvatarIcon: { marginBottom: 8 },
+  placeholderHomeIcon: { marginBottom: 8 },
+  placeholderText: { fontSize: 48 },
+  placeholderLabel: { fontFamily: 'Montserrat-Regular', fontSize: 14, color: T.textMuted, textAlign: 'center' },
+  statsGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  statCard: { flex: 1, backgroundColor: T.cardBgAlt, borderRadius: 14, padding: 16, alignItems: 'center' },
+  statValue: { fontFamily: 'Montserrat-Black', fontSize: 24, color: T.textPrimary, marginBottom: 4, letterSpacing: -0.5 },
+  statLabel: { fontFamily: 'Montserrat-SemiBold', fontSize: 10, color: T.textMuted, textAlign: 'center', letterSpacing: 0.4 },
+  overallStats: { gap: 12 },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
+  statRowLabel: { fontFamily: 'Montserrat-Regular', fontSize: 14, color: T.textMuted },
+  statRowValue: { fontFamily: 'Montserrat-SemiBold', fontSize: 16, color: T.textPrimary },
 });

@@ -5,6 +5,7 @@ from ..Entity.UserEntity import UserEntity
 from ..DTO.CommunityDTO import UserSearchResultDTO
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
+from ...Infrastructure.Repository.AvatarRepository import AvatarRepository
 from ...Infrastructure.Repository.FriendRepository import FriendRepository
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ class UserService:
     def __init__(self):
         self.user_repo = UserRepository()
         self.user_avatar_repo = UserAvatarRepository()
+        self.avatar_repo = AvatarRepository()
         self.friend_repo = FriendRepository()
     
     def search_users(self, query: str, current_user_id: int, limit: int = 20) -> List[UserSearchResultDTO]:
@@ -79,11 +81,16 @@ class UserService:
             
             # Get active avatar and level
             active_avatar = self.user_avatar_repo.fetchAvatarByUserId(user_id)
+            avatar_url = None
+            if active_avatar:
+                avatar_entity = self.avatar_repo.fetchAvatarById(active_avatar.avatar_id)
+                if avatar_entity and avatar_entity.image_url:
+                    avatar_url = avatar_entity.image_url
             
             return {
                 "displayName": user.name,
                 "level": active_avatar.level if active_avatar else None,
-                "avatarUrl": None  # Low-fidelity: placeholder
+                "avatarUrl": avatar_url
             }
         except Exception as e:
             logger.error(f"Error getting display info for user {user_id}: {e}")
@@ -133,20 +140,26 @@ class UserService:
             return None
     
     def get_user_avatar_info(self, user_id: int) -> dict:
-        """Get user avatar information including level and XP."""
+        """Get user avatar information including level, XP, and avatar URL."""
         try:
             user = self.user_repo.fetchUserById(user_id)
             if not user:
                 return None
             
             active_avatar = self.user_avatar_repo.fetchAvatarByUserId(user_id)
+            avatar_url = None
+            if active_avatar:
+                avatar_entity = self.avatar_repo.fetchAvatarById(active_avatar.avatar_id)
+                if avatar_entity and avatar_entity.image_url:
+                    avatar_url = avatar_entity.image_url
             
             return {
                 "user": user,
                 "avatar": active_avatar,
                 "level": active_avatar.level if active_avatar else 1,
                 "xp": active_avatar.xp if active_avatar else 0,
-                "nickname": active_avatar.nickname if active_avatar else user.name
+                "nickname": active_avatar.nickname if active_avatar else user.name,
+                "avatarUrl": avatar_url
             }
         except Exception as e:
             logger.error(f"Error getting avatar info for user {user_id}: {e}")

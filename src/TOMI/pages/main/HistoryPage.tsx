@@ -74,6 +74,15 @@ function formatDate(dateStr: string): string {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+/* ─── Stale-while-revalidate cache ─────────────────────────────────────── */
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const summaryCache = new Map<number, { data: WeeklySummary; ts: number }>();
+const monthCache = new Map<string, { activeDates: string[]; allWorkouts: WorkoutListItem[]; ts: number }>();
+
+function getCacheKey(userId: number, monthStr: string) {
+  return `${userId}-${monthStr}`;
+}
+
 /* ─── Component ────────────────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { t } = useTranslation();
@@ -100,14 +109,32 @@ export default function HistoryPage() {
 
   const loadData = async () => {
     if (!user?.userId) return;
-    setLoading(true);
+    const monthStr = getMonthString(currentMonth);
+    const cacheKey = getCacheKey(user.userId, monthStr);
+
+    const cachedSummary = summaryCache.get(user.userId);
+    const cachedMonth = monthCache.get(cacheKey);
+    if (cachedSummary && Date.now() - cachedSummary.ts < CACHE_TTL) {
+      setWeeklySummary(cachedSummary.data);
+    }
+    if (cachedMonth && Date.now() - cachedMonth.ts < CACHE_TTL) {
+      setActiveDates(cachedMonth.activeDates);
+      setAllWorkouts(cachedMonth.allWorkouts);
+      setWorkouts(cachedMonth.allWorkouts);
+      const today = new Date().toISOString().split('T')[0];
+      setSelectedDate(cachedMonth.activeDates.includes(today) ? today : cachedMonth.activeDates.sort().reverse()[0]);
+    }
+    if (cachedSummary || cachedMonth) setLoading(false);
+
     try {
-      const monthStr = getMonthString(currentMonth);
+      if (!cachedSummary && !cachedMonth) setLoading(true);
       const [summary, calendar, workoutsList] = await Promise.all([
         historyService.getWeeklySummary(user.userId),
         historyService.getCalendarActivity(user.userId, monthStr),
-        historyService.getWorkoutsList(user.userId, undefined, 1, 50),
+        historyService.getWorkoutsList(user.userId, undefined, monthStr, 1, 50),
       ]);
+      summaryCache.set(user.userId, { data: summary, ts: Date.now() });
+      monthCache.set(cacheKey, { activeDates: calendar.activeDates, allWorkouts: workoutsList.items, ts: Date.now() });
       setWeeklySummary(summary);
       setActiveDates(calendar.activeDates);
       setAllWorkouts(workoutsList.items);
@@ -123,18 +150,37 @@ export default function HistoryPage() {
 
   const loadMonthData = async () => {
     if (!user?.userId) return;
+    const monthStr = getMonthString(currentMonth);
+    const cacheKey = getCacheKey(user.userId, monthStr);
+
+    const cached = monthCache.get(cacheKey);
+    if (cached) {
+      setActiveDates(cached.activeDates);
+      setAllWorkouts(cached.allWorkouts);
+      if (cached.activeDates.length > 0) {
+        const most = [...cached.activeDates].sort().reverse()[0];
+        setSelectedDate(most);
+        setWorkouts(cached.allWorkouts.filter(w => w.startedAt.startsWith(most)));
+      } else {
+        setSelectedDate(undefined);
+        setWorkouts([]);
+      }
+      if (Date.now() - cached.ts < CACHE_TTL) return;
+    }
+
     try {
-      const monthStr = getMonthString(currentMonth);
       const [calendar, monthWorkoutsList] = await Promise.all([
         historyService.getCalendarActivity(user.userId, monthStr),
-        historyService.getWorkoutsList(user.userId, undefined, 1, 200),
+        historyService.getWorkoutsList(user.userId, undefined, monthStr, 1, 200),
       ]);
+      const items = monthWorkoutsList.items;
+      monthCache.set(cacheKey, { activeDates: calendar.activeDates, allWorkouts: items, ts: Date.now() });
       setActiveDates(calendar.activeDates);
-      setAllWorkouts(monthWorkoutsList.items);
+      setAllWorkouts(items);
       if (calendar.activeDates.length > 0) {
         const most = calendar.activeDates.sort().reverse()[0];
         setSelectedDate(most);
-        await loadWorkoutsForDate(most);
+        setWorkouts(items.filter(w => w.startedAt.startsWith(most)));
       } else {
         setSelectedDate(undefined);
         setWorkouts([]);
@@ -146,10 +192,19 @@ export default function HistoryPage() {
 
   const loadWorkoutsForDate = async (date?: string) => {
     if (!user?.userId) return;
-    setWorkoutsLoading(true);
     setSelectedDate(date);
+    if (!date) {
+      setWorkouts(allWorkouts);
+      return;
+    }
+    const fromCache = allWorkouts.filter(w => w.startedAt.startsWith(date));
+    if (fromCache.length > 0) {
+      setWorkouts(fromCache);
+      return;
+    }
+    setWorkoutsLoading(true);
     try {
-      const data = await historyService.getWorkoutsList(user.userId, date, 1, date ? 20 : 10);
+      const data = await historyService.getWorkoutsList(user.userId, date, undefined, 1, 20);
       setWorkouts(data.items);
     } catch (err) {
       console.error('[HistoryPage] Error loading workouts:', err);

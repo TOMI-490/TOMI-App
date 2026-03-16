@@ -1,7 +1,10 @@
 import { httpClient } from '../httpClient';
+import { createAPICache } from '../../utils/apiCache';
 import type { WorkoutResponseDto, WorkoutCreateDto, WorkoutUpdateDto, WorkoutStartDto, WorkoutSummaryDto } from '../../models/dto/Workout.dto';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import { workoutTypeService } from './workoutType.service';
+
+const summaryCache = createAPICache<WorkoutSummaryDto>(120_000); // 2 min
 
 type Id = string | number;
 
@@ -46,8 +49,10 @@ export const workoutService = {
     return { workout, xpAwarded };
   },
 
-  // Get workout summary with computed fields
   getWorkoutSummary: async (workoutId: Id): Promise<WorkoutSummaryDto> => {
+    const cached = summaryCache.getFresh(`${workoutId}`);
+    if (cached) return cached;
+
     const workout = await workoutService.getById(workoutId);
     const workoutType = await workoutTypeService.getById(workout.workoutTypeId);
 
@@ -62,13 +67,15 @@ export const workoutService = {
     // Mock calories for now (can be replaced with backend-calculated values later)
     const mockCalories = Math.floor(duration / 60 * 10); // ~10 cal/min
 
-    return {
+    const summary: WorkoutSummaryDto = {
       workout,
       workoutType,
       duration,
       calories: mockCalories,
       xp: actualXp,
     };
+    summaryCache.set(`${workoutId}`, summary);
+    return summary;
   },
 
   // Get user's workouts

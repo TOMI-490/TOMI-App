@@ -18,6 +18,11 @@ class FriendListItemDTO(BaseModel):
     displayName: str
     level: Optional[int] = None
     avatarUrl: Optional[str] = None
+    xp: Optional[int] = None
+    badgesCount: Optional[int] = None
+    currentXp: Optional[int] = None
+    nextLevelXp: Optional[int] = None
+    xpProgress: Optional[float] = None
 
 
 # DTO for friend request
