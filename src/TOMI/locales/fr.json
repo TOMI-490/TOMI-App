@@ -206,7 +206,16 @@
     "summaryType": "Type",
     "summaryStarted": "Démarré",
     "summaryEnded": "Terminé",
-    "done": "Terminé"
+    "done": "Terminé",
+    "summaryHeartRate": "Fréquence cardiaque",
+    "summaryAvgHR": "Moyenne",
+    "summaryMinHR": "Minimale",
+    "summaryMaxHR": "Maximale",
+    "summarySpo2": "Oxygène sanguin (SpO₂)",
+    "summaryAvgSpo2": "Moyenne",
+    "summaryMinSpo2": "Minimale",
+    "summaryMaxSpo2": "Maximale",
+    "summarySteps": "Pas"
   },
   "levelUp": {
     "title": "Niveau supérieur!",

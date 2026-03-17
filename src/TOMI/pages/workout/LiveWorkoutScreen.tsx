@@ -14,6 +14,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
 
+import { finalizeWorkout } from '../../services/syncService';
+
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 
 interface LocationPoint {
@@ -245,61 +247,70 @@ const LiveWorkoutScreen: React.FC = () => {
   };
 
   const handleEndWorkout = async () => {
-    Alert.alert(
-      t('workout.endWorkoutTitle'),
-      t('workout.endWorkoutMessage'),
-      [
-        { text: t('workout.cancel'), style: 'cancel' },
-        {
-          text: t('workout.end'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsEnding(true);
-              stopTimer();
-              stopLocationTracking();
+  Alert.alert(
+    t('workout.endWorkoutTitle'),
+    t('workout.endWorkoutMessage'),
+    [
+      { text: t('workout.cancel'), style: 'cancel' },
+      {
+        text: t('workout.end'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsEnding(true);
+            stopTimer();
+            stopLocationTracking();
 
-              console.log('[LiveWorkout] 🏁 Ending workout...');
-              console.log('[LiveWorkout]   - Workout ID:', workoutId);
-              console.log('[LiveWorkout]   - Duration:', elapsedSeconds, 'seconds');
-              console.log('[LiveWorkout]   - Distance:', distance.toFixed(2), 'km');
+            // 1. End workout via existing backend API
+            const { workout: endedWorkout, xpAwarded } = await workoutService.endWorkout(workoutId);
 
-              // End workout via backend API (backend handles XP awarding)
-              const { workout: endedWorkout, xpAwarded } = await workoutService.endWorkout(workoutId);
-              console.log('[LiveWorkout] ✓ Workout ended successfully');
-              console.log('[LiveWorkout]   - Start:', endedWorkout.start);
-              console.log('[LiveWorkout]   - End:', endedWorkout.end);
-              console.log('[LiveWorkout]   - XP Awarded:', xpAwarded);
+            // 2. Process sensor data, upload summary, delete raw data
+            const includeDistance = MAP_WORKOUT_TYPES.includes(workoutType?.name ?? '');
+            const sensorSummary = await finalizeWorkout(
+              workoutId,
+              locations,
+              elapsedSeconds,
+              includeDistance
+            );
 
-              // Navigate to summary screen with replace to prevent back navigation
-              console.log('[LiveWorkout] 📱 Navigating to summary screen...');
-              router.replace({
-                pathname: '/workout-summary',
-                params: {
-                  workoutId: workoutId.toString(),
-                  distance: distance.toFixed(2),
-                  xpAwarded: xpAwarded.toString(),
-                  previousLevel: currentLevel?.toString() || '0',
-                },
-              });
-            } catch (error) {
-              console.error('Error ending workout:', error);
-              Alert.alert(
-                t('workout.errorEndingTitle'),
-                t('workout.errorEndingMessage'),
-                [
-                  { text: t('workout.retry'), onPress: () => handleEndWorkout() },
-                  { text: t('workout.cancel'), style: 'cancel' },
-                ]
-              );
-            } finally {
-              setIsEnding(false);
-            }
-          },
+            // 3. Navigate to summary screen — pass sensor summary as nav params
+            router.replace({
+              pathname: '/workout-summary',
+              params: {
+                workoutId: workoutId.toString(),
+                distance: distance.toFixed(2),
+                xpAwarded: xpAwarded.toString(),
+                previousLevel: currentLevel?.toString() || '0',
+                workoutTypeName: workoutType?.name ?? '',
+                // Sensor summary
+                avg_hr:   sensorSummary.avg_hr.toString(),
+                min_hr:   sensorSummary.min_hr.toString(),
+                max_hr:   sensorSummary.max_hr.toString(),
+                avg_spo2: sensorSummary.avg_spo2.toString(),
+                min_spo2: sensorSummary.min_spo2.toString(),
+                max_spo2: sensorSummary.max_spo2.toString(),
+                steps:    sensorSummary.steps.toString(),
+                distance_km: sensorSummary.distance_km?.toString() ?? '',
+              },
+            });
+          } catch (error) {
+            console.error('Error ending workout:', error);
+            Alert.alert(
+              t('workout.errorEndingTitle'),
+              t('workout.errorEndingMessage'),
+              [
+                { text: t('workout.retry'), onPress: () => handleEndWorkout() },
+                { text: t('workout.cancel'), style: 'cancel' },
+              ]
+            );
+          } finally {
+            setIsEnding(false);
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
 
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);

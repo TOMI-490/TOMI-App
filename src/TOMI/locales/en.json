@@ -242,7 +242,16 @@
     "summaryType": "Type",
     "summaryStarted": "Started",
     "summaryEnded": "Ended",
-    "done": "Done"
+    "done": "Done",
+    "summaryHeartRate": "Heart Rate",
+    "summaryAvgHR": "Average",
+    "summaryMinHR": "Lowest",
+    "summaryMaxHR": "Highest",
+    "summarySpo2": "Blood Oxygen (SpO₂)",
+    "summaryAvgSpo2": "Average",
+    "summaryMinSpo2": "Lowest",
+    "summaryMaxSpo2": "Highest",
+    "summarySteps": "Steps"
   },
   "levelUp": {
     "title": "Level Up!",
