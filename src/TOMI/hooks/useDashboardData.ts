@@ -22,6 +22,11 @@ export function invalidateDashboardCache() {
   dashboardCache.forEach(entry => { entry.timestamp = 0; });
 }
 
+/** Pre-populate the dashboard cache from outside the hook (used by DataPreloader). */
+export function populateDashboardCache(userId: number, data: DashboardData) {
+  dashboardCache.set(userId, { data, timestamp: Date.now() });
+}
+
 export interface TodayProgressDto {
   workoutsCount: number;
   minutes: number;

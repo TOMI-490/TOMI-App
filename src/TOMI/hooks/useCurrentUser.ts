@@ -20,6 +20,11 @@ export function invalidateUserCache() {
   userCache.forEach(entry => { entry.timestamp = 0; });
 }
 
+/** Pre-populate the user cache from outside the hook (used by DataPreloader). */
+export function populateUserCache(cacheKey: string, user: UserResponseDto) {
+  userCache.set(cacheKey, { user, timestamp: Date.now() });
+}
+
 export interface UseCurrentUserResult {
   user: UserResponseDto | null;
   loading: boolean;

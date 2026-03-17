@@ -1,12 +1,13 @@
 import '../global.css';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, Stack } from 'expo-router';
 import { Linking } from 'react-native';
 import { useFonts } from 'expo-font';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/core/supabase';
-import { initializeLocalDatabase } from '../services/localDatabase/localDb'; // Import the database initialization
+import { initializeLocalDatabase } from '../services/localDatabase/localDb';
 import { FONT_MAP } from '../constants/fonts';
+import { preloadAllData } from '../utils/dataPreloader';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -94,6 +95,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+      <DataPreloader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -116,4 +118,18 @@ export default function RootLayout() {
       </Stack>
     </AuthProvider>
   );
+}
+
+function DataPreloader() {
+  const { authId } = useAuth();
+  const didPreload = useRef(false);
+
+  useEffect(() => {
+    if (authId && !didPreload.current) {
+      didPreload.current = true;
+      preloadAllData(authId);
+    }
+  }, [authId]);
+
+  return null;
 }

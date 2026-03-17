@@ -83,6 +83,19 @@ function getCacheKey(userId: number, monthStr: string) {
   return `${userId}-${monthStr}`;
 }
 
+/** Pre-populate from outside (used by DataPreloader). */
+export function populateHistorySummaryCache(userId: number, data: WeeklySummary) {
+  summaryCache.set(userId, { data, ts: Date.now() });
+}
+export function populateHistoryMonthCache(
+  userId: number,
+  monthStr: string,
+  activeDates: string[],
+  allWorkouts: WorkoutListItem[],
+) {
+  monthCache.set(getCacheKey(userId, monthStr), { activeDates, allWorkouts, ts: Date.now() });
+}
+
 /* ─── Component ────────────────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { t } = useTranslation();
