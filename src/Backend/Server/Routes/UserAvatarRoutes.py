@@ -61,6 +61,8 @@ async def getUserAvatar(user_id: int):
             animationActiveUrl=avatar_entity.animation_active_url,
             animationPostWorkoutUrl=avatar_entity.animation_post_workout_url,
             themeColor=avatar_entity.theme_color,
+            evolutionNodeId=user_avatar_entity.evolution_node_id,
+            evolutionStage=user_avatar_entity.evolution_stage,
             currentLevelXp=xp_progression['current_level_xp'],
             nextLevelXp=xp_progression['next_level_xp'],
             xpProgress=xp_progression['xp_progress']

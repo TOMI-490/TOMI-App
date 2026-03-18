@@ -36,6 +36,7 @@ from .Routes.UserRoutes import router as UserRouter
 from .Routes.WatchDeviceRoutes import router as WatchDeviceRouter
 from .Routes.WorkoutRoutes import router as WorkoutRouter
 from .Routes.WorkoutTypeRoutes import router as WorkoutTypeRouter
+from .Routes.EvolutionRoutes import router as EvolutionRouter
 
 
 
@@ -166,6 +167,7 @@ app.include_router(UserRouter, prefix="/api/v1/users", tags=["Users"])
 app.include_router(WatchDeviceRouter, prefix="/api/v1/watchDevices", tags=["Watch Devices"])
 app.include_router(WorkoutRouter, prefix="/api/v1/workouts", tags=["Workouts"])
 app.include_router(WorkoutTypeRouter, prefix="/api/v1/workoutTypes", tags=["Workout Types"])
+app.include_router(EvolutionRouter, prefix="/api/v1/evolution", tags=["Evolution"])
 
     
 # Global exception handler

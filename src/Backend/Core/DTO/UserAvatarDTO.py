@@ -15,6 +15,8 @@ class UserAvatarCreateDTO(BaseModel):
     boredome_level: int = Field(default=50, ge=0, le=100, alias="boredomeLevel")
     happines_level: int = Field(default=50, ge=0, le=100, alias="happinessLevel")
     is_active: bool = Field(default=True, alias="isActive")
+    evolution_node_id: int = Field(default=1, ge=1, alias="evolutionNodeId")
+    evolution_stage: str = Field(default="baby", alias="evolutionStage")
     
     class Config:
         populate_by_name = True
@@ -50,6 +52,8 @@ class UserAvatarResponseDTO(BaseModel):
     is_active: bool = Field(..., alias="isActive")
     last_updated: Optional[datetime] = Field(None, alias="lastUpdated")
     created_at: Optional[datetime] = Field(None, alias="createdAt")
+    evolution_node_id: int = Field(1, alias="evolutionNodeId")
+    evolution_stage: str = Field("baby", alias="evolutionStage")
     
     class Config:
         populate_by_name = True
@@ -78,6 +82,9 @@ class UserAvatarWithDetailsResponseDTO(BaseModel):
     animation_active_url: Optional[str] = Field(None, alias="animationActiveUrl")
     animation_post_workout_url: Optional[str] = Field(None, alias="animationPostWorkoutUrl")
     theme_color: Optional[str] = Field(None, alias="themeColor")
+    # Evolution
+    evolution_node_id: int = Field(1, alias="evolutionNodeId")
+    evolution_stage: str = Field("baby", alias="evolutionStage")
     # XP progression (calculated on backend)
     current_level_xp: int = Field(0, alias="currentLevelXp")
     next_level_xp: int = Field(100, alias="nextLevelXp")

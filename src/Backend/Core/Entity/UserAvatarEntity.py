@@ -16,5 +16,7 @@ class UserAvatarEntity(BaseModel):
     is_active: bool
     created_at: datetime 
     last_updated: datetime
+    evolution_node_id: int = 1
+    evolution_stage: str = 'baby'
     
     

@@ -405,6 +405,111 @@ export const avatarPageStyles = StyleSheet.create({
   },
   evoPathDoneText: { fontSize: 11, fontFamily: F.semiBold, color: T.success },
 
+  /* ── Evolution: Eligibility banner ──────────────── */
+  evoBanner: {
+    ...card, borderRadius: 20, padding: 20, marginBottom: 22,
+    borderWidth: 2, borderColor: T.warningTint,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+  },
+  evoBannerIconBox: {
+    width: 52, height: 52, borderRadius: 16,
+    backgroundColor: T.warningTint,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  evoBannerTitle: { fontSize: 17, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  evoBannerSub: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+
+  /* ── Evolution: Selection cards ────────────────── */
+  evoOptionsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24,
+  },
+  evoOptionCard: {
+    width: '47%' as any, ...card, borderRadius: 20,
+    paddingVertical: 20, paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  evoOptionCardSelected: {
+    borderWidth: 2.5, borderColor: T.primary,
+  },
+  evoOptionAvatar: {
+    width: 72, height: 72, borderRadius: 18, marginBottom: 10,
+  },
+  evoOptionFallback: {
+    width: 72, height: 72, borderRadius: 18,
+    backgroundColor: T.primaryTint,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 10,
+  },
+  evoOptionName: {
+    fontSize: 14, fontFamily: F.headlineMd, color: T.textPrimary,
+    textAlign: 'center', letterSpacing: -0.2,
+  },
+  evoOptionStage: {
+    fontSize: 11, fontFamily: F.semiBold, color: T.primary,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3,
+  },
+
+  /* ── Evolution: Confirm button ─────────────────── */
+  evoConfirmBtn: {
+    backgroundColor: T.primary, borderRadius: 16,
+    paddingVertical: 16, alignItems: 'center',
+    marginBottom: 24,
+    ...shadowSm, shadowColor: T.primary, shadowOpacity: 0.35,
+  },
+  evoConfirmBtnDisabled: { opacity: 0.5 },
+  evoConfirmBtnText: { fontSize: 16, fontFamily: F.bold, color: '#FFF' },
+
+  /* ── Evolution: Fully evolved state ────────────── */
+  evoFullCard: {
+    ...card, borderRadius: 22, padding: 28, marginBottom: 22,
+    alignItems: 'center',
+    borderWidth: 2, borderColor: '#E0DAF5',
+    ...shadowMd, shadowColor: '#7C3AED', shadowOpacity: 0.10,
+  },
+  evoFullIconBox: {
+    width: 64, height: 64, borderRadius: 20,
+    backgroundColor: '#EDE9FE',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 14,
+  },
+  evoFullTitle: {
+    fontSize: 22, fontFamily: F.headlineMd, color: '#7C3AED', letterSpacing: -0.3, marginBottom: 4,
+  },
+  evoFullSub: {
+    fontSize: 13, fontFamily: F.regular, color: T.textMuted, textAlign: 'center', lineHeight: 19,
+  },
+
+  /* ── Evolution: Current stage info ─────────────── */
+  evoStageRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18,
+  },
+  evoStageAvatar: {
+    width: 60, height: 60, borderRadius: 16,
+  },
+  evoStageFallback: {
+    width: 60, height: 60, borderRadius: 16,
+    backgroundColor: T.primaryTint,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  evoStageName: { fontSize: 20, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  evoStageBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: T.primaryTint, borderRadius: 10, marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  evoStageBadgeText: { fontSize: 11, fontFamily: F.bold, color: T.primary, textTransform: 'uppercase' },
+
+  /* ── Evolution: Next threshold info ────────────── */
+  evoNextInfo: {
+    ...card, borderRadius: 18, padding: 16, marginBottom: 22,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  evoNextIconBox: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: T.secondaryTint,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  evoNextLabel: { fontSize: 14, fontFamily: F.semiBold, color: T.textPrimary },
+  evoNextSub: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+
   /* ── Stats Tab ───────────────────────────────────── */
   statsGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 22,

@@ -10,6 +10,9 @@ CREATE TABLE public.avatar (
   is_default boolean NOT NULL,
   created_by character varying NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  animation_active_url text DEFAULT 'https://rvtrwomwwrrwqelpgxmr.supabase.co/storage/v1/object/sign/avatars/IMG_0489.gif?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZTcwYTk2Yy0xYzU4LTQ0YjctOTYwMS0yZTRkMjM4NWM5OTUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhdmF0YXJzL0lNR18wNDg5LmdpZiIsImlhdCI6MTc3MTM5MDY5NiwiZXhwIjoxODAyOTI2Njk2fQ.Ji994DP39EPeK6AR22dYIo0ccTpfxQutDWg96CTpGtc'::text,
+  animation_post_workout_url text,
+  animation_idle_url text,
   CONSTRAINT avatar_pkey PRIMARY KEY (avatar_id)
 );
 CREATE TABLE public.badge (
@@ -49,7 +52,8 @@ CREATE TABLE public.goal (
   last_updated timestamp without time zone NOT NULL,
   CONSTRAINT goal_pkey PRIMARY KEY (goal_id),
   CONSTRAINT goal_goal_status_id_fkey FOREIGN KEY (goal_status_id) REFERENCES public.goal_status(goal_status_id),
-  CONSTRAINT goal_goal_type_id_fkey FOREIGN KEY (goal_type_id) REFERENCES public.goal_type(goal_type_id)
+  CONSTRAINT goal_goal_type_id_fkey FOREIGN KEY (goal_type_id) REFERENCES public.goal_type(goal_type_id),
+  CONSTRAINT goal_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user(user_id)
 );
 CREATE TABLE public.goal_status (
   goal_status_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -159,13 +163,30 @@ CREATE TABLE public.workout (
   workout_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   user_id bigint NOT NULL,
   workout_type_id bigint NOT NULL,
-  start timestamp without time zone NOT NULL,
-  end timestamp without time zone NOT NULL,
-  device_id bigint NOT NULL,
+  start timestamp without time zone,
+  end timestamp without time zone,
+  device_id bigint,
+  xp_awarded bigint,
   CONSTRAINT workout_pkey PRIMARY KEY (workout_id),
   CONSTRAINT workout_workout_type_id_fkey FOREIGN KEY (workout_type_id) REFERENCES public.workout_type(workout_type_id),
   CONSTRAINT workout_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user(user_id),
   CONSTRAINT workout_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.watch_device(device_id)
+);
+CREATE TABLE public.workout_summaries (
+  summary_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  workout_id bigint NOT NULL UNIQUE,
+  duration_ms bigint NOT NULL,
+  avg_hr integer,
+  min_hr integer,
+  max_hr integer,
+  avg_spo2 integer,
+  min_spo2 integer,
+  max_spo2 integer,
+  steps integer,
+  distance_km real,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT workout_summaries_pkey PRIMARY KEY (summary_id),
+  CONSTRAINT workout_summaries_workout_id_fkey FOREIGN KEY (workout_id) REFERENCES public.workout(workout_id)
 );
 CREATE TABLE public.workout_type (
   workout_type_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,

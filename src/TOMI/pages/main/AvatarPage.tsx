@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '../../locales/i18n';
@@ -8,8 +8,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAvatarPage } from '../../hooks/useAvatarPage';
 import { useGamification } from '../../hooks/useGamification';
-import { avatarService } from '../../services/resources/avatar.service';
-import type { AvatarResponseDto } from '../../models/dto/Avatar.dto';
+import { evolutionService } from '../../services/resources/evolution.service';
+import { userAvatarService } from '../../services/resources/userAvatar.service';
+import { invalidateDashboardCache } from '../../hooks/useDashboardData';
+import type { EvolutionStateDto, EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 import { avatarPageStyles as styles } from '../../styles/home/avatarPage.styles';
 import { TOMI_THEME as T } from '../../constants/theme';
 
@@ -21,23 +23,11 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'shop',       label: 'Shop' },
 ];
 
-/* ── Evolution definitions ──────────────────────────────────────────── */
-const EVOLUTION_STAGES = [
-  { name: 'Hatchling', desc: 'A brand new companion...', lvlRange: [1, 4],   icon: 'egg-outline' as const,             color: '#2DCB8A', bg: '#E6F9F0' },
-  { name: 'Sprout',    desc: 'Growing stronger with you.',  lvlRange: [5, 10],  icon: 'leaf-outline' as const,            color: '#4E9BE8', bg: '#E8F1FD' },
-  { name: 'Warrior',   desc: 'Ready for any challenge.',    lvlRange: [11, 15], icon: 'shield-checkmark-outline' as const, color: '#FF7A3D', bg: '#FFF0E8' },
-  { name: 'Hero',      desc: 'Inspiring others to move.',   lvlRange: [16, 20], icon: 'flash-outline' as const,            color: '#F4A623', bg: '#FEF6E0' },
-  { name: 'Champion',  desc: 'Elite athlete with incredible discipline.', lvlRange: [21, 29], icon: 'trophy-outline' as const, color: '#FF7A3D', bg: '#FFF0E8' },
-  { name: 'Legend',    desc: 'A true fitness legend. The pinnacle.', lvlRange: [30, 99], icon: 'star-outline' as const, color: '#7C3AED', bg: '#EDE9FE' },
-];
+const STAGE_LABELS: Record<string, string> = { baby: 'Baby', teen: 'Teen', adult: 'Adult' };
 
-function getEvolutionStage(level: number) {
-  return EVOLUTION_STAGES.find(s => level >= s.lvlRange[0] && level <= s.lvlRange[1]) ?? EVOLUTION_STAGES[0];
-}
-
-function getNextEvolution(level: number) {
-  const idx = EVOLUTION_STAGES.findIndex(s => level >= s.lvlRange[0] && level <= s.lvlRange[1]);
-  return idx < EVOLUTION_STAGES.length - 1 ? EVOLUTION_STAGES[idx + 1] : null;
+function isPlaceholderUrl(url?: string | null): boolean {
+  if (!url) return true;
+  return url.includes('example.com');
 }
 
 /* ── Accessory placeholders ─────────────────────────────────────────── */
@@ -56,15 +46,11 @@ export default function AvatarPage() {
   const { data: gamData } = useGamification(user?.userId);
 
   const [activeTab, setActiveTab] = useState<TabId>('customize');
-  const [avatarTemplates, setAvatarTemplates] = useState<AvatarResponseDto[]>([]);
-
-  useEffect(() => {
-    avatarService.getAll().then(setAvatarTemplates).catch(() => {});
-  }, []);
 
   const themeColor = avatar?.themeColor ?? T.primary;
-  const currentEvo = useMemo(() => getEvolutionStage(avatar?.level ?? 1), [avatar?.level]);
-  const nextEvo = useMemo(() => getNextEvolution(avatar?.level ?? 1), [avatar?.level]);
+  const stageName = avatar?.evolutionStage
+    ? STAGE_LABELS[avatar.evolutionStage] ?? avatar.evolutionStage
+    : 'Baby';
 
   const fullnessPercent   = avatar ? 100 - avatar.hungerLevel : 0;
   const energyPercent     = avatar ? 100 - avatar.sleepinessLevel : 0;
@@ -126,7 +112,7 @@ export default function AvatarPage() {
             <View style={styles.avatarTopRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.avatarNickname}>{nickname}</Text>
-                <Text style={styles.avatarMeta}>{ageDays} days old · {currentEvo.name}</Text>
+                <Text style={styles.avatarMeta}>{ageDays} days old · {stageName} Stage</Text>
               </View>
               <View style={styles.levelBadge}>
                 <Text style={styles.levelBadgeLabel}>Level</Text>
@@ -300,14 +286,9 @@ export default function AvatarPage() {
         </View>
 
         {/* ── Tab Content ─────────────────────────────────── */}
-        {activeTab === 'customize' && (
-          <CustomizeContent
-            avatarTemplates={avatarTemplates}
-            currentAvatarId={avatar?.avatarId}
-          />
-        )}
+        {activeTab === 'customize' && <CustomizeContent />}
         {activeTab === 'evolution' && (
-          <EvolutionContent level={level} currentEvo={currentEvo} nextEvo={nextEvo} />
+          <EvolutionContent userId={user?.userId} onEvolved={refresh} />
         )}
         {activeTab === 'stats' && (
           <StatsContent xp={xp} level={level} ageDays={ageDays} rank={userRank} nextLevelXp={nextLevelXp} xpPercent={xpPercent} />
@@ -323,34 +304,9 @@ export default function AvatarPage() {
    Tab content components
    ═══════════════════════════════════════════════════════════════════════ */
 
-function CustomizeContent({ avatarTemplates, currentAvatarId }: { avatarTemplates: AvatarResponseDto[]; currentAvatarId?: number }) {
+function CustomizeContent() {
   return (
     <>
-      {/* Choose Avatar */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="happy-outline" size={20} color={T.primary} />
-        <Text style={styles.sectionTitle}>Choose Avatar</Text>
-      </View>
-      <View style={styles.avatarGrid}>
-        {avatarTemplates.map(a => {
-          const selected = a.avatarId === currentAvatarId;
-          return (
-            <TouchableOpacity
-              key={a.avatarId}
-              style={[styles.avatarOption, selected && styles.avatarOptionSelected]}
-              activeOpacity={0.7}
-            >
-              {a.imageURL ? (
-                <Image source={{ uri: a.imageURL }} style={styles.avatarOptionImage} contentFit="contain" />
-              ) : (
-                <Ionicons name="sparkles" size={28} color={selected ? T.primary : T.textMuted} />
-              )}
-              <Text style={styles.avatarOptionName} numberOfLines={1}>{a.name}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
       {/* Accessories */}
       <View style={styles.sectionHeader}>
         <MaterialCommunityIcons name="creation" size={20} color={T.primary} />
@@ -377,132 +333,190 @@ function CustomizeContent({ avatarTemplates, currentAvatarId }: { avatarTemplate
   );
 }
 
-function EvolutionContent({ level, currentEvo, nextEvo }: {
-  level: number;
-  currentEvo: (typeof EVOLUTION_STAGES)[number];
-  nextEvo: (typeof EVOLUTION_STAGES)[number] | null;
-}) {
-  const currentIdx = EVOLUTION_STAGES.indexOf(currentEvo);
-  const CURRENT_PERKS: Record<string, string[]> = {
-    Hatchling: ['Beginner avatar unlocked'],
-    Sprout:    ['Sprout avatar unlocked', 'Basic accessories'],
-    Warrior:   ['Warrior avatar unlocked', 'Battle accessories'],
-    Hero:      ['Hero avatar unlocked', 'XP multiplier x1.5'],
-    Champion:  ['Champion avatar unlocked', 'Leaderboard title', 'XP multiplier x2'],
-    Legend:    ['Legend avatar unlocked', 'All accessories unlocked', 'XP multiplier x3'],
+function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: () => void }) {
+  const [evoState, setEvoState] = useState<EvolutionStateDto | null>(null);
+  const [loadingEvo, setLoadingEvo] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<EvolutionNodeDto | null>(null);
+  const [evolving, setEvolving] = useState(false);
+
+  const fetchState = useCallback(async (force = false) => {
+    if (!userId) return;
+    try {
+      const state = await evolutionService.getEvolutionState(userId, force);
+      setEvoState(state);
+    } catch {
+      // leave null
+    } finally {
+      setLoadingEvo(false);
+    }
+  }, [userId]);
+
+  // Always force a fresh fetch when the Evolution tab mounts
+  useEffect(() => { fetchState(true); }, [fetchState]);
+
+  if (loadingEvo) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={T.primary} />
+        <Text style={styles.loadingText}>Loading evolution…</Text>
+      </View>
+    );
+  }
+
+  if (!evoState) {
+    return (
+      <View style={styles.centered}>
+        <Ionicons name="alert-circle-outline" size={40} color={T.textMuted} />
+        <Text style={styles.errorText}>Unable to load evolution data.</Text>
+      </View>
+    );
+  }
+
+  const { currentNode, currentStage, currentLevel, isEligible, availableOptions } = evoState;
+  const fullyEvolved = currentStage === 'adult' && availableOptions.length === 0;
+
+  const handleEvolve = async () => {
+    if (!userId || !selectedNode) return;
+    setEvolving(true);
+    try {
+      const resp = await evolutionService.evolve(userId, selectedNode.evolutionNodeId);
+      if (resp.success) {
+        // Clear all avatar-related caches so every page shows the new GIF
+        userAvatarService.invalidateCache();
+        invalidateDashboardCache();
+        setSelectedNode(null);
+        const freshState = await evolutionService.getEvolutionState(userId, true);
+        setEvoState(freshState);
+        onEvolved();
+        Alert.alert('Evolution Complete!', resp.message);
+      } else {
+        Alert.alert('Cannot Evolve', resp.message);
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setEvolving(false);
+    }
+  };
+
+  const renderNodeAvatar = (node: EvolutionNodeDto, size: number) => {
+    const url = node.animationActiveUrl || node.animationIdleUrl || node.imageUrl;
+    if (url && !isPlaceholderUrl(url)) {
+      return (
+        <Image
+          source={{ uri: url }}
+          style={{ width: size, height: size, borderRadius: size * 0.22 }}
+          contentFit="contain"
+        />
+      );
+    }
+    return (
+      <View style={[styles.evoStageFallback, { width: size, height: size, borderRadius: size * 0.22 }]}>
+        <Ionicons name="sparkles" size={size * 0.45} color={T.primary} />
+      </View>
+    );
   };
 
   return (
     <>
-      {/* Current Form */}
+      {/* ── Current Stage Card ──────────────────── */}
       <View style={styles.evolutionCurrentCard}>
         <Text style={styles.evolutionCurrentLabel}>Current Form</Text>
-        <View style={styles.evolutionCurrentRow}>
-          <View style={[styles.evolutionIconBox, { backgroundColor: currentEvo.bg }]}>
-            <Ionicons name={currentEvo.icon as any} size={26} color={currentEvo.color} />
-          </View>
+        <View style={styles.evoStageRow}>
+          {renderNodeAvatar(currentNode, 60)}
           <View style={{ flex: 1 }}>
-            <Text style={[styles.evolutionName, { color: currentEvo.color }]}>{currentEvo.name}</Text>
-            <Text style={styles.evolutionDesc}>{currentEvo.desc}</Text>
-          </View>
-        </View>
-        <View style={styles.evolutionPerksList}>
-          {(CURRENT_PERKS[currentEvo.name] ?? []).map(p => (
-            <View key={p} style={styles.evolutionPerk}>
-              <View style={[styles.evolutionPerkDot, { backgroundColor: currentEvo.color }]} />
-              <Text style={styles.evolutionPerkText}>{p}</Text>
+            <Text style={styles.evoStageName}>{currentNode.name}</Text>
+            <View style={styles.evoStageBadge}>
+              <Text style={styles.evoStageBadgeText}>
+                {STAGE_LABELS[currentStage] ?? currentStage} · Lv.{currentLevel}
+              </Text>
             </View>
-          ))}
+          </View>
         </View>
       </View>
 
-      {/* Next Evolution */}
-      {nextEvo && (
-        <>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="sparkles" size={18} color={T.primary} />
-            <Text style={styles.sectionTitle}>Next Evolution</Text>
-            <View style={[styles.nextEvoBadge, { marginLeft: 'auto' as any }]}>
-              <Text style={styles.nextEvoBadgeText}>Lvl {nextEvo.lvlRange[0]}</Text>
-            </View>
+      {/* ── Fully Evolved ───────────────────────── */}
+      {fullyEvolved && (
+        <View style={styles.evoFullCard}>
+          <View style={styles.evoFullIconBox}>
+            <Ionicons name="star" size={30} color="#7C3AED" />
           </View>
-          <View style={styles.nextEvoCard}>
-            <View style={[styles.evoPathIconBox, { backgroundColor: nextEvo.bg }]}>
-              <Ionicons name={nextEvo.icon as any} size={22} color={nextEvo.color} />
-            </View>
-            <View style={styles.nextEvoInfo}>
-              <Text style={styles.nextEvoLabel}>{nextEvo.name}</Text>
-              <Text style={styles.nextEvoSubtitle}>{nextEvo.desc}</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <Text style={styles.nextEvoLevelRange}>Lvl {level} → Lvl {nextEvo.lvlRange[0]}</Text>
-                <Text style={styles.nextEvoLevelsToGo}>{nextEvo.lvlRange[0] - level} levels to go</Text>
-              </View>
-              <View style={styles.nextEvoProgress}>
-                <View style={[styles.nextEvoProgressFill, {
-                  width: `${Math.min(((level - currentEvo.lvlRange[0]) / (nextEvo.lvlRange[0] - currentEvo.lvlRange[0])) * 100, 100)}%` as any,
-                }]} />
-              </View>
-            </View>
-          </View>
-        </>
+          <Text style={styles.evoFullTitle}>Fully Evolved!</Text>
+          <Text style={styles.evoFullSub}>
+            Your TOMI has reached its final form.{'\n'}You've unlocked everything this branch offers.
+          </Text>
+        </View>
       )}
 
-      {/* Evolution Path */}
-      <View style={styles.evoPathTitle}>
-        <MaterialCommunityIcons name="chart-timeline-variant-shimmer" size={20} color={T.primary} />
-        <Text style={styles.sectionTitle}>Evolution Path</Text>
-      </View>
-      <View style={styles.evoPathContainer}>
-        {/* Continuous vertical rail */}
-        <View style={[styles.evoPathRail, { backgroundColor: currentIdx > 0 ? T.secondary : '#E0E0E0' }]} />
-        {/* Colored portion of the rail (completed) */}
-        {currentIdx > 0 && (
-          <View style={[styles.evoPathRail, {
-            backgroundColor: T.secondary,
-            bottom: undefined,
-            height: `${Math.min((currentIdx / (EVOLUTION_STAGES.length - 1)) * 100, 100)}%` as any,
-          }]} />
-        )}
+      {/* ── Not Eligible Yet ────────────────────── */}
+      {!isEligible && !fullyEvolved && (
+        <View style={styles.evoNextInfo}>
+          <View style={styles.evoNextIconBox}>
+            <Ionicons name="lock-closed" size={20} color={T.secondary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.evoNextLabel}>Next evolution locked</Text>
+            <Text style={styles.evoNextSub}>
+              Keep leveling up to unlock the next stage!
+            </Text>
+          </View>
+        </View>
+      )}
 
-        {EVOLUTION_STAGES.map((stage, i) => {
-          const isCurrent = stage === currentEvo;
-          const isPast = i < currentIdx;
-          const completed = isPast || isCurrent;
-          const dotColor = completed ? T.secondary : '#D4D4D4';
-
-          return (
-            <View key={stage.name} style={styles.evoPathItem}>
-              {/* Dot on the rail */}
-              <View style={styles.evoPathDotWrap}>
-                <View style={[styles.evoPathDotOuter, { backgroundColor: dotColor + '30' }]}>
-                  <View style={[styles.evoPathDotInner, { backgroundColor: dotColor }]} />
-                </View>
-              </View>
-
-              {/* Card content */}
-              <View style={styles.evoPathCard}>
-                <View style={[styles.evoPathIconBox, { backgroundColor: stage.bg }]}>
-                  <Ionicons name={stage.icon as any} size={20} color={stage.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.evoPathName}>{stage.name}</Text>
-                  <Text style={styles.evoPathDesc} numberOfLines={1}>{stage.desc}</Text>
-                </View>
-                {isPast ? (
-                  <View style={styles.evoPathDone}>
-                    <Ionicons name="checkmark-circle" size={16} color={T.success} />
-                    <Text style={styles.evoPathDoneText}>Done</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.evoPathBadge, { backgroundColor: stage.color }]}>
-                    <Text style={styles.evoPathBadgeText}>Lv.{stage.lvlRange[0]}</Text>
-                  </View>
-                )}
-              </View>
+      {/* ── Eligible: show options ──────────────── */}
+      {isEligible && availableOptions.length > 0 && (
+        <>
+          <View style={styles.evoBanner}>
+            <View style={styles.evoBannerIconBox}>
+              <Ionicons name="sparkles" size={24} color={T.warning} />
             </View>
-          );
-        })}
-      </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.evoBannerTitle}>Ready to Evolve!</Text>
+              <Text style={styles.evoBannerSub}>Choose your next form below</Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="chart-timeline-variant-shimmer" size={20} color={T.primary} />
+            <Text style={styles.sectionTitle}>Choose Evolution</Text>
+          </View>
+
+          <View style={styles.evoOptionsGrid}>
+            {availableOptions.map((opt) => {
+              const isSelected = selectedNode?.evolutionNodeId === opt.evolutionNodeId;
+              return (
+                <TouchableOpacity
+                  key={opt.evolutionNodeId}
+                  style={[styles.evoOptionCard, isSelected && styles.evoOptionCardSelected]}
+                  activeOpacity={0.7}
+                  onPress={() => setSelectedNode(isSelected ? null : opt)}
+                >
+                  {renderNodeAvatar(opt, 72)}
+                  <Text style={styles.evoOptionName}>{opt.name}</Text>
+                  <Text style={styles.evoOptionStage}>
+                    {STAGE_LABELS[opt.stage] ?? opt.stage} · Lv.{opt.levelRequired}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.evoConfirmBtn, (!selectedNode || evolving) && styles.evoConfirmBtnDisabled]}
+            disabled={!selectedNode || evolving}
+            onPress={handleEvolve}
+            activeOpacity={0.8}
+          >
+            {evolving ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.evoConfirmBtnText}>
+                {selectedNode ? `Evolve to ${selectedNode.name}` : 'Select an evolution'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
     </>
   );
 }

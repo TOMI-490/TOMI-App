@@ -20,6 +20,9 @@ export interface UserAvatarResponseDto {
   animationActiveUrl?: string;        // Active / happy state GIF
   animationPostWorkoutUrl?: string;   // Post-workout celebration GIF
   themeColor?: string;
+  // Evolution
+  evolutionNodeId?: number;
+  evolutionStage?: 'baby' | 'teen' | 'adult';
   // XP progression (calculated on backend)
   currentLevelXp?: number;
   nextLevelXp?: number;
