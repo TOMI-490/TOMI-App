@@ -37,9 +37,13 @@ import { StreakResponseDto } from '../../models/dto/Streak.dto';
 import { homePageStyles as styles } from '../../styles/home/homePage.styles';
 import { TOMI_THEME as T } from '../../constants/theme';
 import { avatarStateStore } from '../../utils/avatarStateStore';
-import { XpToast, LevelUpModal } from '../../components/gamification';
+import { XpToast, LevelUpModal, EvolutionModal } from '../../components/gamification';
+import { evolutionService } from '../../services/resources/evolution.service';
+import { userAvatarService } from '../../services/resources/userAvatar.service';
+import { invalidateDashboardCache } from '../../hooks/useDashboardData';
 import { DailyQuest } from '../../services/resources/homeScreen.service';
 import { EarnedBadge, UpcomingBadge } from '../../services/gamification';
+import type { EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 
 /* ---------------------------------------------------------------------------
    Icon registry
@@ -226,6 +230,25 @@ export default function HomePage() {
   const postWorkoutTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tomiEffects                     = useTomiEffects(data?.tomi);
   const tomiData                        = data?.tomi ?? null;
+  const [evolving, setEvolving]         = useState(false);
+
+  const handleEvolutionSelect = useCallback(async (node: EvolutionNodeDto) => {
+    if (!user?.userId) return;
+    setEvolving(true);
+    try {
+      const resp = await evolutionService.evolve(user.userId, node.evolutionNodeId);
+      if (resp.success) {
+        userAvatarService.invalidateCache();
+        invalidateDashboardCache();
+        tomiEffects.dismissEvolutionModal();
+        refresh();
+      }
+    } catch {
+      // Silently fail — user can retry from the Avatar tab
+    } finally {
+      setEvolving(false);
+    }
+  }, [user?.userId, tomiEffects, refresh]);
 
   const avatarGifUrl = useMemo(() => {
     if (!tomiData) return null;
@@ -587,6 +610,15 @@ export default function HomePage() {
 
       {/* Level-Up Modal */}
       <LevelUpModal visible={tomiEffects.showLevelUpModal} level={tomiEffects.newLevel} onDismiss={tomiEffects.dismissLevelUpModal} />
+
+      {/* Evolution Modal — auto-triggered after level-up unlocks new evolution */}
+      <EvolutionModal
+        visible={tomiEffects.showEvolutionModal}
+        options={tomiEffects.evolutionOptions}
+        loading={tomiEffects.evolutionLoading}
+        evolving={evolving}
+        onSelect={handleEvolutionSelect}
+      />
     </ScreenWrapper>
   );
 }

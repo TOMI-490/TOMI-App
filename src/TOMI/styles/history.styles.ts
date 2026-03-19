@@ -59,19 +59,24 @@ export const historyStyles = StyleSheet.create({
   toggleBtnTextActive: { color: '#FFFFFF' },
 
   /* ── Weekly Activity card ──────────────────────── */
-  activityCard: { ...card, borderRadius: 22, padding: 20, marginBottom: 22 },
-  activityHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
-  activityTitle: { fontSize: 18, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  activityCard: { ...card, borderRadius: 24, padding: 20, marginBottom: 22 },
+  activityHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  activityTitle: { fontSize: 17, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
   barChartRow: {
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
-    height: 140, paddingHorizontal: 2,
+    height: 72, paddingHorizontal: 4,
   },
   barCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
-  bar: { width: 30, borderRadius: 10, backgroundColor: T.primary, minHeight: 8 },
-  barEmpty: { backgroundColor: '#F0EDE8', opacity: 0.6 },
-  barLabel: { fontSize: 11, fontFamily: F.semiBold, color: T.textMuted, marginTop: 8 },
+  bar: { width: 20, minHeight: 20, borderRadius: 10, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  barFill: { backgroundColor: '#FF884D' },
+  barEmpty: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D1D5DB' },
+  barLabel: { fontSize: 10, fontFamily: F.semiBold, marginTop: 8, minWidth: 24, textAlign: 'center' },
+  barLabelActive: { color: T.textPrimary },
+  barLabelInactive: { color: T.textMuted },
   barValue: {
-    fontSize: 11, fontFamily: F.bold, color: T.primary, marginBottom: 5,
+    fontSize: 11,
+    fontFamily: F.bold,
+    color: '#FFFFFF',
   },
 
   /* ── Calendar card ─────────────────────────────── */

@@ -361,17 +361,27 @@ export default function HistoryPage() {
         {period === 'week' && (
           <View style={styles.activityCard}>
             <View style={styles.activityHeader}>
-              <MaterialCommunityIcons name="chart-bar" size={20} color={T.primary} />
+              <MaterialCommunityIcons name="chart-line" size={22} color={T.primary} />
               <Text style={styles.activityTitle}>Weekly Activity</Text>
             </View>
             <View style={styles.barChartRow}>
               {weeklyBars.map(b => {
-                const barH = b.count > 0 ? Math.max(b.height * 1.1, 18) : 8;
+                const hasActivity = b.count > 0;
+                if (!hasActivity) {
+                  return (
+                    <View key={b.label} style={styles.barCol}>
+                      <View style={styles.barEmpty} />
+                      <Text style={[styles.barLabel, styles.barLabelInactive]}>{b.label}</Text>
+                    </View>
+                  );
+                }
+                const barH = Math.max((b.height / 100) * 52, 18);
                 return (
                   <View key={b.label} style={styles.barCol}>
-                    {b.count > 0 && <Text style={styles.barValue}>{b.count}</Text>}
-                    <View style={[styles.bar, { height: barH }, b.count === 0 && styles.barEmpty]} />
-                    <Text style={styles.barLabel}>{b.label}</Text>
+                    <View style={[styles.bar, styles.barFill, { height: barH }]}>
+                      <Text style={styles.barValue}>{b.count}</Text>
+                    </View>
+                    <Text style={[styles.barLabel, styles.barLabelActive]}>{b.label}</Text>
                   </View>
                 );
               })}

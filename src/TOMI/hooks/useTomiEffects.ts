@@ -1,25 +1,31 @@
 /**
  * useTomiEffects Hook
- * Detects XP changes and level ups for visual effects
+ * Detects XP changes, level ups, and evolution eligibility for visual effects
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { UserAvatarResponseDto } from '../models/dto/UserAvatar.dto';
+import { evolutionService } from '../services/resources/evolution.service';
+import type { EvolutionNodeDto, EvolutionStateDto } from '../models/dto/Evolution.dto';
 
 export interface TomiEffects {
-  xpDelta: number | null;  // Amount of XP gained (null if no change)
-  levelUp: boolean;         // True if level increased
-  newLevel: number | null;  // The new level reached (null if no level up)
-  showXpToast: boolean;     // Flag to show XP toast
-  showLevelUpModal: boolean; // Flag to show level up modal
+  xpDelta: number | null;
+  levelUp: boolean;
+  newLevel: number | null;
+  showXpToast: boolean;
+  showLevelUpModal: boolean;
   dismissXpToast: () => void;
   dismissLevelUpModal: () => void;
+  // Evolution
+  showEvolutionModal: boolean;
+  evolutionOptions: EvolutionNodeDto[];
+  evolutionLoading: boolean;
+  dismissEvolutionModal: () => void;
+  checkEvolution: () => void;
 }
 
 /**
- * Hook to detect TOMI XP and level changes for visual effects
- * @param currentTomi - Current TOMI data
- * @returns Flags and data for showing XP/level up effects
+ * Hook to detect TOMI XP/level changes and evolution eligibility
  */
 export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undefined): TomiEffects {
   const [xpDelta, setXpDelta] = useState<number | null>(null);
@@ -28,12 +34,33 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
   const [showXpToast, setShowXpToast] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
 
-  // Store previous values to detect changes
+  const [showEvolutionModal, setShowEvolutionModal] = useState(false);
+  const [evolutionOptions, setEvolutionOptions] = useState<EvolutionNodeDto[]>([]);
+  const [evolutionLoading, setEvolutionLoading] = useState(false);
+  const pendingEvolutionCheck = useRef(false);
+
   const prevTomiRef = useRef<UserAvatarResponseDto | null>(null);
 
-  // Extract values to use as dependencies (to avoid infinite loops from object reference changes)
   const currentXp = currentTomi?.xp;
   const currentLevel = currentTomi?.level;
+  const userId = currentTomi?.userId;
+
+  const checkEvolution = useCallback(async () => {
+    if (!userId) return;
+    setEvolutionLoading(true);
+    try {
+      const state: EvolutionStateDto = await evolutionService.getEvolutionState(userId, true);
+      if (state.isEligible && state.availableOptions.length > 0) {
+        console.log('[useTomiEffects] 🧬 EVOLUTION AVAILABLE! Options:', state.availableOptions.length);
+        setEvolutionOptions(state.availableOptions);
+        setShowEvolutionModal(true);
+      }
+    } catch {
+      // Silently fail — user can still evolve from the Avatar tab
+    } finally {
+      setEvolutionLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     console.log('[useTomiEffects] Effect triggered - currentTomi:', currentTomi ? `Lv${currentTomi.level} XP${currentTomi.xp}` : 'null');
@@ -46,7 +73,6 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
     const prevTomi = prevTomiRef.current;
     console.log('[useTomiEffects] Previous TOMI:', prevTomi ? `Lv${prevTomi.level} XP${prevTomi.xp}` : 'null (first time)');
 
-    // First time seeing TOMI data - just store it, no effects
     if (!prevTomi) {
       console.log('[useTomiEffects] First TOMI data, storing reference');
       prevTomiRef.current = { ...currentTomi };
@@ -62,7 +88,6 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
         setShowXpToast(true);
         console.log('[useTomiEffects] ✨ XP gained:', delta);
 
-        // Auto-dismiss XP toast after 3 seconds
         setTimeout(() => {
           setShowXpToast(false);
           setXpDelta(null);
@@ -70,29 +95,39 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
       }
     }
 
-    // Detect level up
+    // Detect level up → queue evolution check after LevelUpModal is dismissed
     if (currentTomi.level > prevTomi.level) {
       console.log('[useTomiEffects] 🎉 LEVEL UP DETECTED!', prevTomi.level, '→', currentTomi.level);
       setLevelUp(true);
       setNewLevel(currentTomi.level);
       setShowLevelUpModal(true);
+      pendingEvolutionCheck.current = true;
     }
 
-    // Update ref with current data (create a copy to store values)
-    console.log('[useTomiEffects] Updating ref with current TOMI');
     prevTomiRef.current = { ...currentTomi };
-  }, [currentXp, currentLevel]); // Only depend on primitive values to avoid infinite loop
+  }, [currentXp, currentLevel]);
 
   const dismissXpToast = () => {
     setShowXpToast(false);
     setXpDelta(null);
   };
 
-  const dismissLevelUpModal = () => {
+  const dismissLevelUpModal = useCallback(() => {
     setShowLevelUpModal(false);
     setLevelUp(false);
     setNewLevel(null);
-  };
+
+    // After the celebration, check if evolution is now available
+    if (pendingEvolutionCheck.current) {
+      pendingEvolutionCheck.current = false;
+      checkEvolution();
+    }
+  }, [checkEvolution]);
+
+  const dismissEvolutionModal = useCallback(() => {
+    setShowEvolutionModal(false);
+    setEvolutionOptions([]);
+  }, []);
 
   return {
     xpDelta,
@@ -102,5 +137,10 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
     showLevelUpModal,
     dismissXpToast,
     dismissLevelUpModal,
+    showEvolutionModal,
+    evolutionOptions,
+    evolutionLoading,
+    dismissEvolutionModal,
+    checkEvolution,
   };
 }

@@ -11,6 +11,7 @@ import { useGamification } from '../../hooks/useGamification';
 import { evolutionService } from '../../services/resources/evolution.service';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
+import { EvolutionModal } from '../../components/gamification';
 import type { EvolutionStateDto, EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 import { avatarPageStyles as styles } from '../../styles/home/avatarPage.styles';
 import { TOMI_THEME as T } from '../../constants/theme';
@@ -25,9 +26,10 @@ const TABS: { id: TabId; label: string }[] = [
 
 const STAGE_LABELS: Record<string, string> = { baby: 'Baby', teen: 'Teen', adult: 'Adult' };
 
-function isPlaceholderUrl(url?: string | null): boolean {
-  if (!url) return true;
-  return url.includes('example.com');
+function isUsableUrl(url?: string | null): boolean {
+  if (!url) return false;
+  if (url.includes('example.com')) return false;
+  return true;
 }
 
 /* ── Accessory placeholders ─────────────────────────────────────────── */
@@ -336,7 +338,7 @@ function CustomizeContent() {
 function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: () => void }) {
   const [evoState, setEvoState] = useState<EvolutionStateDto | null>(null);
   const [loadingEvo, setLoadingEvo] = useState(true);
-  const [selectedNode, setSelectedNode] = useState<EvolutionNodeDto | null>(null);
+  const [showEvoModal, setShowEvoModal] = useState(false);
   const [evolving, setEvolving] = useState(false);
 
   const fetchState = useCallback(async (force = false) => {
@@ -344,6 +346,10 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
     try {
       const state = await evolutionService.getEvolutionState(userId, force);
       setEvoState(state);
+      // Auto-trigger the evolution modal if eligible
+      if (state.isEligible && state.availableOptions.length > 0) {
+        setShowEvoModal(true);
+      }
     } catch {
       // leave null
     } finally {
@@ -351,8 +357,30 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
     }
   }, [userId]);
 
-  // Always force a fresh fetch when the Evolution tab mounts
   useEffect(() => { fetchState(true); }, [fetchState]);
+
+  const handleEvolveSelect = async (node: EvolutionNodeDto) => {
+    if (!userId) return;
+    setEvolving(true);
+    try {
+      const resp = await evolutionService.evolve(userId, node.evolutionNodeId);
+      if (resp.success) {
+        userAvatarService.invalidateCache();
+        invalidateDashboardCache();
+        setShowEvoModal(false);
+        const freshState = await evolutionService.getEvolutionState(userId, true);
+        setEvoState(freshState);
+        onEvolved();
+        Alert.alert('Evolution Complete!', resp.message);
+      } else {
+        Alert.alert('Cannot Evolve', resp.message);
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setEvolving(false);
+    }
+  };
 
   if (loadingEvo) {
     return (
@@ -375,33 +403,10 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
   const { currentNode, currentStage, currentLevel, isEligible, availableOptions } = evoState;
   const fullyEvolved = currentStage === 'adult' && availableOptions.length === 0;
 
-  const handleEvolve = async () => {
-    if (!userId || !selectedNode) return;
-    setEvolving(true);
-    try {
-      const resp = await evolutionService.evolve(userId, selectedNode.evolutionNodeId);
-      if (resp.success) {
-        // Clear all avatar-related caches so every page shows the new GIF
-        userAvatarService.invalidateCache();
-        invalidateDashboardCache();
-        setSelectedNode(null);
-        const freshState = await evolutionService.getEvolutionState(userId, true);
-        setEvoState(freshState);
-        onEvolved();
-        Alert.alert('Evolution Complete!', resp.message);
-      } else {
-        Alert.alert('Cannot Evolve', resp.message);
-      }
-    } catch {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    } finally {
-      setEvolving(false);
-    }
-  };
-
   const renderNodeAvatar = (node: EvolutionNodeDto, size: number) => {
-    const url = node.animationActiveUrl || node.animationIdleUrl || node.imageUrl;
-    if (url && !isPlaceholderUrl(url)) {
+    const candidates = [node.animationActiveUrl, node.animationIdleUrl, node.imageUrl];
+    const url = candidates.find(isUsableUrl);
+    if (url) {
       return (
         <Image
           source={{ uri: url }}
@@ -463,7 +468,7 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
         </View>
       )}
 
-      {/* ── Eligible: show options ──────────────── */}
+      {/* ── Eligible: banner + button to reopen modal ── */}
       {isEligible && availableOptions.length > 0 && (
         <>
           <View style={styles.evoBanner}>
@@ -472,51 +477,27 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.evoBannerTitle}>Ready to Evolve!</Text>
-              <Text style={styles.evoBannerSub}>Choose your next form below</Text>
+              <Text style={styles.evoBannerSub}>Choose your next form to continue</Text>
             </View>
           </View>
 
-          <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="chart-timeline-variant-shimmer" size={20} color={T.primary} />
-            <Text style={styles.sectionTitle}>Choose Evolution</Text>
-          </View>
-
-          <View style={styles.evoOptionsGrid}>
-            {availableOptions.map((opt) => {
-              const isSelected = selectedNode?.evolutionNodeId === opt.evolutionNodeId;
-              return (
-                <TouchableOpacity
-                  key={opt.evolutionNodeId}
-                  style={[styles.evoOptionCard, isSelected && styles.evoOptionCardSelected]}
-                  activeOpacity={0.7}
-                  onPress={() => setSelectedNode(isSelected ? null : opt)}
-                >
-                  {renderNodeAvatar(opt, 72)}
-                  <Text style={styles.evoOptionName}>{opt.name}</Text>
-                  <Text style={styles.evoOptionStage}>
-                    {STAGE_LABELS[opt.stage] ?? opt.stage} · Lv.{opt.levelRequired}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
           <TouchableOpacity
-            style={[styles.evoConfirmBtn, (!selectedNode || evolving) && styles.evoConfirmBtnDisabled]}
-            disabled={!selectedNode || evolving}
-            onPress={handleEvolve}
+            style={styles.evoConfirmBtn}
+            onPress={() => setShowEvoModal(true)}
             activeOpacity={0.8}
           >
-            {evolving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.evoConfirmBtnText}>
-                {selectedNode ? `Evolve to ${selectedNode.name}` : 'Select an evolution'}
-              </Text>
-            )}
+            <Text style={styles.evoConfirmBtnText}>Choose Evolution</Text>
           </TouchableOpacity>
         </>
       )}
+
+      {/* Evolution choice modal */}
+      <EvolutionModal
+        visible={showEvoModal}
+        options={availableOptions}
+        evolving={evolving}
+        onSelect={handleEvolveSelect}
+      />
     </>
   );
 }
