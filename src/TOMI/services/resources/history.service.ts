@@ -1,5 +1,8 @@
 import { httpClient } from '../httpClient';
 import { createAPICache } from '../../utils/apiCache';
+import { HTTP_TIMEOUT_HISTORY } from '../config/config';
+
+const historyRequestConfig = { timeout: HTTP_TIMEOUT_HISTORY } as const;
 
 export interface WeeklySummary {
   weekStart: string;
@@ -32,6 +35,14 @@ export interface PaginatedWorkouts {
   pageSize: number;
   hasNext: boolean;
   total: number;
+}
+
+/** Response from GET /api/v1/history/workouts/full */
+export interface FullWorkoutsListResponse {
+  items: WorkoutListItem[];
+  total: number;
+  rangeStart: string;
+  rangeEnd: string;
 }
 
 export interface MostFrequentWorkout {
@@ -80,6 +91,11 @@ export function invalidateWorkoutsListForUserDay(userId: number, yyyyMmDd: strin
   }
 }
 
+/** Clear paginated workout list cache (e.g. after logging a workout) so full-history reload is fresh. */
+export function clearWorkoutsListCache() {
+  workoutsListCache.clear();
+}
+
 export const historyService = {
   /**
    * Get weekly summary with comparison to previous week
@@ -95,7 +111,7 @@ export const historyService = {
     const params = new URLSearchParams({ user_id: userId.toString() });
     if (weekStart) params.append('week_start', weekStart);
     const promise = httpClient
-      .get<WeeklySummary>(`/api/v1/history/weekly-summary?${params.toString()}`)
+      .get<WeeklySummary>(`/api/v1/history/weekly-summary?${params.toString()}`, historyRequestConfig)
       .then((r) => { weeklySummaryCache.set(key, r.data); return r.data; });
 
     if (stale) { promise.catch(() => {}); return stale; }
@@ -115,7 +131,7 @@ export const historyService = {
     const stale = calendarCache.get(key);
     const params = new URLSearchParams({ user_id: userId.toString(), month });
     const promise = httpClient
-      .get<CalendarActivity>(`/api/v1/history/calendar?${params.toString()}`)
+      .get<CalendarActivity>(`/api/v1/history/calendar?${params.toString()}`, historyRequestConfig)
       .then((r) => { calendarCache.set(key, r.data); return r.data; });
 
     if (stale) { promise.catch(() => {}); return stale; }
@@ -150,7 +166,7 @@ export const historyService = {
     if (date) params.append('date', date);
     else if (month) params.append('month', month);
     const promise = httpClient
-      .get<PaginatedWorkouts>(`/api/v1/history/workouts?${params.toString()}`)
+      .get<PaginatedWorkouts>(`/api/v1/history/workouts?${params.toString()}`, historyRequestConfig)
       .then((r) => { workoutsListCache.set(key, r.data); return r.data; });
 
     if (stale) { promise.catch(() => {}); return stale; }
@@ -168,7 +184,8 @@ export const historyService = {
       month: month,
     });
     const response = await httpClient.get<MostFrequentResponse>(
-      `/api/v1/history/most-frequent?${params.toString()}`
+      `/api/v1/history/most-frequent?${params.toString()}`,
+      historyRequestConfig,
     );
     return response.data;
   },
@@ -184,8 +201,38 @@ export const historyService = {
       month: month,
     });
     const response = await httpClient.get<XpOverTimeResponse>(
-      `/api/v1/history/xp-over-time?${params.toString()}`
+      `/api/v1/history/xp-over-time?${params.toString()}`,
+      historyRequestConfig,
     );
     return response.data;
   },
 };
+
+/** Sort by `startedAt` descending without `Date` alloc — valid for zero-padded ISO-8601 strings. */
+export function sortWorkoutsByStartedAtDesc(items: WorkoutListItem[]): WorkoutListItem[] {
+  return items.sort((a, b) => (a.startedAt < b.startedAt ? 1 : a.startedAt > b.startedAt ? -1 : 0));
+}
+
+const DEFAULT_FULL_HISTORY_MONTHS = 60;
+
+/**
+ * Full workout history for History tab + preloader (single backend round trip).
+ *
+ * Uses `GET /api/v1/history/workouts/full` so the server returns the real date window instead of
+ * the paginated `/workouts` default (~30 days when month is omitted).
+ */
+export async function fetchAllWorkoutsForUser(
+  userId: number,
+  monthsBack: number = DEFAULT_FULL_HISTORY_MONTHS,
+): Promise<WorkoutListItem[]> {
+  const params = new URLSearchParams({
+    user_id: userId.toString(),
+    months_back: String(Math.min(120, Math.max(1, monthsBack))),
+  });
+  const res = await httpClient.get<FullWorkoutsListResponse>(
+    `/api/v1/history/workouts/full?${params.toString()}`,
+    historyRequestConfig,
+  );
+  const items = res.data?.items ?? [];
+  return sortWorkoutsByStartedAtDesc([...items]);
+}

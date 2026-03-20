@@ -7,9 +7,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import {
   historyService,
+  fetchAllWorkoutsForUser,
   type WeeklySummary,
   type WorkoutListItem,
-  type CalendarActivity,
 } from '../../services/resources/history.service';
 import { CalendarMonth } from '../../components/history/CalendarMonth';
 import { createHistoryStyles } from '../../styles/history.styles';
@@ -74,13 +74,69 @@ function formatDate(dateStr: string): string {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+/**
+ * History grouping must use the calendar day/month embedded in the API string.
+ * `new Date(iso).getMonth()` shifts UTC timestamps across month boundaries (e.g. January → December).
+ */
+/**
+ * Normalize calendar day from API string so `2026-1-5` matches `2026-01-05` and padding matches `getMonthString`.
+ */
+function workoutDayKey(startedAt: string): string {
+  if (!startedAt) return '';
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(startedAt.trim());
+  if (m) {
+    return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  }
+  return startedAt.length >= 10 ? startedAt.slice(0, 10) : startedAt;
+}
+
+function workoutMonthKey(startedAt: string): string {
+  if (!startedAt) return '';
+  const m = /^(\d{4})-(\d{1,2})(?:-|T|$)/.exec(startedAt.trim());
+  if (m) {
+    return `${m[1]}-${m[2].padStart(2, '0')}`;
+  }
+  return startedAt.length >= 7 ? startedAt.slice(0, 7) : startedAt;
+}
+
+function localTodayYmd(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+}
+
+function parseYmd(ymd: string): { y: number; m0: number; d: number } | null {
+  const p = ymd.split('-').map(Number);
+  if (p.length !== 3 || p.some((x) => Number.isNaN(x))) return null;
+  return { y: p[0], m0: p[1] - 1, d: p[2] };
+}
+
 /* ─── Stale-while-revalidate cache ─────────────────────────────────────── */
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const FULL_HISTORY_TTL = 5 * 60 * 1000;
 const summaryCache = new Map<number, { data: WeeklySummary; ts: number }>();
 const monthCache = new Map<string, { activeDates: string[]; allWorkouts: WorkoutListItem[]; ts: number }>();
+/** Full workout list per user — month changes read from here (no extra API). */
+const fullHistoryCache = new Map<number, { items: WorkoutListItem[]; ts: number }>();
 
 function getCacheKey(userId: number, monthStr: string) {
   return `${userId}-${monthStr}`;
+}
+
+function hydrateMonthCachesFromItems(userId: number, items: WorkoutListItem[]) {
+  const byMonth = new Map<string, WorkoutListItem[]>();
+  for (const w of items) {
+    const m = workoutMonthKey(w.startedAt);
+    if (!byMonth.has(m)) byMonth.set(m, []);
+    byMonth.get(m)!.push(w);
+  }
+  for (const [monthStr, list] of byMonth) {
+    const activeDates = [...new Set(list.map((x) => workoutDayKey(x.startedAt)))].sort();
+    monthCache.set(getCacheKey(userId, monthStr), {
+      activeDates,
+      allWorkouts: list,
+      ts: Date.now(),
+    });
+  }
 }
 
 /** Pre-populate from outside (used by DataPreloader). */
@@ -94,6 +150,17 @@ export function populateHistoryMonthCache(
   allWorkouts: WorkoutListItem[],
 ) {
   monthCache.set(getCacheKey(userId, monthStr), { activeDates, allWorkouts, ts: Date.now() });
+}
+
+/** Warm full history + per-month caches (e.g. DataPreloader). */
+export function populateHistoryFullWorkoutsCache(userId: number, items: WorkoutListItem[]) {
+  fullHistoryCache.set(userId, { items, ts: Date.now() });
+  hydrateMonthCachesFromItems(userId, items);
+}
+
+export function invalidateHistoryFullWorkoutsCache(userId?: number) {
+  if (userId != null) fullHistoryCache.delete(userId);
+  else fullHistoryCache.clear();
 }
 
 /* ─── Component ────────────────────────────────────────────────────────── */
@@ -113,95 +180,110 @@ export default function HistoryPage() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [workoutsLoading, setWorkoutsLoading] = useState(false);
+  /** All workouts (all months) — calendar month switching is derived locally. */
+  const [fullHistoryWorkouts, setFullHistoryWorkouts] = useState<WorkoutListItem[]>([]);
+  const [historyReady, setHistoryReady] = useState(false);
 
   const getMonthString = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   const getDateString = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-  useEffect(() => { if (user?.userId) loadData(); }, [user?.userId]);
-  useEffect(() => { if (user?.userId && !loading) loadMonthData(); }, [currentMonth]);
+  useEffect(() => {
+    if (!user?.userId) {
+      setHistoryReady(false);
+      setFullHistoryWorkouts([]);
+      setWeeklySummary(null);
+      setActiveDates([]);
+      setAllWorkouts([]);
+      setWorkouts([]);
+      setSelectedDate(undefined);
+      setLoading(false);
+      return;
+    }
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
+
+  /** Single O(n) pass: month navigation is O(1) lookup instead of filtering the full list each time. */
+  const workoutsByMonth = useMemo(() => {
+    const m = new Map<string, WorkoutListItem[]>();
+    for (const w of fullHistoryWorkouts) {
+      const key = workoutMonthKey(w.startedAt);
+      let arr = m.get(key);
+      if (!arr) {
+        arr = [];
+        m.set(key, arr);
+      }
+      arr.push(w);
+    }
+    return m;
+  }, [fullHistoryWorkouts]);
+
+  /** When month or full list changes, update calendar + list from indexed data (instant). */
+  useEffect(() => {
+    if (!historyReady || !user?.userId) return;
+    const monthStr = getMonthString(currentMonth);
+    const monthItems = workoutsByMonth.get(monthStr) ?? [];
+    const active = [...new Set(monthItems.map((w) => workoutDayKey(w.startedAt)))].sort();
+    setActiveDates(active);
+    setAllWorkouts(monthItems);
+    if (monthItems.length === 0) {
+      setSelectedDate(undefined);
+      setWorkouts([]);
+      return;
+    }
+    const today = localTodayYmd();
+    const sel = active.includes(today) ? today : [...active].sort().reverse()[0];
+    setSelectedDate(sel);
+    setWorkouts(monthItems.filter((w) => workoutDayKey(w.startedAt) === sel));
+  }, [historyReady, user?.userId, currentMonth, workoutsByMonth]);
 
   const loadData = async () => {
     if (!user?.userId) return;
-    const monthStr = getMonthString(currentMonth);
-    const cacheKey = getCacheKey(user.userId, monthStr);
+    const uid = user.userId;
+    const cachedSummary = summaryCache.get(uid);
+    const fh = fullHistoryCache.get(uid);
 
-    const cachedSummary = summaryCache.get(user.userId);
-    const cachedMonth = monthCache.get(cacheKey);
     if (cachedSummary && Date.now() - cachedSummary.ts < CACHE_TTL) {
       setWeeklySummary(cachedSummary.data);
     }
-    if (cachedMonth && Date.now() - cachedMonth.ts < CACHE_TTL) {
-      setActiveDates(cachedMonth.activeDates);
-      setAllWorkouts(cachedMonth.allWorkouts);
-      setWorkouts(cachedMonth.allWorkouts);
-      const today = new Date().toISOString().split('T')[0];
-      setSelectedDate(cachedMonth.activeDates.includes(today) ? today : cachedMonth.activeDates.sort().reverse()[0]);
+
+    if (fh && Date.now() - fh.ts < FULL_HISTORY_TTL) {
+      setFullHistoryWorkouts(fh.items);
+      hydrateMonthCachesFromItems(uid, fh.items);
+      setHistoryReady(true);
+      if (!cachedSummary || Date.now() - cachedSummary.ts >= CACHE_TTL) {
+        try {
+          const summary = await historyService.getWeeklySummary(uid);
+          summaryCache.set(uid, { data: summary, ts: Date.now() });
+          setWeeklySummary(summary);
+        } catch (err) {
+          console.error('[HistoryPage] Error loading weekly summary:', err);
+        }
+      }
+      setLoading(false);
+      return;
     }
-    if (cachedSummary || cachedMonth) setLoading(false);
 
     try {
-      if (!cachedSummary && !cachedMonth) setLoading(true);
-      const [summary, calendar, workoutsList] = await Promise.all([
-        historyService.getWeeklySummary(user.userId),
-        historyService.getCalendarActivity(user.userId, monthStr),
-        historyService.getWorkoutsList(user.userId, undefined, monthStr, 1, 50),
+      setLoading(true);
+      const [summary, allItems] = await Promise.all([
+        historyService.getWeeklySummary(uid),
+        fetchAllWorkoutsForUser(uid),
       ]);
-      summaryCache.set(user.userId, { data: summary, ts: Date.now() });
-      monthCache.set(cacheKey, { activeDates: calendar.activeDates, allWorkouts: workoutsList.items, ts: Date.now() });
+      summaryCache.set(uid, { data: summary, ts: Date.now() });
+      fullHistoryCache.set(uid, { items: allItems, ts: Date.now() });
+      hydrateMonthCachesFromItems(uid, allItems);
       setWeeklySummary(summary);
-      setActiveDates(calendar.activeDates);
-      setAllWorkouts(workoutsList.items);
-      setWorkouts(workoutsList.items);
-      const today = new Date().toISOString().split('T')[0];
-      setSelectedDate(calendar.activeDates.includes(today) ? today : calendar.activeDates.sort().reverse()[0]);
+      setFullHistoryWorkouts(allItems);
+      setHistoryReady(true);
     } catch (err) {
       console.error('[HistoryPage] Error loading data:', err);
+      setFullHistoryWorkouts([]);
+      setHistoryReady(true);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMonthData = async () => {
-    if (!user?.userId) return;
-    const monthStr = getMonthString(currentMonth);
-    const cacheKey = getCacheKey(user.userId, monthStr);
-
-    const cached = monthCache.get(cacheKey);
-    if (cached) {
-      setActiveDates(cached.activeDates);
-      setAllWorkouts(cached.allWorkouts);
-      if (cached.activeDates.length > 0) {
-        const most = [...cached.activeDates].sort().reverse()[0];
-        setSelectedDate(most);
-        setWorkouts(cached.allWorkouts.filter(w => w.startedAt.startsWith(most)));
-      } else {
-        setSelectedDate(undefined);
-        setWorkouts([]);
-      }
-      if (Date.now() - cached.ts < CACHE_TTL) return;
-    }
-
-    try {
-      const [calendar, monthWorkoutsList] = await Promise.all([
-        historyService.getCalendarActivity(user.userId, monthStr),
-        historyService.getWorkoutsList(user.userId, undefined, monthStr, 1, 200),
-      ]);
-      const items = monthWorkoutsList.items;
-      monthCache.set(cacheKey, { activeDates: calendar.activeDates, allWorkouts: items, ts: Date.now() });
-      setActiveDates(calendar.activeDates);
-      setAllWorkouts(items);
-      if (calendar.activeDates.length > 0) {
-        const most = calendar.activeDates.sort().reverse()[0];
-        setSelectedDate(most);
-        setWorkouts(items.filter(w => w.startedAt.startsWith(most)));
-      } else {
-        setSelectedDate(undefined);
-        setWorkouts([]);
-      }
-    } catch (err) {
-      console.error('[HistoryPage] Error loading month:', err);
     }
   };
 
@@ -212,7 +294,7 @@ export default function HistoryPage() {
       setWorkouts(allWorkouts);
       return;
     }
-    const fromCache = allWorkouts.filter(w => w.startedAt.startsWith(date));
+    const fromCache = allWorkouts.filter(w => workoutDayKey(w.startedAt) === date);
     if (fromCache.length > 0) {
       setWorkouts(fromCache);
       return;
@@ -238,21 +320,21 @@ export default function HistoryPage() {
   /* Filter workouts to current week only (Mon-Sun containing today) */
   const weekWorkouts = useMemo(() => {
     if (!weeklySummary) return [];
-    const ws = new Date(weeklySummary.weekStart);
-    const we = new Date(weeklySummary.weekEnd);
-    we.setHours(23, 59, 59, 999);
-    return allWorkouts.filter(w => {
-      const d = new Date(w.startedAt);
-      return d >= ws && d <= we;
+    const wStart = workoutDayKey(weeklySummary.weekStart);
+    const wEnd = workoutDayKey(weeklySummary.weekEnd);
+    return fullHistoryWorkouts.filter((w) => {
+      const day = workoutDayKey(w.startedAt);
+      return day >= wStart && day <= wEnd;
     });
-  }, [allWorkouts, weeklySummary]);
+  }, [fullHistoryWorkouts, weeklySummary]);
 
   /* Weekly bar chart data */
   const weeklyBars = useMemo(() => {
     const counts = [0, 0, 0, 0, 0, 0, 0];
     for (const w of weekWorkouts) {
-      const d = new Date(w.startedAt);
-      const dow = d.getDay();
+      const parts = parseYmd(workoutDayKey(w.startedAt));
+      if (!parts) continue;
+      const dow = new Date(parts.y, parts.m0, parts.d).getDay();
       counts[dow === 0 ? 6 : dow - 1]++;
     }
     const max = Math.max(...counts, 1);
@@ -261,19 +343,14 @@ export default function HistoryPage() {
 
   /* Month aggregates from the active dates + all workouts for stats display */
   const monthStats = useMemo(() => {
-    const m = currentMonth.getMonth();
-    const y = currentMonth.getFullYear();
-    const monthWorkouts = allWorkouts.filter(w => {
-      const d = new Date(w.startedAt);
-      return d.getMonth() === m && d.getFullYear() === y;
-    });
+    const monthWorkouts = allWorkouts;
     return {
       workouts: monthWorkouts.length,
       xp: monthWorkouts.reduce((s, w) => s + (w.xpEarned ?? 0), 0),
       minutes: monthWorkouts.reduce((s, w) => s + (w.durationMinutes ?? 0), 0),
       calories: monthWorkouts.reduce((s, w) => s + (w.calories ?? 0), 0),
     };
-  }, [allWorkouts, currentMonth]);
+  }, [allWorkouts]);
 
   const weekCalories = useMemo(() =>
     weekWorkouts.reduce((s, w) => s + (w.calories ?? 0), 0),

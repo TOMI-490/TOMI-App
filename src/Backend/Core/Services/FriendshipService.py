@@ -16,7 +16,7 @@ from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
 from ...Infrastructure.Repository.AvatarRepository import AvatarRepository
 from ...Infrastructure.Repository.UserBadgeRepository import UserBadgeRepository
-from ...Core.Utils.xp_utils import calculate_xp_progression
+from ...Core.Utils.xp_utils import calculate_xp_progression, level_from_total_xp
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class FriendshipService:
             active_avatar = self.user_avatar_repo.fetchAvatarByUserId(user_id)
             avatar_url = None
             xp = None
-            level = active_avatar.level if active_avatar else None
+            level = None
             current_xp = None
             next_level_xp = None
             xp_progress = None
@@ -63,7 +63,8 @@ class FriendshipService:
                 if avatar_entity and avatar_entity.image_url:
                     avatar_url = avatar_entity.image_url
                 xp = active_avatar.xp
-                if include_gamification and level and xp is not None:
+                level = level_from_total_xp(xp)
+                if include_gamification and xp is not None:
                     prog = calculate_xp_progression(level, xp)
                     current_xp = xp
                     next_level_xp = prog["next_level_xp"]

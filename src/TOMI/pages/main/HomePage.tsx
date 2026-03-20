@@ -228,9 +228,15 @@ export default function HomePage() {
   );
 
   /* Derived data */
-  const { workoutStreak, nextLevelXp } = useMemo(() => {
+  const { workoutStreak, nextLevelXp, levelXpProgressPct } = useMemo(() => {
     const streaks: StreakResponseDto[] = data?.streaks ?? [];
-    return { workoutStreak: streaks.find(s => s.metric === 'workout'), nextLevelXp: tomiData?.nextLevelXp ?? 100 };
+    const tom = tomiData;
+    const raw = tom?.xpProgress ?? 0;
+    return {
+      workoutStreak: streaks.find(s => s.metric === 'workout'),
+      nextLevelXp: tom?.nextLevelXp ?? 100,
+      levelXpProgressPct: Math.min(100, Math.max(0, raw)),
+    };
   }, [data, tomiData]);
 
   /* Start Workout press animation */
@@ -423,7 +429,7 @@ export default function HomePage() {
 
             {/* XP bar */}
             <View style={styles.xpBarTrack}>
-              <View style={[styles.xpBarFill, { width: `${Math.min(((tomiData?.xp ?? 0) / Math.max(nextLevelXp, 1)) * 100, 100)}%` as any, backgroundColor: tomiData?.themeColor ?? T.secondary }]} />
+              <View style={[styles.xpBarFill, { width: `${levelXpProgressPct}%` as any, backgroundColor: tomiData?.themeColor ?? T.secondary }]} />
             </View>
 
             {/* Mood indicators */}

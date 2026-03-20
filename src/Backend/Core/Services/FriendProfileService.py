@@ -17,6 +17,7 @@ from ...Infrastructure.Repository.WorkoutRepository import WorkoutRepository
 from ...Infrastructure.Repository.WorkoutTypeRepository import WorkoutTypeRepository
 from .FriendshipService import FriendshipService
 from .UserService import UserService
+from ..Utils.xp_utils import level_from_total_xp
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,9 @@ class FriendProfileService:
             avatar_info = self._get_friend_avatar_info(friend_id, friend_user.name)
             
             # Calculate XP progression
-            xp_metrics = self._calculate_xp_progression(avatar_info["level"], avatar_info["xp"])
+            xp_metrics = self._calculate_xp_progression(
+                level_from_total_xp(avatar_info["xp"]), avatar_info["xp"]
+            )
             
             # Calculate streak
             streak_info = self._calculate_streak(friend_id)
@@ -59,7 +62,7 @@ class FriendProfileService:
             return FriendDashboardSummaryDTO(
                 userId=friend_user.user_id,
                 displayName=friend_user.name,
-                level=avatar_info["level"],
+                level=level_from_total_xp(avatar_info["xp"]),
                 avatarNickname=avatar_info["nickname"],
                 avatarImageUrl=None,  # Low-fidelity: No avatar images
                 themeColor=None,  # Low-fidelity: No theme colors
@@ -108,7 +111,7 @@ class FriendProfileService:
                 displayName=user.name,
                 email=user.email,
                 bio=profile.bio if profile else "",
-                level=active_avatar.level if active_avatar else 1,
+                level=level_from_total_xp(active_avatar.xp) if active_avatar else 1,
                 xp=active_avatar.xp if active_avatar else 0,
                 nickname=active_avatar.nickname if active_avatar else user.name,
                 avatarImageUrl=None,  # Low-fidelity
@@ -209,7 +212,7 @@ class FriendProfileService:
                 }
             else:
                 return {
-                    "level": friend_avatar.level,
+                    "level": level_from_total_xp(friend_avatar.xp),
                     "xp": friend_avatar.xp,
                     "nickname": friend_avatar.nickname
                 }

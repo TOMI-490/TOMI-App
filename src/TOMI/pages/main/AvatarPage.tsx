@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../locales/i18n';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,6 +37,13 @@ function isUsableUrl(url?: string | null): boolean {
   return true;
 }
 
+/** Safe 0–100 display for mood bars (DB-backed values may be floats). */
+function pct(n: number): number {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0;
+  return Math.max(0, Math.min(100, Math.round(x)));
+}
+
 /* ── Accessory placeholders ─────────────────────────────────────────── */
 const ACCESSORIES = [
   { id: 'crown',   name: 'Crown',    icon: 'crown' as const,               unlocked: true },
@@ -55,15 +63,22 @@ export default function AvatarPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>('customize');
 
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
   const themeColor = avatar?.themeColor ?? T.primary;
   const stageName = avatar?.evolutionStage
     ? STAGE_LABELS[avatar.evolutionStage] ?? avatar.evolutionStage
     : 'Baby';
 
-  const fullnessPercent   = avatar ? 100 - avatar.hungerLevel : 0;
-  const energyPercent     = avatar ? 100 - avatar.sleepinessLevel : 0;
-  const funPercent        = avatar ? 100 - avatar.boredomeLevel : 0;
-  const happinessPercent  = avatar ? avatar.happinessLevel : 0;
+  /* Mood bars: hunger/sleepiness/boredom are “stress” 0–100; fullness/energy/fun are inverse. Values normalized in API layer. */
+  const fullnessPercent  = avatar ? pct(100 - avatar.hungerLevel) : 0;
+  const energyPercent    = avatar ? pct(100 - avatar.sleepinessLevel) : 0;
+  const funPercent       = avatar ? pct(100 - avatar.boredomeLevel) : 0;
+  const happinessPercent = avatar ? pct(avatar.happinessLevel) : 0;
 
   const leaderboard = gamData?.leaderboards?.[0];
   const userRank = leaderboard?.userEntry?.rank ?? 0;

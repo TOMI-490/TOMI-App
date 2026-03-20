@@ -1,5 +1,7 @@
 import { httpClient } from '../httpClient';
 import type { UserResponseDto, UserCreateDto, UserUpdateDto } from '../../models/dto/User.dto';
+import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
+import { normalizeUserAvatarDto } from '../../utils/normalizeUserAvatarDto';
 
 type Id = string | number;
 
@@ -59,13 +61,16 @@ export const userService = {
       profile?: any;
       tomi?: any;
       todayProgress?: any;
-    }>(`/api/v1/dashboard/${userId}`).then(r => {
+    }>(`/api/v1/dashboard/${userId}`).then((r) => {
       console.log('[UserService] ✓ Dashboard data received');
       console.log('[UserService]   - User:', r.data.user?.email);
       console.log('[UserService]   - Profile:', r.data.profile ? 'present' : 'missing');
       console.log('[UserService]   - TOMI:', r.data.tomi ? 'present' : 'missing');
       console.log('[UserService]   - Today Progress:', JSON.stringify(r.data.todayProgress));
-      return r.data;
+      const tomi = r.data.tomi
+        ? normalizeUserAvatarDto(r.data.tomi as UserAvatarResponseDto)
+        : r.data.tomi;
+      return { ...r.data, tomi };
     });
   },
 };

@@ -9,7 +9,7 @@ from ..DTO.UserAvatarDTO import UserAvatarWithDetailsResponseDTO
 from ..DTO.StreakDTO import StreakResponseDTO
 from ..DTO.WorkoutDTO import WorkoutResponseDTO
 from ..DTO.GoalDTO import GoalWithDetailsResponseDTO
-from ..Utils.xp_utils import calculate_xp_progression, calculate_today_progress
+from ..Utils.xp_utils import calculate_xp_progression, calculate_today_progress, reconcile_stored_level_with_xp
 from ...Infrastructure.Repository.UserRepository import UserRepository
 from ...Infrastructure.Repository.ProfileRepository import ProfileRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
@@ -69,15 +69,19 @@ class DashboardService:
                 # Get the avatar details
                 avatar_entity = self.avatar_repo.fetchAvatarById(user_avatar_entity.avatar_id)
                 if avatar_entity:
-                    # Calculate XP progression
-                    xp_progression = calculate_xp_progression(user_avatar_entity.level, user_avatar_entity.xp)
-                    
+                    user_avatar_entity, canonical_level = reconcile_stored_level_with_xp(
+                        self.user_avatar_repo, user_avatar_entity
+                    )
+                    xp_progression = calculate_xp_progression(
+                        canonical_level, user_avatar_entity.xp
+                    )
+
                     user_avatar_dto = UserAvatarWithDetailsResponseDTO(
                         userAvatarId=user_avatar_entity.user_avatar_id,
                         userId=user_avatar_entity.user_id,
                         avatarId=user_avatar_entity.avatar_id,
                         nickname=user_avatar_entity.nickname,
-                        level=user_avatar_entity.level,
+                        level=canonical_level,
                         xp=user_avatar_entity.xp,
                         ageDays=user_avatar_entity.age_days,
                         hungerLevel=user_avatar_entity.hunger_level,

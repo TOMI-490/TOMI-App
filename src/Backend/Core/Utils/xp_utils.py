@@ -7,6 +7,21 @@ from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
+# Must stay in sync with XPService.XP_PER_LEVEL / award_xp level calculation
+DEFAULT_XP_PER_LEVEL = 100
+
+
+def level_from_total_xp(total_xp: int, xp_per_level: int = DEFAULT_XP_PER_LEVEL) -> int:
+    """
+    Derive avatar level from total XP (same rule as XPService.calculate_level).
+    Total XP is the source of truth — stored `level` must match or it is corrected on read/update.
+    """
+    safe_xp = max(0, int(total_xp or 0))
+    if xp_per_level <= 0:
+        return 1
+    computed = (safe_xp // xp_per_level) + 1
+    return max(1, computed)
+
 
 # Generate random XP for a workout (between 5 and 49)
 # Returns:
@@ -85,12 +100,14 @@ def calculate_today_progress(all_workouts: List) -> dict:
 #     - current_level_xp: XP threshold for current level
 #     - next_level_xp: XP threshold for next level
 #     - xp_progress: Progress percentage toward next level (0-100)
-def calculate_xp_progression(level: int, xp: int, xp_per_level: int = 100) -> dict:
+def calculate_xp_progression(level: int, xp: int, xp_per_level: int = DEFAULT_XP_PER_LEVEL) -> dict:
     current_level_xp = (level - 1) * xp_per_level
     next_level_xp = level * xp_per_level
     xp_in_level = xp - current_level_xp
     xp_needed = next_level_xp - current_level_xp
-    xp_progress = (xp_in_level / xp_needed) * 100 if xp_needed > 0 else 0
+    raw_progress = (xp_in_level / xp_needed) * 100 if xp_needed > 0 else 0.0
+    # Clamp when DB level/XP drift (should not happen after reconcile)
+    xp_progress = max(0.0, min(100.0, float(raw_progress)))
     
     return {
         'current_level_xp': current_level_xp,
@@ -99,12 +116,39 @@ def calculate_xp_progression(level: int, xp: int, xp_per_level: int = 100) -> di
     }
 
 
+def xp_progression_from_total_xp(total_xp: int, xp_per_level: int = DEFAULT_XP_PER_LEVEL) -> tuple:
+    """
+    Returns (canonical_level, progression_dict) using XP as source of truth.
+    """
+    lvl = level_from_total_xp(total_xp, xp_per_level)
+    return lvl, calculate_xp_progression(lvl, total_xp, xp_per_level)
+
+
+def reconcile_stored_level_with_xp(user_avatar_repo, entity) -> tuple:
+    """
+    Persist level if it does not match total XP (e.g. manual DB edits). XP is source of truth.
+    Returns (entity_or_updated, canonical_level).
+    """
+    canonical = level_from_total_xp(entity.xp)
+    if canonical != entity.level:
+        logger.info(
+            f"[XP] Correcting avatar level mismatch: user_avatar_id={entity.user_avatar_id} "
+            f"stored_level={entity.level} xp={entity.xp} -> level={canonical}"
+        )
+        updated = user_avatar_repo.updateUserAvatarFields(
+            entity.user_avatar_id,
+            {"level": canonical},
+        )
+        return updated, canonical
+    return entity, canonical
+
+
 # Service for calculating and awarding XP to user avatars
 class XPService:
     
     XP_PER_MINUTE = 5
     MINIMUM_XP = 5
-    XP_PER_LEVEL = 100
+    XP_PER_LEVEL = DEFAULT_XP_PER_LEVEL
     
     def __init__(self, user_avatar_repo):
         self.user_avatar_repo = user_avatar_repo
@@ -132,7 +176,7 @@ class XPService:
     # Returns:
     #   Calculated level
     def calculate_level(self, total_xp: int) -> int:
-        return (total_xp // self.XP_PER_LEVEL) + 1
+        return level_from_total_xp(total_xp, self.XP_PER_LEVEL)
     
     # Award XP to a user's avatar and update level if needed
     # Args:

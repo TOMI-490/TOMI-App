@@ -7,13 +7,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserAvatarResponseDto } from '../models/dto/UserAvatar.dto';
 import { userAvatarService } from '../services/resources/userAvatar.service';
+import { normalizeUserAvatarDto } from '../utils/normalizeUserAvatarDto';
 
 const avatarPageCache = new Map<number, { data: UserAvatarResponseDto; timestamp: number }>();
 const AVATAR_CACHE_DURATION_MS = 60_000;
 
 /** Align with DataPreloader — warm cache so Avatar tab doesn't refetch immediately. */
 export function populateAvatarPageCache(userId: number, data: UserAvatarResponseDto) {
-  avatarPageCache.set(userId, { data, timestamp: Date.now() });
+  avatarPageCache.set(userId, { data: normalizeUserAvatarDto(data), timestamp: Date.now() });
 }
 
 export function invalidateAvatarPageCache(userId?: number) {
@@ -81,5 +82,7 @@ export function useAvatarPage(userId: number | undefined): UseAvatarPageResult {
     fetchAvatar();
   }, [fetchAvatar]);
 
-  return { avatar, loading, error, refresh: () => fetchAvatar(true) };
+  const refresh = useCallback(() => fetchAvatar(true), [fetchAvatar]);
+
+  return { avatar, loading, error, refresh };
 }

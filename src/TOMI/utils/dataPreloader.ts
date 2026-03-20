@@ -8,7 +8,7 @@
 
 import { userService } from '../services/resources/user.service';
 import { communityService } from '../services/community';
-import { historyService } from '../services/resources/history.service';
+import { fetchAllWorkoutsForUser, historyService } from '../services/resources/history.service';
 import { userAvatarService } from '../services/resources/userAvatar.service';
 import { avatarService } from '../services/resources/avatar.service';
 import { workoutTypeService } from '../services/resources/workoutType.service';
@@ -18,7 +18,7 @@ import { populateUserCache } from '../hooks/useCurrentUser';
 import { populateDashboardCache, type DashboardData } from '../hooks/useDashboardData';
 import { populateGamificationCache } from '../hooks/useGamification';
 import { populateAvatarPageCache } from '../hooks/useAvatarPage';
-import { populateHistorySummaryCache, populateHistoryMonthCache } from '../pages/main/HistoryPage';
+import { populateHistorySummaryCache, populateHistoryFullWorkoutsCache } from '../pages/main/HistoryPage';
 import { evolutionService } from '../services/resources/evolution.service';
 
 let preloading = false;
@@ -48,9 +48,6 @@ export async function preloadAllData(authId: string): Promise<void> {
     console.log(`[DataPreloader] User resolved in ${Date.now() - t0}ms`);
 
     const userId = user.userId;
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
     // ── Step 2: fire everything in parallel (same services the tabs use) ──
     const results = await Promise.allSettled([
       // HomePage — dashboard → useDashboard cache
@@ -76,15 +73,12 @@ export async function preloadAllData(authId: string): Promise<void> {
       communityService.getFriendRequests(userId),
       communityService.getLeaderboard(userId, 'friends', 'week'),
 
-      // HistoryPage — warm service + HistoryPage month caches
+      // HistoryPage — full workout list + per-month caches (instant month switching)
       historyService.getWeeklySummary(userId).then((summary) => {
         populateHistorySummaryCache(userId, summary);
       }),
-      Promise.all([
-        historyService.getCalendarActivity(userId, currentMonth),
-        historyService.getWorkoutsList(userId, undefined, currentMonth, 1, 50),
-      ]).then(([calendar, workoutsList]) => {
-        populateHistoryMonthCache(userId, currentMonth, calendar.activeDates, workoutsList.items);
+      fetchAllWorkoutsForUser(userId).then((items) => {
+        populateHistoryFullWorkoutsCache(userId, items);
       }),
 
       avatarService.getAll(),

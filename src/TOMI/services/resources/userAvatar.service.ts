@@ -1,17 +1,22 @@
 import { httpClient } from '../httpClient';
 import { createAPICache } from '../../utils/apiCache';
 import type { UserAvatarResponseDto, UserAvatarCreateDto, UserAvatarUpdateDto } from '../../models/dto/UserAvatar.dto';
+import { normalizeUserAvatarDto } from '../../utils/normalizeUserAvatarDto';
 
 type Id = string | number;
 
 const avatarByUserCache = createAPICache<UserAvatarResponseDto>(120_000); // 2 min
 
+const norm = (d: UserAvatarResponseDto) => normalizeUserAvatarDto(d);
+
 export const userAvatarService = {
   getAll: (params?: Record<string, any>) =>
-    httpClient.get<UserAvatarResponseDto[]>('/api/v1/userAvatars', { params }).then(r => r.data),
+    httpClient
+      .get<UserAvatarResponseDto[]>('/api/v1/userAvatars', { params })
+      .then((r) => r.data.map(norm)),
 
   getById: (id: Id) =>
-    httpClient.get<UserAvatarResponseDto>(`/api/v1/userAvatars/${id}`).then(r => r.data),
+    httpClient.get<UserAvatarResponseDto>(`/api/v1/userAvatars/${id}`).then((r) => norm(r.data)),
 
   getByUserId: async (userId: Id): Promise<UserAvatarResponseDto> => {
     const key = `user:${userId}`;
@@ -22,8 +27,9 @@ export const userAvatarService = {
     const fetchPromise = httpClient
       .get<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}`)
       .then((r) => {
-        avatarByUserCache.set(key, r.data);
-        return r.data;
+        const data = norm(r.data);
+        avatarByUserCache.set(key, data);
+        return data;
       });
 
     if (stale) {
@@ -34,12 +40,12 @@ export const userAvatarService = {
   },
 
   create: (data: UserAvatarCreateDto) =>
-    httpClient.post<UserAvatarResponseDto>('/api/v1/userAvatars', data).then(r => r.data),
+    httpClient.post<UserAvatarResponseDto>('/api/v1/userAvatars', data).then((r) => norm(r.data)),
 
   update: (id: Id, data: UserAvatarUpdateDto) =>
     httpClient.put<UserAvatarResponseDto>(`/api/v1/userAvatars/${id}`, data).then((r) => {
       avatarByUserCache.clear();
-      return r.data;
+      return norm(r.data);
     }),
 
   delete: (id: Id) =>
@@ -51,13 +57,13 @@ export const userAvatarService = {
   feed: (userId: Id) =>
     httpClient.post<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}/feed`).then((r) => {
       avatarByUserCache.invalidate(`user:${userId}`);
-      return r.data;
+      return norm(r.data);
     }),
 
   rest: (userId: Id) =>
     httpClient.post<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}/rest`).then((r) => {
       avatarByUserCache.invalidate(`user:${userId}`);
-      return r.data;
+      return norm(r.data);
     }),
 
   invalidateCache: (userId?: Id) => {
