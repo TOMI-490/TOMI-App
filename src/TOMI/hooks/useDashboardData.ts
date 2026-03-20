@@ -15,7 +15,8 @@ import { WorkoutResponseDto } from '../models/dto/Workout.dto';
 import { userService } from '../services/resources/user.service';
 
 const dashboardCache = new Map<number, { data: DashboardData; timestamp: number }>();
-const CACHE_DURATION = 15_000; // 15 seconds
+/** Keep in sync with DataPreloader: avoid duplicate dashboard hits right after preload. */
+const CACHE_DURATION = 60_000;
 
 /** Mark cache as stale so the next read refreshes in background (data stays visible) */
 export function invalidateDashboardCache() {

@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import useBLE from '../hooks/useBLE';
+import { useWorkoutBle } from '../contexts/WorkoutBleContext';
 import { useSensorDataCollection } from '../hooks/useSensorDataCollection';
-import { smartwatchBleConfig } from '../config/smartwatchBleConfig';
 import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
 import BLEPopup from '../components/ble/blePopup';
 
@@ -38,12 +37,12 @@ export default function SensorScreen() {
   // ==========================================
   // BLE CONNECTION
   // ==========================================
-  const { 
-    data,                    // Real-time sensor data from smartwatch
-    connectionStatus,        // 'disconnected' | 'connecting' | 'connected' | 'error'
-    connectedDevice,         // Connected device info
-    devices,                 // Available devices from scan
-    isScanning,             
+  const {
+    data,
+    connectionStatus,
+    connectedDevice,
+    devices,
+    isScanning,
     startScan,
     connectToDevice,
     disconnect,
@@ -51,7 +50,7 @@ export default function SensorScreen() {
     error,
     bluetoothState,
     writeData,
-  } = useBLE<SmartwatchSensorData>(smartwatchBleConfig);
+  } = useWorkoutBle();
 
   useEffect(() => {
   console.log('[SensorScreen] Connection Status:', connectionStatus);

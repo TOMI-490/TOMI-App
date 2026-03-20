@@ -14,6 +14,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { createLiveWorkoutStyles } from '../../styles/workout/liveWorkoutScreen.styles';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useWorkoutBle } from '../../contexts/WorkoutBleContext';
+import type { FlattenedBLEData } from '../../hooks/useBLE';
+import { useSensorDataCollection } from '../../hooks/useSensorDataCollection';
+import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
+import BLEPopup from '../../components/ble/blePopup';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 
@@ -60,7 +65,7 @@ const LiveWorkoutScreen: React.FC = () => {
   const [avatarData, setAvatarData] = useState<UserAvatarResponseDto | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [heartRate] = useState(72);
+  const [showBlePopup, setShowBlePopup] = useState(false);
   const [distance, setDistance] = useState(0);
   const [locations, setLocations] = useState<LocationPoint[]>([]);
   const [currentLocation, setCurrentLocation] = useState<LocationPoint | null>(null);
@@ -71,6 +76,31 @@ const LiveWorkoutScreen: React.FC = () => {
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const mapRef = useRef<MapView>(null);
+
+  const ble = useWorkoutBle();
+
+  const bleSensorPayload = useMemo((): SmartwatchSensorData | null => {
+    if (!ble.data) return null;
+    const { timestamp: _ts, ...sensor } = ble.data as FlattenedBLEData<SmartwatchSensorData>;
+    return sensor;
+  }, [ble.data]);
+
+  const sensorActive = !isPaused && !isEnding;
+
+  const { currentReading, dataSourceWarning, forceFlush } = useSensorDataCollection({
+    workoutId,
+    isActive: sensorActive,
+    useMockData: false,
+    realTimeData: bleSensorPayload,
+    connectionStatus: ble.connectionStatus,
+    onConnectionLost: () => {
+      console.warn('[LiveWorkout] BLE connection lost during session');
+    },
+  });
+
+  const heartRate =
+    currentReading?.heartRate ?? bleSensorPayload?.heartRate ?? ble.data?.heartRate ?? null;
+  const heartRateDisplay = heartRate != null && heartRate > 0 ? String(heartRate) : '—';
 
   useEffect(() => {
     loadWorkoutType();
@@ -159,12 +189,23 @@ const LiveWorkoutScreen: React.FC = () => {
     setIsPaused(!isPaused);
   };
 
+  const handleOpenBle = async () => {
+    const ok = await ble.requestPermissions();
+    if (!ok) {
+      Alert.alert(t('workout.bluetoothRequired'), t('workout.blePermissionDenied'));
+      return;
+    }
+    setShowBlePopup(true);
+    ble.startScan();
+  };
+
   const handleEndWorkout = () => {
     Alert.alert(t('workout.endWorkoutTitle'), t('workout.endWorkoutMessage'), [
       { text: t('workout.cancel'), style: 'cancel' },
       { text: t('workout.end'), style: 'destructive', onPress: async () => {
         try {
           setIsEnding(true); stopTimer(); stopLocationTracking();
+          forceFlush();
           const prevLevel = avatarData?.level ?? 0;
           const { xpAwarded } = await workoutService.endWorkout(workoutId);
           router.replace({ pathname: '/workout-summary', params: {
@@ -211,6 +252,32 @@ const LiveWorkoutScreen: React.FC = () => {
         </View>
       </View>
 
+      <View style={styles.bleRow}>
+        <TouchableOpacity
+          style={styles.bleChip}
+          onPress={handleOpenBle}
+          disabled={isEnding}
+          activeOpacity={0.75}
+        >
+          <Ionicons
+            name="bluetooth"
+            size={16}
+            color={ble.connectionStatus === 'connected' ? T.success : T.secondary}
+          />
+          <Text style={styles.bleChipText} numberOfLines={1}>
+            {ble.connectionStatus === 'connected' && ble.connectedDevice
+              ? ble.connectedDevice.name || t('workout.watchConnected')
+              : t('workout.connectWatch')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {dataSourceWarning ? (
+        <View style={styles.bleWarning}>
+          <Text style={styles.bleWarningText}>{dataSourceWarning}</Text>
+        </View>
+      ) : null}
+
       {/* ── Map ────────────────────────────────────────── */}
       <View style={styles.mapCard}>
         {showMap && currentLocation ? (
@@ -238,7 +305,7 @@ const LiveWorkoutScreen: React.FC = () => {
               <View style={styles.mapPill}>
                 <Ionicons name="heart" size={14} color={T.danger} />
                 <View>
-                  <Text style={styles.mapPillValue}>{heartRate}</Text>
+                  <Text style={styles.mapPillValue}>{heartRateDisplay}</Text>
                   <Text style={styles.mapPillUnit}>bpm</Text>
                 </View>
               </View>
@@ -255,6 +322,16 @@ const LiveWorkoutScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {!(showMap && currentLocation) ? (
+        <View style={styles.inlineHrRow}>
+          <Ionicons name="heart" size={16} color={T.danger} />
+          <View>
+            <Text style={styles.inlineHrValue}>{heartRateDisplay}</Text>
+            <Text style={styles.inlineHrUnit}>bpm</Text>
+          </View>
+        </View>
+      ) : null}
 
       {/* ── Stats content ──────────────────────────────── */}
       <View style={styles.content}>
@@ -332,6 +409,8 @@ const LiveWorkoutScreen: React.FC = () => {
           {isEnding ? <ActivityIndicator color={T.danger} /> : <Ionicons name="stop" size={22} color={T.danger} />}
         </TouchableOpacity>
       </View>
+
+      <BLEPopup visible={showBlePopup} onClose={() => setShowBlePopup(false)} bleHook={ble} />
     </View>
   );
 };

@@ -7,7 +7,8 @@ import { useState, useEffect } from 'react';
 import { gamificationService, GamificationData } from '../services/gamification';
 
 const gamificationCache = new Map<number, { data: GamificationData; timestamp: number }>();
-const CACHE_DURATION = 30000;
+/** Align with dashboard / avatar caches after DataPreloader. */
+const CACHE_DURATION = 60_000;
 
 /** Pre-populate the gamification cache from outside the hook (used by DataPreloader). */
 export function populateGamificationCache(userId: number, data: GamificationData) {

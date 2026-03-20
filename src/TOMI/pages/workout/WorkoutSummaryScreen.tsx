@@ -13,6 +13,7 @@ import { createWorkoutSummaryStyles } from '../../styles/workout/workoutSummaryS
 import { avatarStateStore } from '../../utils/avatarStateStore';
 import { invalidateUserCache } from '../../hooks/useCurrentUser';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
+import { invalidateAvatarPageCache } from '../../hooks/useAvatarPage';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const WorkoutSummaryScreen: React.FC = () => {
@@ -102,6 +103,7 @@ const WorkoutSummaryScreen: React.FC = () => {
     // Invalidate caches so the next read fetches fresh data from the API
     invalidateUserCache();
     invalidateDashboardCache();
+    if (user?.userId != null) invalidateAvatarPageCache(user.userId);
     await new Promise(resolve => setTimeout(resolve, 300));
     router.replace('/(tabs)');
   };

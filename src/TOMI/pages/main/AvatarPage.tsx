@@ -11,6 +11,7 @@ import { useGamification } from '../../hooks/useGamification';
 import { evolutionService } from '../../services/resources/evolution.service';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
+import { invalidateAvatarPageCache } from '../../hooks/useAvatarPage';
 import { EvolutionModal } from '../../components/gamification';
 import type { EvolutionStateDto, EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 import { createAvatarPageStyles } from '../../styles/home/avatarPage.styles';
@@ -382,6 +383,7 @@ function EvolutionContent({
       if (resp.success) {
         userAvatarService.invalidateCache();
         invalidateDashboardCache();
+        invalidateAvatarPageCache(userId);
         setShowEvoModal(false);
         const freshState = await evolutionService.getEvolutionState(userId, true);
         setEvoState(freshState);

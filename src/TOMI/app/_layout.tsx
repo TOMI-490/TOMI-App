@@ -5,6 +5,7 @@ import { Linking } from 'react-native';
 import { useFonts } from 'expo-font';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
+import { WorkoutBleProvider } from '../contexts/WorkoutBleContext';
 import { supabase } from '../services/core/supabase';
 import { initializeLocalDatabase } from '../services/localDatabase/localDb';
 import { FONT_MAP } from '../constants/fonts';
@@ -97,6 +98,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
     <AuthProvider>
+      <WorkoutBleProvider>
       <DataPreloader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
@@ -118,6 +120,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      </WorkoutBleProvider>
     </AuthProvider>
     </ThemeProvider>
   );

@@ -56,6 +56,47 @@ export function createWorkoutStartStyles(T: TomiThemeColors) {
     textTransform: 'uppercase', letterSpacing: 0.7, textAlign: 'center', marginTop: 3,
   },
 
+  /* ── Watch / BLE gate ──────────────────────────── */
+  watchGateCard: {
+    ...card,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(78,155,232,0.25)',
+    backgroundColor: T.secondaryTint,
+  },
+  watchGateTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+  watchGateIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: T.cardBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  watchGateTitle: { fontSize: 16, fontFamily: F.bold, color: T.textPrimary },
+  watchGateHint: {
+    fontSize: 12,
+    fontFamily: F.regular,
+    color: T.textMuted,
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  watchGateStatus: { fontSize: 12, fontFamily: F.semiBold, marginTop: 6 },
+  watchGateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: T.secondary,
+    borderRadius: 14,
+    paddingVertical: 12,
+    ...shadowSm,
+  },
+  watchGateBtnText: { fontSize: 14, fontFamily: F.bold, color: '#FFF' },
+  btnDisabledOpacity: { opacity: 0.45 },
+
   /* ── Quick Start ───────────────────────────────── */
   quickStartCard: {
     ...card, borderRadius: 20, padding: 18,

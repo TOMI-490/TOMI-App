@@ -6,9 +6,8 @@
  *  2. Stats grid (Level · Streak · XP)
  *  3. Avatar Living-Room card + mood indicators
  *  4. Start Workout CTA
- *  5. Daily Challenges (Supabase: daily_quests)
- *  6. Achievements Preview (Supabase: achievements)
- *  7. Rewards Shop CTA
+ *  5. Daily Challenges (workout types + today's history)
+ *  6. Badges (gamification API)
  *
  * All existing hooks and overlay effects (XpToast, LevelUpModal) are preserved.
  * Daily quests and achievements come from the new useHomeQuests hook.
@@ -35,50 +34,16 @@ import { useGamification } from '../../hooks/useGamification';
 import { useTranslation } from '../../locales/i18n';
 import { StreakResponseDto } from '../../models/dto/Streak.dto';
 import { createHomePageStyles } from '../../styles/home/homePage.styles';
-import type { TomiThemeColors } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { avatarStateStore } from '../../utils/avatarStateStore';
 import { XpToast, LevelUpModal, EvolutionModal } from '../../components/gamification';
 import { evolutionService } from '../../services/resources/evolution.service';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
-import { DailyQuest } from '../../services/resources/homeScreen.service';
+import { invalidateAvatarPageCache } from '../../hooks/useAvatarPage';
+import { DailyChallengesList } from '../../components/DailyChallengesList';
 import { EarnedBadge, UpcomingBadge } from '../../services/gamification';
 import type { EvolutionNodeDto } from '../../models/dto/Evolution.dto';
-
-/* ---------------------------------------------------------------------------
-   Icon registry
-   --------------------------------------------------------------------------- */
-type IconDef =
-  | { lib: 'Ionicons'; name: React.ComponentProps<typeof Ionicons>['name'] }
-  | { lib: 'MaterialCommunityIcons'; name: React.ComponentProps<typeof MaterialCommunityIcons>['name'] };
-
-const ICON_REGISTRY: Record<string, IconDef> = {
-  trophy:   { lib: 'Ionicons', name: 'trophy' },
-  flame:    { lib: 'Ionicons', name: 'flame' },
-  star:     { lib: 'Ionicons', name: 'star' },
-  heart:    { lib: 'Ionicons', name: 'heart' },
-  barbell:  { lib: 'Ionicons', name: 'barbell' },
-  run:      { lib: 'MaterialCommunityIcons', name: 'run' },
-  dumbbell: { lib: 'MaterialCommunityIcons', name: 'dumbbell' },
-  medal:    { lib: 'MaterialCommunityIcons', name: 'medal' },
-  zap:      { lib: 'MaterialCommunityIcons', name: 'lightning-bolt' },
-  default:  { lib: 'Ionicons', name: 'star-outline' },
-};
-
-function RegistryIcon({ name, size, color }: { name?: string; size: number; color: string }) {
-  const def = (name && ICON_REGISTRY[name]) || ICON_REGISTRY.default;
-  if (def.lib === 'Ionicons') {
-    return <Ionicons name={def.name as React.ComponentProps<typeof Ionicons>['name']} size={size} color={color} />;
-  }
-  return (
-    <MaterialCommunityIcons
-      name={def.name as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-      size={size}
-      color={color}
-    />
-  );
-}
 
 /* ---------------------------------------------------------------------------
    Helpers
@@ -88,15 +53,6 @@ function getGreetingLabel(): string {
   if (h < 12) return 'Good Morning';
   if (h < 18) return 'Good Afternoon';
   return 'Good Evening';
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '');
-  return [0, 2, 4].map(i => parseInt(h.substring(i, i + 2), 16)).join(',');
-}
-
-function resolveQuestColor(token: string, T: TomiThemeColors): string {
-  return ({ primary: T.primary, secondary: T.secondary, warning: T.warning, success: T.success, danger: T.danger } as Record<string, string>)[token] ?? T.primary;
 }
 
 type HomeStyles = ReturnType<typeof createHomePageStyles>;
@@ -117,16 +73,6 @@ function SkeletonBlock({ height, width = '100%', styles }: { height: number; wid
   return <Animated.View style={[styles.skeletonLine, { height, width: width as number, opacity }]} />;
 }
 
-function QuestSkeleton({ styles }: { styles: HomeStyles }) {
-  return (
-    <View style={styles.skeletonCard} accessible accessibilityLabel="Loading">
-      <SkeletonBlock height={16} width="70%" styles={styles} />
-      <SkeletonBlock height={10} width="40%" styles={styles} />
-      <SkeletonBlock height={8} styles={styles} />
-    </View>
-  );
-}
-
 function AchievementSkeleton({ itemWidth, styles }: { itemWidth: string; styles: HomeStyles }) {
   const opacity = useRef(new Animated.Value(0.45)).current;
   useEffect(() => {
@@ -142,36 +88,6 @@ function AchievementSkeleton({ itemWidth, styles }: { itemWidth: string; styles:
       <View style={[styles.achievementIconBox, styles.achievementIconBoxLocked]} />
       <View style={[styles.skeletonLineShort, { alignSelf: 'center' }]} />
     </Animated.View>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   QuestCard
-   --------------------------------------------------------------------------- */
-function QuestCard({ quest, styles, T }: { quest: DailyQuest; styles: HomeStyles; T: TomiThemeColors }) {
-  const pct         = quest.max_value > 0 ? Math.min(quest.progress / quest.max_value, 1) : 0;
-  const accentColor = resolveQuestColor(quest.color_token, T);
-  const iconBg      = `rgba(${hexToRgb(accentColor)},0.18)`;
-
-  return (
-    <View style={styles.questCard}>
-      <View style={[styles.questIconBox, { backgroundColor: iconBg }]}>
-        <RegistryIcon name={quest.icon_name} size={22} color={accentColor} />
-      </View>
-      <View style={styles.questContent}>
-        <View style={styles.questTitleRow}>
-          <Text style={styles.questTitle} numberOfLines={1}>{quest.title}</Text>
-          <View style={styles.questXpChip}>
-            <Ionicons name="flash" size={11} color={T.warning} />
-            <Text style={styles.questXpText}>+{quest.xp_reward}</Text>
-          </View>
-        </View>
-        <Text style={styles.questProgressText}>{quest.progress} / {quest.max_value}</Text>
-        <View style={styles.questBarTrack}>
-          <View style={[styles.questBarFill, { width: `${pct * 100}%` as any, backgroundColor: quest.completed ? T.success : accentColor }]} />
-        </View>
-      </View>
-    </View>
   );
 }
 
@@ -230,7 +146,8 @@ export default function HomePage() {
 
   const { data, loading, error, refresh } = useDashboard(user);
   const { workouts: pastWorkouts }        = usePastWorkouts(user?.userId, 5);
-  const { dailyQuests, loading: questsLoading, error: questsError } = useHomeQuests(user?.userId);
+  const { dailyQuests, loading: questsLoading, error: questsError, refresh: refreshDailyQuests } =
+    useHomeQuests(user?.userId);
   const { data: gamificationData, loading: gamLoading } = useGamification(user?.userId);
   const { t } = useTranslation();
 
@@ -249,6 +166,7 @@ export default function HomePage() {
       if (resp.success) {
         userAvatarService.invalidateCache();
         invalidateDashboardCache();
+        invalidateAvatarPageCache(user.userId);
         tomiEffects.dismissEvolutionModal();
         refresh();
       }
@@ -275,13 +193,13 @@ export default function HomePage() {
       postWorkoutTimerRef.current = setTimeout(() => setAvatarState('active'), 8000);
       // Force an immediate dashboard refresh so XP/level update is visible
       refresh();
+      void refreshDailyQuests();
       avatarStateStore.clearPostWorkoutData();
     } else {
       setAvatarState(prev => (prev === 'post_workout' ? prev : 'active'));
     }
     return () => { setAvatarState('idle'); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []));
+  }, [refresh, refreshDailyQuests]));
 
   const prevWorkoutCountRef = useRef<number>(0);
   const lastRefreshRef      = useRef<number>(0);
@@ -298,11 +216,16 @@ export default function HomePage() {
 
   useEffect(() => () => { if (postWorkoutTimerRef.current) clearTimeout(postWorkoutTimerRef.current); }, []);
 
-  useFocusEffect(useCallback(() => {
-    const now = Date.now();
-    if (user && now - lastRefreshRef.current >= 2000) { lastRefreshRef.current = now; refresh(); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId]));
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (user && now - lastRefreshRef.current >= 2000) {
+        lastRefreshRef.current = now;
+        refresh();
+        void refreshDailyQuests();
+      }
+    }, [user, refresh, refreshDailyQuests]),
+  );
 
   /* Derived data */
   const { workoutStreak, nextLevelXp } = useMemo(() => {
@@ -551,26 +474,13 @@ export default function HomePage() {
         <View style={styles.sectionGap} />
 
         {/* Section 5 — Daily Challenges */}
-        <View>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleRow}>
-              <View style={styles.sectionTitleAccent} />
-              <Text style={styles.sectionTitle}>Daily Challenges</Text>
-            </View>
-            <TouchableOpacity style={styles.viewAllBtn} onPress={() => router.push('/(tabs)/history')} accessibilityRole="button">
-              <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="chevron-forward" size={13} color={T.primary} />
-            </TouchableOpacity>
-          </View>
-          {questsError && !questsLoading && (
-            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>Daily quests are coming soon.</Text></View>
-          )}
-          {questsLoading && <><QuestSkeleton styles={styles} /><QuestSkeleton styles={styles} /></>}
-          {!questsLoading && !questsError && dailyQuests.length === 0 && (
-            <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>No quests for today — check back later!</Text></View>
-          )}
-          {!questsLoading && dailyQuests.map(q => <QuestCard key={q.id} quest={q} styles={styles} T={T} />)}
-        </View>
+        <DailyChallengesList
+          variant="home"
+          dailyQuests={dailyQuests}
+          loading={questsLoading}
+          error={questsError}
+          onViewAll={() => router.push('/(tabs)/workout')}
+        />
 
         <View style={styles.sectionGap} />
 
@@ -603,24 +513,6 @@ export default function HomePage() {
               <Text style={styles.inlineErrorText}>Complete a workout to earn your first badge!</Text>
             </View>
           )}
-        </View>
-
-        <View style={styles.sectionGap} />
-
-        {/* Section 7 — Rewards Shop CTA */}
-        <View style={styles.rewardsCard}>
-          <View style={styles.rewardsGloss} pointerEvents="none" />
-          <View style={styles.rewardsLeft}>
-            <Text style={styles.rewardsTitle}>Rewards Shop</Text>
-            <Text style={styles.rewardsSubtitle}>Unlock exclusive items with your XP</Text>
-            <TouchableOpacity style={styles.rewardsShopBtn} onPress={() => console.log('TODO: rewards shop')} accessibilityRole="button">
-              <Text style={styles.rewardsShopBtnText}>Browse Shop</Text>
-              <Ionicons name="arrow-forward" size={16} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.rewardsIconBox}>
-            <Ionicons name="star" size={32} color={T.secondary} />
-          </View>
         </View>
 
         <View style={styles.sectionGap} />

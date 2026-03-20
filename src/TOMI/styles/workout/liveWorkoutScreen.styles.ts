@@ -38,6 +38,39 @@ export function createLiveWorkoutStyles(T: TomiThemeColors) {
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   statusText: { fontSize: 12, fontFamily: F.semiBold },
 
+  bleRow: {
+    paddingHorizontal: 20,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  bleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: T.cardBgAlt,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.borderLight,
+  },
+  bleChipText: {
+    fontSize: 13,
+    fontFamily: F.semiBold,
+    color: T.textSecondary,
+    maxWidth: 220,
+  },
+  bleWarning: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: T.warningTint,
+  },
+  bleWarningText: { fontSize: 12, fontFamily: F.medium, color: T.warning, lineHeight: 17 },
+
   /* ── Map card ────────────────────────────────────── */
   mapCard: {
     marginHorizontal: 18, borderRadius: 22, overflow: 'hidden',
@@ -65,6 +98,25 @@ export function createLiveWorkoutStyles(T: TomiThemeColors) {
   },
   mapPillValue: { fontSize: 17, fontFamily: F.black, color: T.textPrimary },
   mapPillUnit: { fontSize: 9, fontFamily: F.bold, color: T.textMuted, textTransform: 'uppercase' },
+
+  inlineHrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 18,
+    marginTop: 12,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: T.cardBg,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.borderLight,
+    ...shadowSm,
+  },
+  inlineHrValue: { fontSize: 18, fontFamily: F.black, color: T.textPrimary },
+  inlineHrUnit: { fontSize: 11, fontFamily: F.semiBold, color: T.textMuted },
 
   /* ── Content area ────────────────────────────────── */
   content: { flex: 1, paddingHorizontal: 18 },

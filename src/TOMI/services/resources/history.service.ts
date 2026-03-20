@@ -68,6 +68,18 @@ const weeklySummaryCache = createAPICache<WeeklySummary>(60_000);
 const calendarCache      = createAPICache<CalendarActivity>(120_000);
 const workoutsListCache  = createAPICache<PaginatedWorkouts>(60_000);
 
+/**
+ * Mark cached "workouts list" entries stale for a user + calendar day (YYYY-MM-DD).
+ * Call after a workout completes so daily challenge progress refreshes.
+ */
+export function invalidateWorkoutsListForUserDay(userId: number, yyyyMmDd: string) {
+  for (let page = 1; page <= 10; page++) {
+    for (const pageSize of [10, 20, 50, 100]) {
+      workoutsListCache.invalidate(`wl:${userId}:${yyyyMmDd}::${page}:${pageSize}`);
+    }
+  }
+}
+
 export const historyService = {
   /**
    * Get weekly summary with comparison to previous week

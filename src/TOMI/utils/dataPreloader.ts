@@ -17,7 +17,9 @@ import { gamificationService } from '../services/gamification';
 import { populateUserCache } from '../hooks/useCurrentUser';
 import { populateDashboardCache, type DashboardData } from '../hooks/useDashboardData';
 import { populateGamificationCache } from '../hooks/useGamification';
+import { populateAvatarPageCache } from '../hooks/useAvatarPage';
 import { populateHistorySummaryCache, populateHistoryMonthCache } from '../pages/main/HistoryPage';
+import { evolutionService } from '../services/resources/evolution.service';
 
 let preloading = false;
 
@@ -49,24 +51,32 @@ export async function preloadAllData(authId: string): Promise<void> {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    // ── Step 2: fire everything in parallel ───────────────────
+    // ── Step 2: fire everything in parallel (same services the tabs use) ──
     const results = await Promise.allSettled([
-      // HomePage — dashboard (also populates hook cache)
+      // HomePage — dashboard → useDashboard cache
       userService.getDashboard(userId).then((data: DashboardData) => {
         populateDashboardCache(userId, data);
       }),
 
-      // HomePage + AvatarPage — gamification (also populates hook cache)
+      // HomePage + AvatarPage — gamification → useGamification cache
       gamificationService.getGamificationData(userId).then((data) => {
         populateGamificationCache(userId, data);
       }),
+
+      // AvatarPage — same as useAvatarPage / userAvatarService.getByUserId
+      userAvatarService.getByUserId(userId).then((avatar) => {
+        populateAvatarPageCache(userId, avatar);
+      }),
+
+      // AvatarPage evolution tab — evolutionService APICache (same as AvatarPage / Evolve flows)
+      evolutionService.getEvolutionState(userId),
 
       // CommunityPage — friends & requests
       communityService.getFriends(userId),
       communityService.getFriendRequests(userId),
       communityService.getLeaderboard(userId, 'friends', 'week'),
 
-      // HistoryPage — warm both service-level AND component-level caches
+      // HistoryPage — warm service + HistoryPage month caches
       historyService.getWeeklySummary(userId).then((summary) => {
         populateHistorySummaryCache(userId, summary);
       }),
@@ -77,11 +87,9 @@ export async function preloadAllData(authId: string): Promise<void> {
         populateHistoryMonthCache(userId, currentMonth, calendar.activeDates, workoutsList.items);
       }),
 
-      // AvatarPage
-      userAvatarService.getByUserId(userId),
       avatarService.getAll(),
 
-      // HomePage — workout types
+      // Workout tab — types list
       workoutTypeService.getAll(),
     ]);
 

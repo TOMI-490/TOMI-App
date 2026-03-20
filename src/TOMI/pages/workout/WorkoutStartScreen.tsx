@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../locales/i18n';
 import { workoutTypeService } from '../../services/resources/workoutType.service';
 import { workoutService } from '../../services/resources/workout.service';
@@ -12,6 +12,10 @@ import { ScreenWrapper } from '../../components/ScreenWrapper';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import { createWorkoutStartStyles } from '../../styles/workout/workoutStartScreen.styles';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useWorkoutBle } from '../../contexts/WorkoutBleContext';
+import BLEPopup from '../../components/ble/blePopup';
+import { useHomeQuests } from '../../hooks/useHomeQuests';
+import { DailyChallengesList } from '../../components/DailyChallengesList';
 
 /* ─── Icon helpers ──────────────────────────────────────────────────────── */
 type IconDef =
@@ -117,11 +121,23 @@ const WorkoutStartScreen = () => {
   const { authId } = useAuth();
   const { user, loading: userLoading } = useCurrentUser(authId || undefined);
   const { workouts: pastWorkouts } = usePastWorkouts(user?.userId, 5);
+  const { dailyQuests, loading: questsLoading, error: questsError, refresh: refreshDailyQuests } =
+    useHomeQuests(user?.userId);
 
   const [workoutTypes, setWorkoutTypes] = useState<WorkoutTypeResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingId, setStartingId] = useState<number | null>(null);
+  const [showBlePopup, setShowBlePopup] = useState(false);
   const startingRef = useRef(false);
+
+  const ble = useWorkoutBle();
+  const watchConnected = ble.connectionStatus === 'connected';
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshDailyQuests();
+    }, [refreshDailyQuests]),
+  );
 
   useEffect(() => { loadWorkoutTypes(); }, []);
 
@@ -137,8 +153,25 @@ const WorkoutStartScreen = () => {
     }
   };
 
+  const handleOpenBle = async () => {
+    const ok = await ble.requestPermissions();
+    if (!ok) {
+      Alert.alert(t('workout.bluetoothRequired'), t('workout.blePermissionDenied'));
+      return;
+    }
+    setShowBlePopup(true);
+    ble.startScan();
+  };
+
   const handleStartWorkout = async (workoutTypeId: number) => {
     if (startingRef.current || !user) return;
+    if (!watchConnected) {
+      Alert.alert(t('workout.watchRequiredTitle'), t('workout.watchRequiredHint'), [
+        { text: t('workout.cancel'), style: 'cancel' },
+        { text: t('workout.connectWatch'), onPress: () => void handleOpenBle() },
+      ]);
+      return;
+    }
     try {
       startingRef.current = true;
       setStartingId(workoutTypeId);
@@ -205,6 +238,33 @@ const WorkoutStartScreen = () => {
           </View>
         </View>
 
+        {/* ── Smartwatch required ───────────────────────────── */}
+        <View style={styles.watchGateCard}>
+          <View style={styles.watchGateTop}>
+            <View style={styles.watchGateIconBox}>
+              <Ionicons name="watch-outline" size={22} color={T.secondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.watchGateTitle}>{t('workout.watchRequiredTitle')}</Text>
+              <Text style={styles.watchGateHint}>{t('workout.watchRequiredHint')}</Text>
+              <Text
+                style={[
+                  styles.watchGateStatus,
+                  { color: watchConnected ? T.success : T.warning },
+                ]}
+              >
+                {watchConnected
+                  ? `✓ ${ble.connectedDevice?.name || t('workout.watchConnected')}`
+                  : t('workout.watchNotConnected')}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.watchGateBtn} onPress={handleOpenBle} activeOpacity={0.85}>
+            <Ionicons name="bluetooth" size={18} color="#FFF" />
+            <Text style={styles.watchGateBtnText}>{t('workout.openWatchConnection')}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Stats row ─────────────────────────────────────── */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -241,7 +301,11 @@ const WorkoutStartScreen = () => {
               <Text style={styles.quickStartSubtitle}>Track any outdoor activity</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.quickStartBtn} onPress={handleQuickStart} disabled={startingId !== null}>
+          <TouchableOpacity
+            style={[styles.quickStartBtn, !watchConnected && styles.btnDisabledOpacity]}
+            onPress={handleQuickStart}
+            disabled={startingId !== null || !watchConnected}
+          >
             {startingId !== null ? (
               <ActivityIndicator color="#FFF" size="small" />
             ) : (
@@ -273,6 +337,19 @@ const WorkoutStartScreen = () => {
               <Text style={styles.categoryCount}>{categoryCounts[cat.name] || 0} workouts</Text>
             </View>
           ))}
+        </View>
+
+        {/* ── Daily challenges (same picks as Home) ─────────── */}
+        <View style={{ marginBottom: 8 }}>
+          <DailyChallengesList
+            variant="workout"
+            dailyQuests={dailyQuests}
+            loading={questsLoading}
+            error={questsError}
+            watchConnected={watchConnected}
+            startingWorkoutTypeId={startingId}
+            onStartChallenge={handleStartWorkout}
+          />
         </View>
 
         {/* ── Featured ──────────────────────────────────────── */}
@@ -320,7 +397,11 @@ const WorkoutStartScreen = () => {
                     <MaterialCommunityIcons name="lightning-bolt" size={13} color={T.primary} />
                     <Text style={styles.xpChipText}>+{fw.xp} XP</Text>
                   </View>
-                  <TouchableOpacity style={styles.startBtn} onPress={() => handleStartWorkout(fw.id)} disabled={startingId !== null}>
+                  <TouchableOpacity
+                    style={[styles.startBtn, !watchConnected && styles.btnDisabledOpacity]}
+                    onPress={() => handleStartWorkout(fw.id)}
+                    disabled={startingId !== null || !watchConnected}
+                  >
                     {startingId === fw.id ? (
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
@@ -360,7 +441,11 @@ const WorkoutStartScreen = () => {
                     <MaterialCommunityIcons name="lightning-bolt" size={14} color={T.primary} />
                     <Text style={styles.pastXpText}>+{pw.xpAwarded ?? 0}</Text>
                   </View>
-                  <TouchableOpacity style={styles.pastPlayBtn} onPress={() => handleStartWorkout(pw.workoutTypeId)}>
+                  <TouchableOpacity
+                    style={[styles.pastPlayBtn, !watchConnected && styles.btnDisabledOpacity]}
+                    onPress={() => handleStartWorkout(pw.workoutTypeId)}
+                    disabled={!watchConnected}
+                  >
                     <Ionicons name="play" size={16} color={T.primary} />
                   </TouchableOpacity>
                 </View>
@@ -383,6 +468,8 @@ const WorkoutStartScreen = () => {
         </View>
 
       </ScrollView>
+
+      <BLEPopup visible={showBlePopup} onClose={() => setShowBlePopup(false)} bleHook={ble} />
     </ScreenWrapper>
   );
 };
