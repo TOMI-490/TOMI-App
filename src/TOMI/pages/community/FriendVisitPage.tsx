@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,8 +17,8 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../locales/i18n';
 import { communityService } from '../../services/community';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
-import { TOMI_THEME as T } from '../../constants/theme';
-import { friendProfileStyles as styles } from '../../styles/friendProfile.styles';
+import { useTheme } from '../../contexts/ThemeContext';
+import { createFriendProfileStyles } from '../../styles/friendProfile.styles';
 import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
 import type { 
   FriendDashboardSummary,
@@ -27,6 +27,8 @@ import type {
 
 export default function FriendVisitPage() {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createFriendProfileStyles(T), [T]);
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);

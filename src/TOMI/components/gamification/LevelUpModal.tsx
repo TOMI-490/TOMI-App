@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, Modal, TouchableOpacity, Animated, Easing } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '../../locales/i18n';
-import { levelUpModalStyles as styles } from '../../styles/gamification/levelUpModal.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createLevelUpModalStyles } from '../../styles/gamification/levelUpModal.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface LevelUpModalProps {
   visible: boolean;
@@ -11,26 +11,34 @@ interface LevelUpModalProps {
   onDismiss: () => void;
 }
 
-const PARTICLE_COLORS = [T.primary, T.secondary, T.success, T.warning, '#FFD700', T.primaryLight];
-
 export const LevelUpModal: React.FC<LevelUpModalProps> = ({ visible, level, onDismiss }) => {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createLevelUpModalStyles(colors), [colors]);
 
   const scaleAnim = useRef(new Animated.Value(0.4)).current;
   const badgeScale = useRef(new Animated.Value(0)).current;
   const badgeRotate = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const particles = useMemo(() =>
-    Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      anim: new Animated.Value(0),
-      x: 15 + Math.random() * 70,
-      color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-      size: 8 + Math.random() * 10,
-      delay: i * 60,
-    })),
-  []);
+  const particleColors = useMemo(
+    () =>
+      [colors.primary, colors.secondary, colors.success, colors.warning, '#FFD700', colors.primaryLight],
+    [colors],
+  );
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        id: i,
+        anim: new Animated.Value(0),
+        x: 15 + Math.random() * 70,
+        color: particleColors[i % particleColors.length],
+        size: 8 + Math.random() * 10,
+        delay: i * 60,
+      })),
+    [particleColors],
+  );
 
   useEffect(() => {
     if (visible) {

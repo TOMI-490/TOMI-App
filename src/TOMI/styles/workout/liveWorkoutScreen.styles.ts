@@ -1,25 +1,26 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-const shadowSm = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
-} as const;
+export function createLiveWorkoutStyles(T: TomiThemeColors) {
+  const shadowSm = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
+  } as const;
 
-const shadowMd = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.20, shadowRadius: 14, elevation: 6,
-} as const;
+  const shadowMd = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.20, shadowRadius: 14, elevation: 6,
+  } as const;
 
-const card = { backgroundColor: '#FFFFFF', borderRadius: 22, ...shadowSm } as const;
+  const card = { backgroundColor: T.cardBg, borderRadius: 22, ...shadowSm } as const;
 
-export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#EDEAE3' },
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.background },
   loadingContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EDEAE3',
+    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.background,
   },
 
   /* ── Header ──────────────────────────────────────── */
@@ -32,7 +33,7 @@ export const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 16,
     backgroundColor: T.primaryTint, justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { fontSize: 24, fontFamily: F.headline, color: '#1A1A1A', letterSpacing: -0.6 },
+  headerTitle: { fontSize: 24, fontFamily: F.headline, color: T.textPrimary, letterSpacing: -0.6 },
   headerStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   statusText: { fontSize: 12, fontFamily: F.semiBold },
@@ -45,7 +46,7 @@ export const styles = StyleSheet.create({
   },
   map: { flex: 1 },
   noMapPlaceholder: {
-    flex: 1, backgroundColor: '#F5F2ED', borderRadius: 22,
+    flex: 1, backgroundColor: T.cardBgAlt, borderRadius: 22,
     justifyContent: 'center', alignItems: 'center',
   },
   placeholderAvatar: { width: 130, height: 130 },
@@ -136,8 +137,9 @@ export const styles = StyleSheet.create({
   pauseBtnText: { fontSize: 17, fontFamily: F.bold, color: '#FFFFFF' },
   endBtn: {
     width: 56, height: 56, borderRadius: 18,
-    backgroundColor: '#FFF', borderWidth: 2, borderColor: T.danger,
+    backgroundColor: T.cardBg, borderWidth: 2, borderColor: T.danger,
     justifyContent: 'center', alignItems: 'center',
     ...shadowSm,
   },
-});
+  });
+}

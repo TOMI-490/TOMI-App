@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, Pressable } from 'react-native';
-import { pickerInputStyles } from '../../styles/auth/pickerInput.styles';
+import { createPickerInputStyles } from '../../styles/auth/pickerInput.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PickerInputProps {
   label: string;
@@ -19,6 +20,8 @@ export const PickerInput: React.FC<PickerInputProps> = ({
   error,
   disabled = false,
 }) => {
+  const { colors } = useTheme();
+  const pickerInputStyles = useMemo(() => createPickerInputStyles(colors), [colors]);
   const [isOpen, setIsOpen] = useState(false);
   const selectedItem = items.find(item => item.value === value);
 

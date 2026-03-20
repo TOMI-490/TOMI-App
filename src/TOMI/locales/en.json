@@ -2,6 +2,7 @@
   "login": {
     "logoPlaceholder": "LOGO",
     "title": "TOMI",
+    "eyebrow": "SIGN IN",
     "emailLabel": "Email *",
     "emailPlaceholder": "email@example.com",
     "passwordLabel": "Password",
@@ -33,6 +34,8 @@
     "logoPlaceholder": "LOGO",
     "title": "Create an account",
     "subtitle": "Sign up to get started",
+    "companionBadge": "Start your TOMI journey",
+    "welcomeSubtitle": "A few quick details — then your companion is ready to grow with every workout.",
     "nameLabel": "Full Name *",
     "namePlaceholder": "John Doe",
     "emailLabel": "Email *",

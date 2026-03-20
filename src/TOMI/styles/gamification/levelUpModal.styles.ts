@@ -1,19 +1,20 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-export const levelUpModalStyles = StyleSheet.create({
+export function createLevelUpModalStyles(T: TomiThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(28,30,39,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   modalContent: {
-    backgroundColor: '#FDFCFA',
+    backgroundColor: T.cardBg,
     borderRadius: 32,
     paddingTop: 48,
     paddingBottom: 32,
@@ -129,4 +130,5 @@ export const levelUpModalStyles = StyleSheet.create({
     backgroundColor: T.primaryTint,
     marginBottom: 16,
   },
-});
+  });
+}

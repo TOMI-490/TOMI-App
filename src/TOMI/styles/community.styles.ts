@@ -1,40 +1,41 @@
 import { StyleSheet } from 'react-native';
-import { TOMI_THEME as T } from '../constants/theme';
+import type { TomiThemeColors } from '../constants/theme';
 import { F } from '../constants/fonts';
 
-const shadowXs = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 2 },
-  shadowOpacity: 0.18,
-  shadowRadius:  6,
-  elevation:     3,
-} as const;
+export function createCommunityStyles(T: TomiThemeColors) {
+  const shadowXs = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius:  6,
+    elevation:     3,
+  } as const;
 
-const shadowSm = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 3 },
-  shadowOpacity: 0.22,
-  shadowRadius:  10,
-  elevation:     5,
-} as const;
+  const shadowSm = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius:  10,
+    elevation:     5,
+  } as const;
 
-const shadowMd = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 6 },
-  shadowOpacity: 0.28,
-  shadowRadius:  16,
-  elevation:     8,
-} as const;
+  const shadowMd = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius:  16,
+    elevation:     8,
+  } as const;
 
-const card = {
-  backgroundColor: T.cardBg,
-  borderRadius:    20,
-} as const;
+  const card = {
+    backgroundColor: T.cardBg,
+    borderRadius:    20,
+  } as const;
 
-export const communityStyles = StyleSheet.create({
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
 
   // ─── Header ───
@@ -344,13 +345,12 @@ export const communityStyles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   leaderboardPodiumCard: {
+    ...card,
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 8,
-    borderRadius: 20,
     flex: 1,
     marginHorizontal: 4,
-    ...card,
   },
   leaderboardPodiumFirst: {
     backgroundColor: T.primaryTint,
@@ -545,7 +545,7 @@ export const communityStyles = StyleSheet.create({
     marginBottom: 8,
   },
   searchInput: {
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -597,7 +597,7 @@ export const communityStyles = StyleSheet.create({
     borderColor: T.borderLight,
   },
   searchResultActionDisabled: {
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   searchResultActionText: {
     fontFamily: 'Montserrat-SemiBold',
@@ -730,7 +730,7 @@ export const communityStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   loadingText: {
     fontFamily: 'Montserrat-Medium',
@@ -743,7 +743,7 @@ export const communityStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   errorText: {
     fontFamily: 'Montserrat-Medium',
@@ -765,4 +765,5 @@ export const communityStyles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
   },
-});
+  });
+}

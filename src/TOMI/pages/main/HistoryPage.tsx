@@ -12,8 +12,8 @@ import {
   type CalendarActivity,
 } from '../../services/resources/history.service';
 import { CalendarMonth } from '../../components/history/CalendarMonth';
-import { historyStyles as styles } from '../../styles/history.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createHistoryStyles } from '../../styles/history.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 type IconDef =
@@ -60,11 +60,11 @@ function getCategoryLabel(type: string): string {
   return 'general';
 }
 
-function getCategoryColor(cat: string): string {
+function getCategoryColor(cat: string, primary: string): string {
   if (cat === 'cardio')      return '#F0545C';
   if (cat === 'strength')    return '#FF7A3D';
   if (cat === 'flexibility') return '#4E9BE8';
-  return T.primary;
+  return primary;
 }
 
 function formatDate(dateStr: string): string {
@@ -99,6 +99,8 @@ export function populateHistoryMonthCache(
 /* ─── Component ────────────────────────────────────────────────────────── */
 export default function HistoryPage() {
   const { t } = useTranslation();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createHistoryStyles(T), [T]);
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
 
@@ -449,7 +451,7 @@ export default function HistoryPage() {
             const icon = getWorkoutIcon(w.type);
             const wc = getWorkoutColor(w.type);
             const cat = getCategoryLabel(w.type);
-            const catColor = getCategoryColor(cat);
+            const catColor = getCategoryColor(cat, T.primary);
             return (
               <View key={w.id} style={styles.workoutCard}>
                 <View style={[styles.workoutAccent, { backgroundColor: wc.color }]} />

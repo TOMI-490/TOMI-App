@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
@@ -12,8 +12,8 @@ import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createLiveWorkoutStyles } from '../../styles/workout/liveWorkoutScreen.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 
@@ -45,6 +45,8 @@ interface LocationPoint { latitude: number; longitude: number; timestamp: number
 
 const LiveWorkoutScreen: React.FC = () => {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createLiveWorkoutStyles(T), [T]);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);

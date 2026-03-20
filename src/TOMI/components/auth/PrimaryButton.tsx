@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
   ViewStyle,
 } from 'react-native';
-import { primaryButtonStyles } from '../../styles/auth/primaryButton.styles';
+import { createPrimaryButtonStyles } from '../../styles/auth/primaryButton.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PrimaryButtonProps {
   title: string;
@@ -22,6 +23,9 @@ export function PrimaryButton({
   disabled = false,
   style,
 }: PrimaryButtonProps) {
+  const { colors } = useTheme();
+  const primaryButtonStyles = useMemo(() => createPrimaryButtonStyles(colors), [colors]);
+
   return (
     <TouchableOpacity
       style={[primaryButtonStyles.button, disabled && primaryButtonStyles.disabled, style]}

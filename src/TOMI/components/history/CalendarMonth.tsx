@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { historyStyles } from '../../styles/history.styles';
+import { createHistoryStyles } from '../../styles/history.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface CalendarMonthProps {
   currentMonth: Date;
@@ -20,6 +21,9 @@ export const CalendarMonth: React.FC<CalendarMonthProps> = ({
   onDatePress,
   emptyMessage = 'No workouts this month',
 }) => {
+  const { colors } = useTheme();
+  const historyStyles = useMemo(() => createHistoryStyles(colors), [colors]);
+
   // Get calendar grid data
   const getCalendarGrid = () => {
     const year = currentMonth.getFullYear();

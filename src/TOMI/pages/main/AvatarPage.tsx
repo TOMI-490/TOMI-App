@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,8 +13,11 @@ import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
 import { EvolutionModal } from '../../components/gamification';
 import type { EvolutionStateDto, EvolutionNodeDto } from '../../models/dto/Evolution.dto';
-import { avatarPageStyles as styles } from '../../styles/home/avatarPage.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createAvatarPageStyles } from '../../styles/home/avatarPage.styles';
+import { useTheme } from '../../contexts/ThemeContext';
+import type { TomiThemeColors } from '../../constants/theme';
+
+type AvatarPageStyles = ReturnType<typeof createAvatarPageStyles>;
 
 type TabId = 'customize' | 'evolution' | 'stats' | 'shop';
 const TABS: { id: TabId; label: string }[] = [
@@ -42,6 +45,8 @@ const ACCESSORIES = [
 
 export default function AvatarPage() {
   const { t } = useTranslation();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createAvatarPageStyles(T), [T]);
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
   const { avatar, loading, error, refresh } = useAvatarPage(user?.userId);
@@ -288,14 +293,14 @@ export default function AvatarPage() {
         </View>
 
         {/* ── Tab Content ─────────────────────────────────── */}
-        {activeTab === 'customize' && <CustomizeContent />}
+        {activeTab === 'customize' && <CustomizeContent styles={styles} T={T} />}
         {activeTab === 'evolution' && (
-          <EvolutionContent userId={user?.userId} onEvolved={refresh} />
+          <EvolutionContent userId={user?.userId} onEvolved={refresh} styles={styles} T={T} />
         )}
         {activeTab === 'stats' && (
-          <StatsContent xp={xp} level={level} ageDays={ageDays} rank={userRank} nextLevelXp={nextLevelXp} xpPercent={xpPercent} />
+          <StatsContent xp={xp} level={level} ageDays={ageDays} rank={userRank} nextLevelXp={nextLevelXp} xpPercent={xpPercent} styles={styles} T={T} />
         )}
-        {activeTab === 'shop' && <ShopContent />}
+        {activeTab === 'shop' && <ShopContent styles={styles} T={T} />}
 
       </ScrollView>
     </ScreenWrapper>
@@ -306,7 +311,7 @@ export default function AvatarPage() {
    Tab content components
    ═══════════════════════════════════════════════════════════════════════ */
 
-function CustomizeContent() {
+function CustomizeContent({ styles, T }: { styles: AvatarPageStyles; T: TomiThemeColors }) {
   return (
     <>
       {/* Accessories */}
@@ -335,7 +340,17 @@ function CustomizeContent() {
   );
 }
 
-function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: () => void }) {
+function EvolutionContent({
+  userId,
+  onEvolved,
+  styles,
+  T,
+}: {
+  userId?: number;
+  onEvolved: () => void;
+  styles: AvatarPageStyles;
+  T: TomiThemeColors;
+}) {
   const [evoState, setEvoState] = useState<EvolutionStateDto | null>(null);
   const [loadingEvo, setLoadingEvo] = useState(true);
   const [showEvoModal, setShowEvoModal] = useState(false);
@@ -502,8 +517,24 @@ function EvolutionContent({ userId, onEvolved }: { userId?: number; onEvolved: (
   );
 }
 
-function StatsContent({ xp, level, ageDays, rank, nextLevelXp, xpPercent }: {
-  xp: number; level: number; ageDays: number; rank: number; nextLevelXp: number; xpPercent: number;
+function StatsContent({
+  xp,
+  level,
+  ageDays,
+  rank,
+  nextLevelXp,
+  xpPercent,
+  styles,
+  T,
+}: {
+  xp: number;
+  level: number;
+  ageDays: number;
+  rank: number;
+  nextLevelXp: number;
+  xpPercent: number;
+  styles: AvatarPageStyles;
+  T: TomiThemeColors;
 }) {
   const nextMilestoneLvl = Math.ceil(level / 5) * 5;
   const milestonePct = nextMilestoneLvl > 0 ? Math.min((level / nextMilestoneLvl) * 100, 100) : 0;
@@ -565,7 +596,7 @@ function StatsContent({ xp, level, ageDays, rank, nextLevelXp, xpPercent }: {
   );
 }
 
-function ShopContent() {
+function ShopContent({ styles, T }: { styles: AvatarPageStyles; T: TomiThemeColors }) {
   return (
     <View style={styles.shopEmpty}>
       <Ionicons name="storefront-outline" size={48} color={T.textMuted} />

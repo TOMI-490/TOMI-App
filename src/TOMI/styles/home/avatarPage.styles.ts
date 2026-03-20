@@ -1,32 +1,49 @@
 import { StyleSheet, Platform } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
-import { F } from '../../constants/fonts';
+import type { TomiThemeColors } from '../../constants/theme';
+import { LIGHT_THEME } from '../../constants/theme';
 
-const shadowSm = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.16, shadowRadius: 8, elevation: 4,
-} as const;
+export function createAvatarPageStyles(T: TomiThemeColors) {
+  // Runtime require avoids rare Hermes/init ordering issues with static `F` import
+  const Fonts = require('../../constants/fonts').F as {
+    readonly [k: string]: string;
+  };
 
-const shadowMd = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.22, shadowRadius: 14, elevation: 6,
-} as const;
+  const isLightAvatar = T.background === LIGHT_THEME.background;
 
-const card = { backgroundColor: '#FFFFFF', borderRadius: 22, ...shadowSm } as const;
+  /** Raised surfaces on the main card (screen uses T.background like other tabs) */
+  const avatarMainCard = isLightAvatar ? '#FFFFFF' : '#3D4450';
+  const avatarSoftPanel = isLightAvatar ? '#FFFBF7' : '#353C48';
+  const avatarTabShell = isLightAvatar ? '#FFFFFF' : '#404854';
+  const avatarTrackLight = isLightAvatar ? '#FFF3EA' : 'rgba(255,255,255,0.10)';
+  const avatarTrackMuted = isLightAvatar ? '#EDE6DD' : 'rgba(255,255,255,0.08)';
 
-export const avatarPageStyles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#EDEAE3' },
+  const shadowSm = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: isLightAvatar ? 0.14 : 0.28,
+    shadowRadius: 8, elevation: 4,
+  } as const;
+
+  const shadowMd = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: isLightAvatar ? 0.18 : 0.32,
+    shadowRadius: 14, elevation: 6,
+  } as const;
+
+  const card = { backgroundColor: T.cardBg, borderRadius: 22, ...shadowSm } as const;
+
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.background },
   scroll: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 120 },
 
   /* ── Loading / Error ─────────────────────────────── */
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText: { marginTop: 10, fontSize: 14, fontFamily: F.medium, color: T.textMuted },
-  errorText: { fontSize: 15, fontFamily: F.medium, color: T.danger, textAlign: 'center', marginBottom: 16 },
+  loadingText: { marginTop: 10, fontSize: 14, fontFamily: Fonts.medium, color: T.textMuted },
+  errorText: { fontSize: 15, fontFamily: Fonts.medium, color: T.danger, textAlign: 'center', marginBottom: 16 },
   retryButton: {
     paddingHorizontal: 24, paddingVertical: 10,
     backgroundColor: T.primary, borderRadius: 14,
   },
-  retryText: { color: '#FFF', fontFamily: F.bold, fontSize: 15 },
+  retryText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 15 },
 
   /* ── Header ──────────────────────────────────────── */
   companionPill: {
@@ -36,13 +53,13 @@ export const avatarPageStyles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
     marginBottom: 10,
   },
-  companionPillText: { fontSize: 13, fontFamily: F.semiBold, color: T.success },
-  headerTitle: { fontSize: 28, fontFamily: F.headline, color: T.textPrimary, letterSpacing: -0.8 },
-  headerSubtitle: { fontSize: 13, fontFamily: F.regular, color: T.textMuted, marginTop: 3, marginBottom: 20 },
+  companionPillText: { fontSize: 13, fontFamily: Fonts.semiBold, color: T.success },
+  headerTitle: { fontSize: 28, fontFamily: Fonts.headline, color: T.textPrimary, letterSpacing: -0.8 },
+  headerSubtitle: { fontSize: 13, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 3, marginBottom: 20 },
 
   /* ── Avatar Card ─────────────────────────────────── */
   avatarCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 24, marginBottom: 18,
+    backgroundColor: avatarMainCard, borderRadius: 24, marginBottom: 18,
     ...shadowMd,
   },
   avatarCardInner: { padding: 18, overflow: 'hidden', borderRadius: 24 },
@@ -52,14 +69,14 @@ export const avatarPageStyles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 12,
   },
-  avatarNickname: { fontSize: 22, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.4 },
-  avatarMeta: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+  avatarNickname: { fontSize: 22, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.4 },
+  avatarMeta: { fontSize: 12, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 2 },
   levelBadge: {
     alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8,
     backgroundColor: T.primaryTint, borderRadius: 14,
   },
-  levelBadgeLabel: { fontSize: 10, fontFamily: F.semiBold, color: T.primary, letterSpacing: 0.4, textTransform: 'uppercase' },
-  levelBadgeValue: { fontSize: 22, fontFamily: F.black, color: T.primary, letterSpacing: -0.5 },
+  levelBadgeLabel: { fontSize: 10, fontFamily: Fonts.semiBold, color: T.primary, letterSpacing: 0.4, textTransform: 'uppercase' },
+  levelBadgeValue: { fontSize: 22, fontFamily: Fonts.black, color: T.primary, letterSpacing: -0.5 },
 
   /* Living room scene — matches Home page exactly */
   livingRoom: {
@@ -241,10 +258,10 @@ export const avatarPageStyles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 8,
   },
-  xpLabel: { fontSize: 13, fontFamily: F.semiBold, color: T.textPrimary },
-  xpValue: { fontSize: 13, fontFamily: F.bold, color: T.primary },
+  xpLabel: { fontSize: 13, fontFamily: Fonts.semiBold, color: T.textPrimary },
+  xpValue: { fontSize: 13, fontFamily: Fonts.bold, color: T.primary },
   xpBarTrack: {
-    width: '100%', height: 8, backgroundColor: '#F0EDE8',
+    width: '100%', height: 8, backgroundColor: avatarTrackLight,
     borderRadius: 4, overflow: 'hidden', marginBottom: 16,
   },
   xpBarFill: { height: '100%', borderRadius: 4 },
@@ -255,16 +272,16 @@ export const avatarPageStyles = StyleSheet.create({
   },
   moodStat: {
     width: '47%' as any,
-    backgroundColor: '#F7F5F0', borderRadius: 14,
+    backgroundColor: avatarSoftPanel, borderRadius: 14,
     paddingVertical: 10, paddingHorizontal: 12,
   },
   moodStatHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6,
   },
-  moodStatLabel: { fontSize: 11, fontFamily: F.semiBold, color: T.textPrimary, flex: 1 },
-  moodStatValue: { fontSize: 12, fontFamily: F.bold },
+  moodStatLabel: { fontSize: 11, fontFamily: Fonts.semiBold, color: T.textPrimary, flex: 1 },
+  moodStatValue: { fontSize: 12, fontFamily: Fonts.bold },
   moodBarTrack: {
-    width: '100%', height: 5, backgroundColor: '#E8E5DE',
+    width: '100%', height: 5, backgroundColor: avatarTrackMuted,
     borderRadius: 3, overflow: 'hidden',
   },
   moodBarFill: { height: '100%', borderRadius: 3 },
@@ -272,17 +289,17 @@ export const avatarPageStyles = StyleSheet.create({
   /* ── Mood hint ──────────────────────────────────── */
   moodHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#F7F5F0', borderRadius: 12,
+    backgroundColor: avatarSoftPanel, borderRadius: 12,
     paddingVertical: 10, paddingHorizontal: 14,
   },
   moodHintText: {
-    fontSize: 12, fontFamily: F.medium, color: T.textMuted, flex: 1,
+    fontSize: 12, fontFamily: Fonts.medium, color: T.textMuted, flex: 1,
   },
 
   /* ── Tab Bar ─────────────────────────────────────── */
   tabBar: {
     flexDirection: 'row', gap: 0,
-    backgroundColor: '#FFFFFF', borderRadius: 18,
+    backgroundColor: avatarTabShell, borderRadius: 18,
     padding: 4, marginBottom: 24,
     ...shadowMd,
   },
@@ -293,14 +310,14 @@ export const avatarPageStyles = StyleSheet.create({
     backgroundColor: T.primary,
     ...shadowSm, shadowColor: T.primary, shadowOpacity: 0.35,
   },
-  tabText: { fontSize: 13, fontFamily: F.semiBold, color: T.textMuted },
-  tabTextActive: { color: '#FFFFFF', fontFamily: F.bold },
+  tabText: { fontSize: 13, fontFamily: Fonts.semiBold, color: T.textMuted },
+  tabTextActive: { color: '#FFFFFF', fontFamily: Fonts.bold },
 
   /* ── Customize Tab ───────────────────────────────── */
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16,
   },
-  sectionTitle: { fontSize: 20, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.4 },
+  sectionTitle: { fontSize: 20, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.4 },
   avatarGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 28,
   },
@@ -312,7 +329,7 @@ export const avatarPageStyles = StyleSheet.create({
   avatarOptionLocked: { opacity: 0.45 },
   avatarOptionImage: { width: '70%', height: '70%' },
   avatarOptionName: {
-    fontSize: 10, fontFamily: F.medium, color: T.textMuted,
+    fontSize: 10, fontFamily: Fonts.medium, color: T.textMuted,
     textAlign: 'center', marginTop: 4,
   },
   lockOverlay: {
@@ -330,7 +347,7 @@ export const avatarPageStyles = StyleSheet.create({
   },
   accessorySelected: { borderWidth: 2.5, borderColor: T.primary },
   accessoryLocked: { opacity: 0.45 },
-  accessoryName: { fontSize: 10, fontFamily: F.medium, color: T.textMuted, textAlign: 'center', marginTop: 4 },
+  accessoryName: { fontSize: 10, fontFamily: Fonts.medium, color: T.textMuted, textAlign: 'center', marginTop: 4 },
 
   /* ── Evolution Tab ───────────────────────────────── */
   evolutionCurrentCard: {
@@ -339,7 +356,7 @@ export const avatarPageStyles = StyleSheet.create({
     ...shadowMd, shadowColor: T.primary, shadowOpacity: 0.12,
   },
   evolutionCurrentLabel: {
-    fontSize: 10, fontFamily: F.bold, color: T.primary,
+    fontSize: 10, fontFamily: Fonts.bold, color: T.primary,
     textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
   },
   evolutionCurrentRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
@@ -347,12 +364,12 @@ export const avatarPageStyles = StyleSheet.create({
     width: 54, height: 54, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center',
   },
-  evolutionName: { fontSize: 22, fontFamily: F.headlineMd, color: T.primary, letterSpacing: -0.3 },
-  evolutionDesc: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 3, lineHeight: 18 },
+  evolutionName: { fontSize: 22, fontFamily: Fonts.headlineMd, color: T.primary, letterSpacing: -0.3 },
+  evolutionDesc: { fontSize: 12, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 3, lineHeight: 18 },
   evolutionPerksList: { gap: 10, marginTop: 6 },
   evolutionPerk: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   evolutionPerkDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: T.primary },
-  evolutionPerkText: { fontSize: 13, fontFamily: F.medium, color: T.textPrimary },
+  evolutionPerkText: { fontSize: 13, fontFamily: Fonts.medium, color: T.textPrimary },
 
   nextEvoCard: {
     ...card, borderRadius: 22, padding: 20, marginBottom: 22,
@@ -360,17 +377,17 @@ export const avatarPageStyles = StyleSheet.create({
     ...shadowMd,
   },
   nextEvoInfo: { flex: 1 },
-  nextEvoLabel: { fontSize: 18, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
-  nextEvoSubtitle: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
-  nextEvoLevelRange: { fontSize: 11, fontFamily: F.medium, color: T.textMuted, marginTop: 8 },
-  nextEvoLevelsToGo: { fontSize: 11, fontFamily: F.semiBold, color: T.primary },
-  nextEvoProgress: { width: '100%', height: 7, backgroundColor: '#F0EDE8', borderRadius: 4, overflow: 'hidden', marginTop: 8 },
+  nextEvoLabel: { fontSize: 18, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  nextEvoSubtitle: { fontSize: 12, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 2 },
+  nextEvoLevelRange: { fontSize: 11, fontFamily: Fonts.medium, color: T.textMuted, marginTop: 8 },
+  nextEvoLevelsToGo: { fontSize: 11, fontFamily: Fonts.semiBold, color: T.primary },
+  nextEvoProgress: { width: '100%', height: 7, backgroundColor: avatarTrackLight, borderRadius: 4, overflow: 'hidden', marginTop: 8 },
   nextEvoProgressFill: { height: '100%', borderRadius: 4, backgroundColor: T.secondary },
   nextEvoBadge: {
     paddingHorizontal: 10, paddingVertical: 4,
     backgroundColor: T.secondaryTint, borderRadius: 10,
   },
-  nextEvoBadgeText: { fontSize: 11, fontFamily: F.bold, color: T.secondary },
+  nextEvoBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: T.secondary },
 
   evoPathTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   evoPathContainer: { position: 'relative', paddingLeft: 28, marginLeft: 10 },
@@ -394,16 +411,16 @@ export const avatarPageStyles = StyleSheet.create({
     width: 46, height: 46, borderRadius: 15,
     justifyContent: 'center', alignItems: 'center',
   },
-  evoPathName: { fontSize: 16, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.2 },
-  evoPathDesc: { fontSize: 11, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+  evoPathName: { fontSize: 16, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.2 },
+  evoPathDesc: { fontSize: 11, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 2 },
   evoPathBadge: {
     marginLeft: 'auto' as any, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10,
   },
-  evoPathBadgeText: { fontSize: 10, fontFamily: F.bold, color: '#FFF' },
+  evoPathBadgeText: { fontSize: 10, fontFamily: Fonts.bold, color: '#FFF' },
   evoPathDone: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' as any,
   },
-  evoPathDoneText: { fontSize: 11, fontFamily: F.semiBold, color: T.success },
+  evoPathDoneText: { fontSize: 11, fontFamily: Fonts.semiBold, color: T.success },
 
   /* ── Evolution: Eligibility banner ──────────────── */
   evoBanner: {
@@ -416,8 +433,8 @@ export const avatarPageStyles = StyleSheet.create({
     backgroundColor: T.warningTint,
     justifyContent: 'center', alignItems: 'center',
   },
-  evoBannerTitle: { fontSize: 17, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
-  evoBannerSub: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+  evoBannerTitle: { fontSize: 17, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  evoBannerSub: { fontSize: 12, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 2 },
 
   /* ── Evolution: Selection cards ────────────────── */
   evoOptionsGrid: {
@@ -440,11 +457,11 @@ export const avatarPageStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 10,
   },
   evoOptionName: {
-    fontSize: 14, fontFamily: F.headlineMd, color: T.textPrimary,
+    fontSize: 14, fontFamily: Fonts.headlineMd, color: T.textPrimary,
     textAlign: 'center', letterSpacing: -0.2,
   },
   evoOptionStage: {
-    fontSize: 11, fontFamily: F.semiBold, color: T.primary,
+    fontSize: 11, fontFamily: Fonts.semiBold, color: T.primary,
     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3,
   },
 
@@ -456,7 +473,7 @@ export const avatarPageStyles = StyleSheet.create({
     ...shadowSm, shadowColor: T.primary, shadowOpacity: 0.35,
   },
   evoConfirmBtnDisabled: { opacity: 0.5 },
-  evoConfirmBtnText: { fontSize: 16, fontFamily: F.bold, color: '#FFF' },
+  evoConfirmBtnText: { fontSize: 16, fontFamily: Fonts.bold, color: '#FFF' },
 
   /* ── Evolution: Fully evolved state ────────────── */
   evoFullCard: {
@@ -471,10 +488,10 @@ export const avatarPageStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 14,
   },
   evoFullTitle: {
-    fontSize: 22, fontFamily: F.headlineMd, color: '#7C3AED', letterSpacing: -0.3, marginBottom: 4,
+    fontSize: 22, fontFamily: Fonts.headlineMd, color: '#7C3AED', letterSpacing: -0.3, marginBottom: 4,
   },
   evoFullSub: {
-    fontSize: 13, fontFamily: F.regular, color: T.textMuted, textAlign: 'center', lineHeight: 19,
+    fontSize: 13, fontFamily: Fonts.regular, color: T.textMuted, textAlign: 'center', lineHeight: 19,
   },
 
   /* ── Evolution: Current stage info ─────────────── */
@@ -489,13 +506,13 @@ export const avatarPageStyles = StyleSheet.create({
     backgroundColor: T.primaryTint,
     justifyContent: 'center', alignItems: 'center',
   },
-  evoStageName: { fontSize: 20, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  evoStageName: { fontSize: 20, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
   evoStageBadge: {
     paddingHorizontal: 10, paddingVertical: 4,
     backgroundColor: T.primaryTint, borderRadius: 10, marginTop: 4,
     alignSelf: 'flex-start',
   },
-  evoStageBadgeText: { fontSize: 11, fontFamily: F.bold, color: T.primary, textTransform: 'uppercase' },
+  evoStageBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: T.primary, textTransform: 'uppercase' },
 
   /* ── Evolution: Next threshold info ────────────── */
   evoNextInfo: {
@@ -507,8 +524,8 @@ export const avatarPageStyles = StyleSheet.create({
     backgroundColor: T.secondaryTint,
     justifyContent: 'center', alignItems: 'center',
   },
-  evoNextLabel: { fontSize: 14, fontFamily: F.semiBold, color: T.textPrimary },
-  evoNextSub: { fontSize: 12, fontFamily: F.regular, color: T.textMuted, marginTop: 2 },
+  evoNextLabel: { fontSize: 14, fontFamily: Fonts.semiBold, color: T.textPrimary },
+  evoNextSub: { fontSize: 12, fontFamily: Fonts.regular, color: T.textMuted, marginTop: 2 },
 
   /* ── Stats Tab ───────────────────────────────────── */
   statsGrid: {
@@ -522,9 +539,9 @@ export const avatarPageStyles = StyleSheet.create({
     width: 54, height: 54, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center', marginBottom: 14,
   },
-  statValue: { fontSize: 30, fontFamily: F.black, color: T.textPrimary, letterSpacing: -0.6 },
+  statValue: { fontSize: 30, fontFamily: Fonts.black, color: T.textPrimary, letterSpacing: -0.6 },
   statLabel: {
-    fontSize: 10, fontFamily: F.bold, color: T.textMuted,
+    fontSize: 10, fontFamily: Fonts.bold, color: T.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4,
   },
 
@@ -533,21 +550,22 @@ export const avatarPageStyles = StyleSheet.create({
     borderWidth: 1.5, borderColor: T.primaryTint,
   },
   milestoneHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  milestoneTitle: { fontSize: 16, fontFamily: F.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
-  milestoneLvl: { fontSize: 13, fontFamily: F.bold, color: T.primary },
-  milestoneBar: { width: '100%', height: 10, backgroundColor: '#F0EDE8', borderRadius: 5, overflow: 'hidden', marginBottom: 12 },
+  milestoneTitle: { fontSize: 16, fontFamily: Fonts.headlineMd, color: T.textPrimary, letterSpacing: -0.3 },
+  milestoneLvl: { fontSize: 13, fontFamily: Fonts.bold, color: T.primary },
+  milestoneBar: { width: '100%', height: 10, backgroundColor: avatarTrackLight, borderRadius: 5, overflow: 'hidden', marginBottom: 12 },
   milestoneBarFill: { height: '100%', borderRadius: 5 },
   milestoneDesc: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: T.primaryTint, borderRadius: 12, padding: 14,
   },
-  milestoneDescText: { fontSize: 12, fontFamily: F.medium, color: T.textPrimary, flex: 1, lineHeight: 17 },
+  milestoneDescText: { fontSize: 12, fontFamily: Fonts.medium, color: T.textPrimary, flex: 1, lineHeight: 17 },
 
   /* ── Shop Tab ────────────────────────────────────── */
   shopEmpty: { alignItems: 'center', paddingVertical: 40 },
-  shopEmptyText: { fontSize: 14, fontFamily: F.medium, color: T.textMuted, marginTop: 10, textAlign: 'center' },
+  shopEmptyText: { fontSize: 14, fontFamily: Fonts.medium, color: T.textMuted, marginTop: 10, textAlign: 'center' },
 
   /* ── General ─────────────────────────────────────── */
-  container: { flex: 1, backgroundColor: '#EDEAE3' },
+  container: { flex: 1, backgroundColor: T.background },
   content: { padding: 18, paddingBottom: 120 },
-});
+  });
+}

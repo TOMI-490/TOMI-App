@@ -1,16 +1,25 @@
 import { StyleSheet } from 'react-native';
+import type { TomiThemeColors } from '../../constants/theme';
 
-export const authCardStyles = StyleSheet.create({
-  card: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-});
+export function createAuthCardStyles(T: TomiThemeColors) {
+  return StyleSheet.create({
+    cardOuter: {
+      width: '100%',
+      maxWidth: 400,
+      backgroundColor: T.cardBg,
+      borderRadius: 28,
+      borderWidth: 1,
+      borderColor: T.borderLight,
+      shadowColor: T.textPrimary,
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.11,
+      shadowRadius: 38,
+      elevation: 12,
+      overflow: 'hidden',
+    },
+    cardInner: {
+      paddingVertical: 34,
+      paddingHorizontal: 28,
+    },
+  });
+}

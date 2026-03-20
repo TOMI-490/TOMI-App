@@ -1,30 +1,31 @@
 import { StyleSheet } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
 
-const shadowSm = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.18, shadowRadius: 8, elevation: 4,
-} as const;
+export function createWorkoutStartStyles(T: TomiThemeColors) {
+  const shadowSm = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18, shadowRadius: 8, elevation: 4,
+  } as const;
 
-const shadowMd = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.24, shadowRadius: 16, elevation: 7,
-} as const;
+  const shadowMd = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.24, shadowRadius: 16, elevation: 7,
+  } as const;
 
-const shadowLg = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 10 },
-  shadowOpacity: 0.28, shadowRadius: 22, elevation: 10,
-} as const;
+  const shadowLg = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28, shadowRadius: 22, elevation: 10,
+  } as const;
 
-const card = { backgroundColor: '#FFFFFF', borderRadius: 20, ...shadowSm } as const;
+  const card = { backgroundColor: T.cardBg, borderRadius: 20, ...shadowSm } as const;
 
-export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#EDEAE3' },
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.background },
   scroll: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 120 },
 
   /* ── Loading ───────────────────────────────────── */
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EDEAE3' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.background },
   loadingText: { marginTop: 10, fontSize: 14, fontFamily: F.medium, color: T.textMuted },
 
   /* ── Header ────────────────────────────────────── */
@@ -170,7 +171,7 @@ export const styles = StyleSheet.create({
 
   /* ── Create Custom CTA ─────────────────────────── */
   customCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 24, padding: 28,
+    backgroundColor: T.cardBg, borderRadius: 24, padding: 28,
     alignItems: 'center', marginTop: 12, marginBottom: 10,
     ...shadowLg,
   },
@@ -188,4 +189,5 @@ export const styles = StyleSheet.create({
     ...shadowLg, shadowColor: T.primary, shadowOpacity: 0.50,
   },
   customBtnText: { fontSize: 14, fontFamily: F.bold, color: '#FFF' },
-});
+  });
+}

@@ -1,32 +1,33 @@
 import { StyleSheet } from 'react-native';
-import { TOMI_THEME as T } from '../constants/theme';
+import type { TomiThemeColors } from '../constants/theme';
 import { F } from '../constants/fonts';
 
-const shadowSm = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 3 },
-  shadowOpacity: 0.22,
-  shadowRadius:  10,
-  elevation:     5,
-} as const;
+export function createFriendProfileStyles(T: TomiThemeColors) {
+  const shadowSm = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius:  10,
+    elevation:     5,
+  } as const;
 
-const shadowMd = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 6 },
-  shadowOpacity: 0.28,
-  shadowRadius:  16,
-  elevation:     8,
-} as const;
+  const shadowMd = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius:  16,
+    elevation:     8,
+  } as const;
 
-const card = {
-  backgroundColor: T.cardBg,
-  borderRadius:    20,
-} as const;
+  const card = {
+    backgroundColor: T.cardBg,
+    borderRadius:    20,
+  } as const;
 
-export const friendProfileStyles = StyleSheet.create({
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
 
   // ─── Header ───
@@ -289,7 +290,7 @@ export const friendProfileStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   loadingText: {
     fontFamily: 'Montserrat-Medium',
@@ -302,7 +303,7 @@ export const friendProfileStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   errorText: {
     fontFamily: 'Montserrat-Medium',
@@ -355,4 +356,5 @@ export const friendProfileStyles = StyleSheet.create({
   statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
   statRowLabel: { fontFamily: 'Montserrat-Regular', fontSize: 14, color: T.textMuted },
   statRowValue: { fontFamily: 'Montserrat-SemiBold', fontSize: 16, color: T.textPrimary },
-});
+  });
+}

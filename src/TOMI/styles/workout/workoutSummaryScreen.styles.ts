@@ -1,29 +1,30 @@
 import { StyleSheet, Platform } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
 
-const shadowSm = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
-} as const;
+export function createWorkoutSummaryStyles(T: TomiThemeColors) {
+  const shadowSm = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
+  } as const;
 
-const shadowMd = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.20, shadowRadius: 14, elevation: 6,
-} as const;
+  const shadowMd = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.20, shadowRadius: 14, elevation: 6,
+  } as const;
 
-const card = { backgroundColor: '#FFFFFF', borderRadius: 22, ...shadowSm } as const;
+  const card = { backgroundColor: T.cardBg, borderRadius: 22, ...shadowSm } as const;
 
-export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#EDEAE3' },
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.background },
   scroll: { paddingBottom: 40 },
 
   loadingContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EDEAE3',
+    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.background,
   },
   loadingText: { marginTop: 10, fontSize: 14, fontFamily: F.medium, color: T.textMuted },
   errorContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#EDEAE3',
+    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: T.background,
   },
   errorText: { fontSize: 15, fontFamily: F.medium, color: T.danger, textAlign: 'center', marginBottom: 16 },
   retryButton: {
@@ -98,7 +99,7 @@ export const styles = StyleSheet.create({
 
   /* ── Progress bar (in details card) ───────────────── */
   progressBar: {
-    width: '100%', height: 7, backgroundColor: '#F0EDE8',
+    width: '100%', height: 7, backgroundColor: T.borderSubtle,
     borderRadius: 4, overflow: 'hidden', marginTop: 14,
   },
   progressBarFill: { height: '100%', borderRadius: 4, backgroundColor: T.primary },
@@ -111,4 +112,5 @@ export const styles = StyleSheet.create({
     ...shadowMd, shadowColor: T.success, shadowOpacity: 0.35,
   },
   doneBtnText: { fontSize: 18, fontFamily: F.bold, color: '#FFFFFF' },
-});
+  });
+}

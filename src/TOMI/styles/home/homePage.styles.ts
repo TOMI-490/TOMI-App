@@ -3,65 +3,63 @@
  */
 
 import { StyleSheet, Dimensions } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-/* ─── Shadow presets ─────────────────────────────────────────────────────── */
-const shadowXs = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 2 },
-  shadowOpacity: 0.18,
-  shadowRadius:  6,
-  elevation:     3,
-} as const;
+export function createHomePageStyles(T: TomiThemeColors) {
+  /* ─── Shadow presets ───────────────────────────────────────────────────── */
+  const shadowXs = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius:  6,
+    elevation:     3,
+  } as const;
 
-const shadowSm = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 3 },
-  shadowOpacity: 0.22,
-  shadowRadius:  10,
-  elevation:     5,
-} as const;
+  const shadowSm = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius:  10,
+    elevation:     5,
+  } as const;
 
-const shadowMd = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 6 },
-  shadowOpacity: 0.28,
-  shadowRadius:  16,
-  elevation:     8,
-} as const;
+  const shadowMd = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius:  16,
+    elevation:     8,
+  } as const;
 
-const shadowLg = {
-  shadowColor:   '#8891A5',
-  shadowOffset:  { width: 0, height: 10 },
-  shadowOpacity: 0.30,
-  shadowRadius:  24,
-  elevation:     12,
-} as const;
+  const shadowLg = {
+    shadowColor:   T.textMuted,
+    shadowOffset:  { width: 0, height: 10 },
+    shadowOpacity: 0.30,
+    shadowRadius:  24,
+    elevation:     12,
+  } as const;
 
-const shadowXl = {
-  shadowColor:   T.primary,
-  shadowOffset:  { width: 0, height: 12 },
-  shadowOpacity: 0.36,
-  shadowRadius:  30,
-  elevation:     16,
-} as const;
+  const shadowXl = {
+    shadowColor:   T.primary,
+    shadowOffset:  { width: 0, height: 12 },
+    shadowOpacity: 0.36,
+    shadowRadius:  30,
+    elevation:     16,
+  } as const;
 
-/* ─── Shared card base ───────────────────────────────────────────────────── */
-const card = {
-  backgroundColor: T.cardBg,
-  borderRadius:    20,
-} as const;
+  const card = {
+    backgroundColor: T.cardBg,
+    borderRadius:    20,
+  } as const;
 
-/* ─── StyleSheet ─────────────────────────────────────────────────────────── */
-export const homePageStyles = StyleSheet.create({
-
+  return StyleSheet.create({
   /* ── Scaffold ────────────────────────────────────────────────────────────── */
   screen: {
     flex: 1,
-    backgroundColor: '#EDEAE3',
+    backgroundColor: T.background,
   },
   scrollContent: {
     paddingHorizontal: 18,
@@ -124,7 +122,7 @@ export const homePageStyles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom:      12,
     borderWidth:       1,
-    borderColor:       'rgba(255,122,61,0.28)',
+    borderColor:       T.borderLight,
     gap:               5,
   },
   greetingPillDot: {
@@ -152,6 +150,27 @@ export const homePageStyles = StyleSheet.create({
     fontFamily:    'Montserrat-Medium',
     color:         T.textMuted,
     lineHeight:    20,
+  },
+  greetingHeaderRow: {
+    flexDirection:     'row',
+    alignItems:        'flex-start',
+    justifyContent:    'space-between',
+  },
+  greetingTextBlock: {
+    flex:         1,
+    paddingRight: 10,
+    minWidth:     0,
+  },
+  themeToggleBtn: {
+    width:           44,
+    height:          44,
+    borderRadius:    14,
+    alignItems:      'center',
+    justifyContent:  'center',
+    backgroundColor: T.cardBgAlt,
+    borderWidth:     1,
+    borderColor:     T.borderLight,
+    marginTop:       2,
   },
 
   /* ─────────────────────────────────────────────────────────────────────────── */
@@ -937,4 +956,5 @@ export const homePageStyles = StyleSheet.create({
     color:      T.danger,
     lineHeight: 18,
   },
-});
+  });
+}

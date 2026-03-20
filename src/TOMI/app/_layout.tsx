@@ -4,6 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import { Linking } from 'react-native';
 import { useFonts } from 'expo-font';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 import { supabase } from '../services/core/supabase';
 import { initializeLocalDatabase } from '../services/localDatabase/localDb';
 import { FONT_MAP } from '../constants/fonts';
@@ -94,6 +95,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <ThemeProvider>
     <AuthProvider>
       <DataPreloader />
       <Stack screenOptions={{ headerShown: false }}>
@@ -117,6 +119,7 @@ export default function RootLayout() {
         />
       </Stack>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

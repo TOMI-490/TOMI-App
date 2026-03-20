@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { xpToastStyles as styles } from '../../styles/gamification/xpToast.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createXpToastStyles } from '../../styles/gamification/xpToast.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface XpToastProps {
   xpDelta: number;
@@ -11,6 +11,8 @@ interface XpToastProps {
 }
 
 export const XpToast: React.FC<XpToastProps> = ({ xpDelta, visible, onDismiss }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createXpToastStyles(colors), [colors]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
@@ -47,7 +49,7 @@ export const XpToast: React.FC<XpToastProps> = ({ xpDelta, visible, onDismiss })
       ]}
     >
       <View style={styles.iconBox}>
-        <MaterialCommunityIcons name="lightning-bolt" size={18} color={T.primary} />
+        <MaterialCommunityIcons name="lightning-bolt" size={18} color={colors.primary} />
       </View>
       <View>
         <Text style={styles.text}>+{xpDelta} XP</Text>

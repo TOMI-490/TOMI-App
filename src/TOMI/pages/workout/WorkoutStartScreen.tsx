@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,8 +10,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePastWorkouts } from '../../hooks/usePastWorkouts';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
-import { styles } from '../../styles/workout/workoutStartScreen.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createWorkoutStartStyles } from '../../styles/workout/workoutStartScreen.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /* ─── Icon helpers ──────────────────────────────────────────────────────── */
 type IconDef =
@@ -111,6 +111,8 @@ function timeAgo(dateStr: string): string {
 /* ========================================================================= */
 const WorkoutStartScreen = () => {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createWorkoutStartStyles(T), [T]);
   const { t } = useTranslation();
   const { authId } = useAuth();
   const { user, loading: userLoading } = useCurrentUser(authId || undefined);

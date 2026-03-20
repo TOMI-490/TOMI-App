@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -9,14 +9,16 @@ import { workoutService } from '../../services/resources/workout.service';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
 import type { WorkoutSummaryDto } from '../../models/dto/Workout.dto';
 import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
-import { styles } from '../../styles/workout/workoutSummaryScreen.styles';
+import { createWorkoutSummaryStyles } from '../../styles/workout/workoutSummaryScreen.styles';
 import { avatarStateStore } from '../../utils/avatarStateStore';
 import { invalidateUserCache } from '../../hooks/useCurrentUser';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const WorkoutSummaryScreen: React.FC = () => {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createWorkoutSummaryStyles(T), [T]);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);

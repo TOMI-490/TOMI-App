@@ -1,21 +1,22 @@
 import { StyleSheet } from 'react-native';
-import { TOMI_THEME as T } from '../constants/theme';
+import type { TomiThemeColors } from '../constants/theme';
 import { F } from '../constants/fonts';
 
-const shadowSm = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.16, shadowRadius: 8, elevation: 4,
-} as const;
+export function createHistoryStyles(T: TomiThemeColors) {
+  const shadowSm = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16, shadowRadius: 8, elevation: 4,
+  } as const;
 
-const shadowMd = {
-  shadowColor: '#8891A5', shadowOffset: { width: 0, height: 5 },
-  shadowOpacity: 0.22, shadowRadius: 14, elevation: 6,
-} as const;
+  const shadowMd = {
+    shadowColor: T.textMuted, shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.22, shadowRadius: 14, elevation: 6,
+  } as const;
 
-const card = { backgroundColor: '#FFFFFF', borderRadius: 22, ...shadowSm } as const;
+  const card = { backgroundColor: T.cardBg, borderRadius: 22, ...shadowSm } as const;
 
-export const historyStyles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#EDEAE3' },
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.background },
   scroll: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 120 },
 
   /* ── Header ────────────────────────────────────── */
@@ -205,8 +206,42 @@ export const historyStyles = StyleSheet.create({
   },
   chartTooltipText: { fontSize: 11, fontFamily: F.semiBold, color: '#FFF' },
 
+  /* ── Workout detail (nested) ───────────────────── */
+  detailNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.borderLight,
+  },
+  detailNavTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: F.headlineMd,
+    color: T.textPrimary,
+    textAlign: 'center',
+  },
+  detailContainer: { flex: 1, backgroundColor: T.background },
+  detailScrollContent: { paddingBottom: 32 },
+  backButton: { padding: 8 },
+  menuButton: { width: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  detailCard: { ...card, marginHorizontal: 16, marginBottom: 14, padding: 16 },
+  detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  detailType: { fontSize: 18, fontFamily: F.bold, color: T.textPrimary },
+  detailDate: { fontSize: 13, fontFamily: F.medium, color: T.textMuted },
+  detailStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  detailStatItem: { width: '47%' as any },
+  detailStatLabel: { fontSize: 12, fontFamily: F.medium, color: T.textMuted, marginBottom: 4 },
+  detailStatValue: { fontSize: 16, fontFamily: F.semiBold, color: T.textPrimary },
+  detailSectionTitle: { fontSize: 16, fontFamily: F.bold, color: T.textPrimary, marginBottom: 10 },
+  placeholderSection: { marginHorizontal: 16, marginBottom: 18 },
+  placeholderCard: { backgroundColor: T.cardBgAlt, padding: 16, borderRadius: 14 },
+  placeholderText: { fontSize: 14, fontFamily: F.regular, color: T.textMuted },
+
   /* ── Compat aliases (old keys still referenced) ── */
-  container: { flex: 1, backgroundColor: '#EDEAE3' },
+  container: { flex: 1, backgroundColor: T.background },
   scrollContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 120 },
   summaryCard: { ...card, marginBottom: 14, padding: 16 },
   summaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
@@ -224,10 +259,10 @@ export const historyStyles = StyleSheet.create({
   workoutHeaderRight: { alignItems: 'flex-end' },
   workoutDuration: { fontSize: 14, fontFamily: F.semiBold, color: T.primary, marginBottom: 4 },
   workoutStats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 10 },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 14, fontFamily: F.semiBold, color: T.textPrimary, marginBottom: 2 },
-  statValueMuted: { color: T.textMuted },
-  statLabel: { fontSize: 11, fontFamily: F.medium, color: T.textMuted },
+  workoutOverviewStatItem: { flex: 1, alignItems: 'center' },
+  workoutOverviewStatValue: { fontSize: 14, fontFamily: F.semiBold, color: T.textPrimary, marginBottom: 2 },
+  workoutOverviewStatValueMuted: { color: T.textMuted },
+  workoutOverviewStatLabel: { fontSize: 11, fontFamily: F.medium, color: T.textMuted },
   overviewGrid: { flexDirection: 'column', marginBottom: 14, gap: 10 },
   overviewCard: { ...card, padding: 14 },
   overviewTitle: { fontSize: 15, fontFamily: F.bold, color: T.textPrimary, marginBottom: 12 },
@@ -239,4 +274,5 @@ export const historyStyles = StyleSheet.create({
   xpMetricItem: { flex: 1, alignItems: 'center' },
   xpMetricValue: { fontSize: 20, fontFamily: F.black, color: T.textPrimary, marginBottom: 2 },
   xpMetricLabel: { fontSize: 10, fontFamily: F.semiBold, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
-});
+  });
+}

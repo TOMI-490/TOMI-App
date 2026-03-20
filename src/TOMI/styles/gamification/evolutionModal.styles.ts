@@ -1,238 +1,243 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import { TOMI_THEME as T } from '../../constants/theme';
+import type { TomiThemeColors } from '../../constants/theme';
 import { F } from '../../constants/fonts';
+
+const PURPLE = '#7C3AED';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const MODAL_W = Math.min(SCREEN_W * 0.92, 400);
-const CARD_W = MODAL_W * 0.52;
 
-export const evolutionModalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(28,30,39,0.75)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+export function createEvolutionModalStyles(T: TomiThemeColors) {
+  const CARD_W = MODAL_W * 0.52;
 
-  modalContent: {
-    backgroundColor: '#FDFCFA',
-    borderRadius: 32,
-    paddingTop: 36,
-    paddingBottom: 28,
-    alignItems: 'center',
-    width: MODAL_W,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.25,
-    shadowRadius: 36,
-    elevation: 24,
-    overflow: 'hidden',
-  },
+  const styles = StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  confetti: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'hidden',
-    borderRadius: 32,
-  },
-  confettiDot: {
-    position: 'absolute',
-    fontFamily: F.black,
-  },
+    modalContent: {
+      backgroundColor: T.cardBg,
+      borderRadius: 32,
+      paddingTop: 36,
+      paddingBottom: 28,
+      alignItems: 'center',
+      width: MODAL_W,
+      shadowColor: PURPLE,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.25,
+      shadowRadius: 36,
+      elevation: 24,
+      overflow: 'hidden',
+    },
 
-  headerIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(124,58,237,0.10)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+    confetti: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden',
+      borderRadius: 32,
+    },
+    confettiDot: {
+      position: 'absolute',
+      fontFamily: F.black,
+    },
 
-  title: {
-    fontSize: 24,
-    fontFamily: F.headline,
-    color: T.textPrimary,
-    marginBottom: 4,
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
+    headerIcon: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(124,58,237,0.10)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
 
-  subtitle: {
-    fontSize: 14,
-    fontFamily: F.medium,
-    color: T.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
+    title: {
+      fontSize: 24,
+      fontFamily: F.headline,
+      color: T.textPrimary,
+      marginBottom: 4,
+      letterSpacing: -0.5,
+      textAlign: 'center',
+    },
 
-  divider: {
-    width: 48,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(124,58,237,0.18)',
-    marginBottom: 20,
-  },
+    subtitle: {
+      fontSize: 14,
+      fontFamily: F.medium,
+      color: T.textMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: 24,
+      paddingHorizontal: 20,
+    },
 
-  carouselContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
+    divider: {
+      width: 48,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: 'rgba(124,58,237,0.18)',
+      marginBottom: 20,
+    },
 
-  carouselContent: {
-    paddingHorizontal: (MODAL_W - CARD_W) / 2,
-  },
+    carouselContainer: {
+      width: '100%',
+      marginBottom: 20,
+    },
 
-  optionCard: {
-    width: CARD_W,
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.06)',
-    marginHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+    carouselContent: {
+      paddingHorizontal: (MODAL_W - CARD_W) / 2,
+    },
 
-  optionCardSelected: {
-    borderColor: '#7C3AED',
-    backgroundColor: 'rgba(124,58,237,0.04)',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 8,
-  },
+    optionCard: {
+      width: CARD_W,
+      alignItems: 'center',
+      paddingVertical: 20,
+      paddingHorizontal: 12,
+      borderRadius: 24,
+      backgroundColor: T.cardBgAlt,
+      borderWidth: 2,
+      borderColor: T.borderLight,
+      marginHorizontal: 8,
+      shadowColor: T.textPrimary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
+    },
 
-  selectedBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
+    optionCardSelected: {
+      borderColor: PURPLE,
+      backgroundColor: 'rgba(124,58,237,0.04)',
+      shadowColor: PURPLE,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.18,
+      shadowRadius: 16,
+      elevation: 8,
+    },
 
-  avatarImageContainer: {
-    width: CARD_W * 0.65,
-    height: CARD_W * 0.65,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
+    selectedBadge: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: PURPLE,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: PURPLE,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4,
+    },
 
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
+    avatarImageContainer: {
+      width: CARD_W * 0.65,
+      height: CARD_W * 0.65,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
 
-  fallbackContainer: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(124,58,237,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
+    },
 
-  optionName: {
-    fontSize: 16,
-    fontFamily: F.bold,
-    color: T.textPrimary,
-    textAlign: 'center',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-  },
+    fallbackContainer: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 999,
+      backgroundColor: 'rgba(124,58,237,0.08)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  optionStage: {
-    fontSize: 12,
-    fontFamily: F.semiBold,
-    color: T.textMuted,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
+    optionName: {
+      fontSize: 16,
+      fontFamily: F.bold,
+      color: T.textPrimary,
+      textAlign: 'center',
+      marginBottom: 4,
+      letterSpacing: -0.2,
+    },
 
-  paginationRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 22,
-  },
+    optionStage: {
+      fontSize: 12,
+      fontFamily: F.semiBold,
+      color: T.textMuted,
+      textAlign: 'center',
+      letterSpacing: 0.3,
+      textTransform: 'uppercase',
+    },
 
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
+    paginationRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 22,
+    },
 
-  dotActive: {
-    backgroundColor: '#7C3AED',
-    width: 20,
-    borderRadius: 4,
-  },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: T.borderLight,
+    },
 
-  evolveButton: {
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 44,
-    paddingVertical: 16,
-    borderRadius: 20,
-    minWidth: 200,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
-    marginHorizontal: 28,
-  },
+    dotActive: {
+      backgroundColor: PURPLE,
+      width: 20,
+      borderRadius: 4,
+    },
 
-  evolveButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
+    evolveButton: {
+      backgroundColor: PURPLE,
+      paddingHorizontal: 44,
+      paddingVertical: 16,
+      borderRadius: 20,
+      minWidth: 200,
+      shadowColor: PURPLE,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 14,
+      elevation: 8,
+      marginHorizontal: 28,
+    },
 
-  evolveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: F.bold,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
+    evolveButtonDisabled: {
+      backgroundColor: T.textLight,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
 
-  loadingContainer: {
-    paddingVertical: 60,
-    alignItems: 'center',
-    gap: 12,
-  },
+    evolveButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontFamily: F.bold,
+      textAlign: 'center',
+      letterSpacing: 0.3,
+    },
 
-  loadingText: {
-    fontSize: 14,
-    fontFamily: F.medium,
-    color: T.textMuted,
-  },
+    loadingContainer: {
+      paddingVertical: 60,
+      alignItems: 'center',
+      gap: 12,
+    },
 
-  CARD_W,
-});
+    loadingText: {
+      fontSize: 14,
+      fontFamily: F.medium,
+      color: T.textMuted,
+    },
+  });
+
+  return { styles, CARD_W };
+}

@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { evolutionModalStyles as styles } from '../../styles/gamification/evolutionModal.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createEvolutionModalStyles } from '../../styles/gamification/evolutionModal.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 import type { EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 
 interface EvolutionModalProps {
@@ -25,7 +25,7 @@ interface EvolutionModalProps {
   onSelect: (node: EvolutionNodeDto) => void;
 }
 
-const PARTICLE_COLORS = ['#7C3AED', '#A78BFA', T.warning, T.secondary, '#FFD700', T.success];
+const PURPLE_PARTICLES = ['#7C3AED', '#A78BFA', '#FFD700'] as const;
 
 const STAGE_LABELS: Record<string, string> = { baby: 'Baby', teen: 'Teen', adult: 'Adult' };
 
@@ -55,6 +55,9 @@ export const EvolutionModal: React.FC<EvolutionModalProps> = ({
   evolving = false,
   onSelect,
 }) => {
+  const { colors } = useTheme();
+  const { styles, CARD_W } = useMemo(() => createEvolutionModalStyles(colors), [colors]);
+
   const [selectedNode, setSelectedNode] = useState<EvolutionNodeDto | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -62,17 +65,22 @@ export const EvolutionModal: React.FC<EvolutionModalProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const headerPulse = useRef(new Animated.Value(0.97)).current;
 
+  const particleColors = useMemo(
+    () => [...PURPLE_PARTICLES, colors.warning, colors.secondary, colors.success],
+    [colors.warning, colors.secondary, colors.success],
+  );
+
   const particles = useMemo(
     () =>
       Array.from({ length: 14 }, (_, i) => ({
         id: i,
         anim: new Animated.Value(0),
         x: 10 + Math.random() * 80,
-        color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
+        color: particleColors[i % particleColors.length],
         size: 8 + Math.random() * 10,
         delay: i * 55,
       })),
-    [],
+    [particleColors],
   );
 
   useEffect(() => {
@@ -263,7 +271,7 @@ export const EvolutionModal: React.FC<EvolutionModalProps> = ({
                   keyExtractor={keyExtractor}
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  snapToInterval={styles.CARD_W + 16}
+                  snapToInterval={CARD_W + 16}
                   decelerationRate="fast"
                   contentContainerStyle={styles.carouselContent}
                   onViewableItemsChanged={onViewableItemsChanged}

@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
-import { authContainerStyles } from '../../styles/auth/authContainer.styles';
+import { createAuthContainerStyles } from '../../styles/auth/authContainer.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface AuthContainerProps {
   children: React.ReactNode;
 }
 
 export function AuthContainer({ children }: AuthContainerProps) {
+  const { colors } = useTheme();
+  const authContainerStyles = useMemo(() => createAuthContainerStyles(colors), [colors]);
+
   return (
     <KeyboardAvoidingView
       style={authContainerStyles.container}

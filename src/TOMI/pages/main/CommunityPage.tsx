@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,8 +19,8 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../locales/i18n';
 import { communityService } from '../../services/community';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
-import { TOMI_THEME as T } from '../../constants/theme';
-import { communityStyles as styles } from '../../styles/community.styles';
+import { useTheme } from '../../contexts/ThemeContext';
+import { createCommunityStyles } from '../../styles/community.styles';
 import type {
   UserSearchResult,
   FriendListItem,
@@ -34,6 +34,8 @@ type LeaderboardPeriod = 'week' | 'month';
 
 export default function CommunityPage() {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createCommunityStyles(T), [T]);
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
   useLanguage(user);

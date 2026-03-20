@@ -1,14 +1,9 @@
 /**
- * TOMI Design Token System — TypeScript constants
- *
- * These values mirror src/TOMI/styles/theme.css (Sunny / default theme).
- * Use these in StyleSheet.create() and inline style props where NativeWind
- * className-based tokens are not applicable.
- *
- * For multi-theme support at runtime, swap this object via React Context.
+ * TOMI Design Tokens — light + dark palettes
+ * Use `useTheme()` from ThemeContext for runtime colors in components.
  */
 
-export const TOMI_THEME = {
+export const LIGHT_THEME = {
   /* ── Brand ────────────────────────────────────────────────────────── */
   primary:         '#FF7A3D',
   primaryLight:    '#FF9A6B',
@@ -40,7 +35,7 @@ export const TOMI_THEME = {
   glassBorder:     'rgba(255,255,255,0.65)',
   glassBorderWeak: 'rgba(255,255,255,0.40)',
 
-  /* ── Overlay tints (for icon containers) ─────────────────────────── */
+  /* ── Overlay tints ────────────────────────────────────────────────── */
   warningTint:     'rgba(244,166,35,0.14)',
   dangerTint:      'rgba(240,84,92,0.12)',
   primaryTint:     'rgba(255,122,61,0.12)',
@@ -54,4 +49,53 @@ export const TOMI_THEME = {
   borderSubtle:    'rgba(0,0,0,0.035)',
 } as const;
 
-export type TomiTheme = typeof TOMI_THEME;
+export type TomiThemeColors = { [K in keyof typeof LIGHT_THEME]: string };
+
+/** Night / dark mode — muted surfaces & accents (easier on the eyes) */
+export const DARK_THEME: TomiThemeColors = {
+  primary:         '#B87D62',
+  primaryLight:    '#C9947A',
+  primaryPressed:  '#9E684F',
+  secondary:       '#6E88A0',
+  secondaryLight:  '#8A9FB4',
+
+  textPrimary:     '#D1D5DD',
+  textSecondary:   '#939AA8',
+  textMuted:       '#6B7280',
+  textLight:       '#565C68',
+
+  warning:         '#B8955A',
+  danger:          '#B07075',
+  success:         '#4BA885',
+  successLight:    '#5FBA97',
+
+  background:      '#16171B',
+  cardBg:          '#1E1F24',
+  cardBgAlt:       '#25262C',
+
+  glassBg:         'rgba(30,31,36,0.72)',
+  glassBgStrong:   'rgba(30,31,36,0.86)',
+  glassBgSubtle:   'rgba(30,31,36,0.48)',
+  glassBorder:     'rgba(255,255,255,0.07)',
+  glassBorderWeak: 'rgba(255,255,255,0.035)',
+
+  warningTint:     'rgba(184,149,90,0.10)',
+  dangerTint:      'rgba(176,112,117,0.10)',
+  primaryTint:     'rgba(184,125,98,0.10)',
+  primaryTintMed:  'rgba(184,125,98,0.16)',
+  secondaryTint:   'rgba(110,136,160,0.10)',
+  secondaryTintMed:'rgba(110,136,160,0.16)',
+  successTint:     'rgba(75,168,133,0.10)',
+
+  borderLight:     'rgba(255,255,255,0.06)',
+  borderSubtle:    'rgba(255,255,255,0.035)',
+};
+
+/** @deprecated Use `useTheme().colors` — kept for gradual migration */
+export const TOMI_THEME = LIGHT_THEME as TomiThemeColors;
+
+export type TomiTheme = TomiThemeColors;
+
+export function themeColorsFor(resolved: 'light' | 'dark'): TomiThemeColors {
+  return resolved === 'dark' ? DARK_THEME : LIGHT_THEME;
+}

@@ -34,8 +34,9 @@ import { useHomeQuests } from '../../hooks/useHomeQuests';
 import { useGamification } from '../../hooks/useGamification';
 import { useTranslation } from '../../locales/i18n';
 import { StreakResponseDto } from '../../models/dto/Streak.dto';
-import { homePageStyles as styles } from '../../styles/home/homePage.styles';
-import { TOMI_THEME as T } from '../../constants/theme';
+import { createHomePageStyles } from '../../styles/home/homePage.styles';
+import type { TomiThemeColors } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { avatarStateStore } from '../../utils/avatarStateStore';
 import { XpToast, LevelUpModal, EvolutionModal } from '../../components/gamification';
 import { evolutionService } from '../../services/resources/evolution.service';
@@ -94,14 +95,16 @@ function hexToRgb(hex: string): string {
   return [0, 2, 4].map(i => parseInt(h.substring(i, i + 2), 16)).join(',');
 }
 
-function resolveQuestColor(token: string): string {
+function resolveQuestColor(token: string, T: TomiThemeColors): string {
   return ({ primary: T.primary, secondary: T.secondary, warning: T.warning, success: T.success, danger: T.danger } as Record<string, string>)[token] ?? T.primary;
 }
+
+type HomeStyles = ReturnType<typeof createHomePageStyles>;
 
 /* ---------------------------------------------------------------------------
    Skeleton block
    --------------------------------------------------------------------------- */
-function SkeletonBlock({ height, width = '100%' }: { height: number; width?: string | number }) {
+function SkeletonBlock({ height, width = '100%', styles }: { height: number; width?: string | number; styles: HomeStyles }) {
   const opacity = useRef(new Animated.Value(0.45)).current;
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
@@ -114,17 +117,17 @@ function SkeletonBlock({ height, width = '100%' }: { height: number; width?: str
   return <Animated.View style={[styles.skeletonLine, { height, width: width as number, opacity }]} />;
 }
 
-function QuestSkeleton() {
+function QuestSkeleton({ styles }: { styles: HomeStyles }) {
   return (
     <View style={styles.skeletonCard} accessible accessibilityLabel="Loading">
-      <SkeletonBlock height={16} width="70%" />
-      <SkeletonBlock height={10} width="40%" />
-      <SkeletonBlock height={8} />
+      <SkeletonBlock height={16} width="70%" styles={styles} />
+      <SkeletonBlock height={10} width="40%" styles={styles} />
+      <SkeletonBlock height={8} styles={styles} />
     </View>
   );
 }
 
-function AchievementSkeleton({ itemWidth }: { itemWidth: string }) {
+function AchievementSkeleton({ itemWidth, styles }: { itemWidth: string; styles: HomeStyles }) {
   const opacity = useRef(new Animated.Value(0.45)).current;
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
@@ -145,9 +148,9 @@ function AchievementSkeleton({ itemWidth }: { itemWidth: string }) {
 /* ---------------------------------------------------------------------------
    QuestCard
    --------------------------------------------------------------------------- */
-function QuestCard({ quest }: { quest: DailyQuest }) {
+function QuestCard({ quest, styles, T }: { quest: DailyQuest; styles: HomeStyles; T: TomiThemeColors }) {
   const pct         = quest.max_value > 0 ? Math.min(quest.progress / quest.max_value, 1) : 0;
-  const accentColor = resolveQuestColor(quest.color_token);
+  const accentColor = resolveQuestColor(quest.color_token, T);
   const iconBg      = `rgba(${hexToRgb(accentColor)},0.18)`;
 
   return (
@@ -190,7 +193,7 @@ function getBadgeIcon(achievement: string): { lib: 'Ionicons' | 'MaterialCommuni
   return                             { lib: 'Ionicons',               name: 'ribbon',               color: '#7C3AED', bg: '#EDE9FE' };
 }
 
-function BadgeCard({ badge, itemWidth }: { badge: EarnedBadge; itemWidth: string }) {
+function BadgeCard({ badge, itemWidth, styles }: { badge: EarnedBadge; itemWidth: string; styles: HomeStyles }) {
   const icon = getBadgeIcon(badge.achievement);
   return (
     <View style={[styles.achievementCard, styles.achievementCardUnlocked, { width: itemWidth as unknown as number }]}>
@@ -217,6 +220,12 @@ export default function HomePage() {
   const router     = useRouter();
   const { authId } = useAuth();
   const { user }   = useCurrentUser(authId || undefined);
+  const { colors: T, resolvedScheme, setPreference } = useTheme();
+  const styles = useMemo(() => createHomePageStyles(T), [T]);
+
+  const onThemeIconPress = useCallback(() => {
+    void setPreference(resolvedScheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedScheme, setPreference]);
   useLanguage(user);
 
   const { data, loading, error, refresh } = useDashboard(user);
@@ -316,14 +325,29 @@ export default function HomePage() {
     <ScreenWrapper style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Section 1 — Greeting */}
-        <View>
-          <View style={styles.greetingPill}>
-            <View style={styles.greetingPillDot} />
-            <Text style={styles.greetingPillText}>{getGreetingLabel()}</Text>
+        {/* Section 1 — Greeting + theme (sun / moon) */}
+        <View style={styles.greetingHeaderRow}>
+          <View style={styles.greetingTextBlock}>
+            <View style={styles.greetingPill}>
+              <View style={styles.greetingPillDot} />
+              <Text style={styles.greetingPillText}>{getGreetingLabel()}</Text>
+            </View>
+            <Text style={styles.greetingTitle}>Hey {userName}!</Text>
+            <Text style={styles.greetingSubtitle}>{"Let's crush your goals today"}</Text>
           </View>
-          <Text style={styles.greetingTitle}>Hey {userName}!</Text>
-          <Text style={styles.greetingSubtitle}>{"Let's crush your goals today"}</Text>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={onThemeIconPress}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={resolvedScheme === 'dark' ? 'Switch to light mode' : 'Switch to night mode'}
+          >
+            <Ionicons
+              name={resolvedScheme === 'dark' ? 'sunny' : 'moon'}
+              size={22}
+              color={T.primary}
+            />
+          </TouchableOpacity>
         </View>
 
         {error && !loading && (
@@ -541,11 +565,11 @@ export default function HomePage() {
           {questsError && !questsLoading && (
             <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>Daily quests are coming soon.</Text></View>
           )}
-          {questsLoading && <><QuestSkeleton /><QuestSkeleton /></>}
+          {questsLoading && <><QuestSkeleton styles={styles} /><QuestSkeleton styles={styles} /></>}
           {!questsLoading && !questsError && dailyQuests.length === 0 && (
             <View style={styles.inlineErrorPill}><Text style={styles.inlineErrorText}>No quests for today — check back later!</Text></View>
           )}
-          {!questsLoading && dailyQuests.map(q => <QuestCard key={q.id} quest={q} />)}
+          {!questsLoading && dailyQuests.map(q => <QuestCard key={q.id} quest={q} styles={styles} T={T} />)}
         </View>
 
         <View style={styles.sectionGap} />
@@ -564,13 +588,13 @@ export default function HomePage() {
           </View>
           {gamLoading && (
             <View style={styles.achievementsGrid}>
-              {[0,1,2,3].map(i => <AchievementSkeleton key={i} itemWidth={ACHI_W} />)}
+              {[0,1,2,3].map(i => <AchievementSkeleton key={i} itemWidth={ACHI_W} styles={styles} />)}
             </View>
           )}
           {!gamLoading && (gamificationData?.badgesEarned?.length ?? 0) > 0 && (
             <View style={styles.achievementsGrid}>
               {(gamificationData!.badgesEarned).slice(0, 4).map(b => (
-                <BadgeCard key={b.id} badge={b} itemWidth={ACHI_W} />
+                <BadgeCard key={b.id} badge={b} itemWidth={ACHI_W} styles={styles} />
               ))}
             </View>
           )}
