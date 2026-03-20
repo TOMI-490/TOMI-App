@@ -7,6 +7,7 @@ from ..DTO.WorkoutDTO import WorkoutCreateDTO, WorkoutUpdateDTO, WorkoutResponse
 from ...Infrastructure.Repository.WorkoutRepository import WorkoutRepository
 from ...Infrastructure.Repository.UserAvatarRepository import UserAvatarRepository
 from ..Utils.xp_utils import XPService
+from ..Services.MoodService import MoodService
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ class WorkoutService:
         self.workout_repo = WorkoutRepository()
         self.user_avatar_repo = UserAvatarRepository()
         self.xp_service = XPService(self.user_avatar_repo)
+        self.mood_service = MoodService(self.user_avatar_repo)
     
     def get_all_workouts(self) -> List[WorkoutResponseDTO]:
         """Get all workouts."""
@@ -116,12 +118,18 @@ class WorkoutService:
                 duration_seconds = (workout.end - workout.start).total_seconds()
                 duration_minutes = int(duration_seconds / 60)
             
-            # Use XP that was set when workout started (random 5-49)
-            xp_awarded = workout.xp_awarded if workout.xp_awarded else 0
+            # Use XP set at start; fall back to duration-based calculation
+            if workout.xp_awarded and workout.xp_awarded > 0:
+                xp_awarded = workout.xp_awarded
+            else:
+                xp_awarded = self.xp_service.calculate_workout_xp(workout.start, workout.end)
+            
+            # Persist the final XP on the workout row
+            workout.xp_awarded = xp_awarded
             
             logger.info(f"[WORKOUT_END] Workout {workout_id} ended")
-            logger.info(f"[WORKOUT_END]   - Duration: {duration_minutes} minutes ({duration_seconds} seconds)")
-            logger.info(f"[WORKOUT_END]   - XP Awarded: {xp_awarded} (from workout start)")
+            logger.info(f"[WORKOUT_END]   - Duration: {duration_minutes} minutes ({duration_seconds:.0f}s)")
+            logger.info(f"[WORKOUT_END]   - XP Awarded: {xp_awarded}")
             
             # Update workout
             updated_workout = self.workout_repo.updateWorkout(workout)
@@ -133,6 +141,16 @@ class WorkoutService:
             except Exception as e:
                 logger.warning(f"[WORKOUT_END] Failed to award XP to user {workout.user_id}: {e}")
             
+            # Update mood stats based on workout duration
+            mood_deltas = {'hunger_delta': 0, 'sleep_delta': 0, 'boredom_delta': 0, 'happy_delta': 0}
+            try:
+                result = self.mood_service.apply_workout_boost(workout.user_id, duration_minutes)
+                if result:
+                    mood_deltas = result
+                    logger.info(f"[WORKOUT_END] ✓ Mood updated for user {workout.user_id}")
+            except Exception as e:
+                logger.warning(f"[WORKOUT_END] Failed to update mood for user {workout.user_id}: {e}")
+            
             return WorkoutEndResponseDTO(
                 workoutId=updated_workout.workout_id,
                 userId=updated_workout.user_id,
@@ -141,7 +159,11 @@ class WorkoutService:
                 end=updated_workout.end,
                 durationMinutes=duration_minutes,
                 xpAwarded=xp_awarded,
-                deviceId=updated_workout.device_id
+                deviceId=updated_workout.device_id,
+                hungerDelta=mood_deltas.get('hunger_delta', 0),
+                sleepinessDelta=mood_deltas.get('sleep_delta', 0),
+                boredomDelta=mood_deltas.get('boredom_delta', 0),
+                happinessDelta=mood_deltas.get('happy_delta', 0),
             )
         except ValueError:
             raise

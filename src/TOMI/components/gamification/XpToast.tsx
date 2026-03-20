@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { xpToastStyles as styles } from '../../styles/gamification/xpToast.styles';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { createXpToastStyles } from '../../styles/gamification/xpToast.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface XpToastProps {
   xpDelta: number;
@@ -10,48 +11,32 @@ interface XpToastProps {
 }
 
 export const XpToast: React.FC<XpToastProps> = ({ xpDelta, visible, onDismiss }) => {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(-50)).current;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createXpToastStyles(colors), [colors]);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
     if (visible) {
-      // Fade in and slide down
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
+        Animated.spring(fadeAnim, { toValue: 1, tension: 80, friction: 10, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 10, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
       ]).start();
 
-      // Auto-dismiss after 2.5 seconds
       const timer = setTimeout(() => {
         Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: -50,
-            duration: 300,
-            useNativeDriver: true,
-          }),
+          Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+          Animated.timing(slideAnim, { toValue: -50, duration: 250, useNativeDriver: true }),
         ]).start(() => onDismiss());
       }, 2500);
 
       return () => clearTimeout(timer);
     }
-  }, [visible, fadeAnim, slideAnim, onDismiss]);
+  }, [visible, fadeAnim, slideAnim, scaleAnim, onDismiss]);
 
-  if (!visible) {
-    return null;
-  }
+  if (!visible) return null;
 
   return (
     <Animated.View
@@ -59,12 +44,17 @@ export const XpToast: React.FC<XpToastProps> = ({ xpDelta, visible, onDismiss })
         styles.container,
         {
           opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
         },
       ]}
     >
-      <Ionicons name="flash" size={16} color="#FFD700" style={{ marginRight: 4 }} />
-      <Text style={styles.text}>+{xpDelta} XP</Text>
+      <View style={styles.iconBox}>
+        <MaterialCommunityIcons name="lightning-bolt" size={18} color={colors.primary} />
+      </View>
+      <View>
+        <Text style={styles.text}>+{xpDelta} XP</Text>
+        <Text style={styles.label}>Experience earned</Text>
+      </View>
     </Animated.View>
   );
 };

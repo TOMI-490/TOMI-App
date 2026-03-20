@@ -1,0 +1,73 @@
+/**
+ * TOMI Design Token System
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Three avatar-based themes: Sunny (default), Ocean, Mystic.
+ * Tokens are consumed by NativeWind via tailwind.config.js theme extensions
+ * and by React Native StyleSheet via src/TOMI/constants/theme.ts.
+ *
+ * NOTE: This project targets React Native (NativeWind v4 / Tailwind v3).
+ *       CSS custom-property syntax is kept here as the canonical source-of-truth
+ *       reference; actual runtime values live in constants/theme.ts.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Sunny (default) ───────────────────────────────────────────────────────── */
+:root,
+[data-avatar-theme="sunny"] {
+  --color-primary:           #ff8c42;
+  --color-primary-pressed:   #ff7324;
+  --color-secondary:         #4a90e2;
+  --color-text-primary:      #1a202c;
+  --color-text-muted:        #718096;
+  --color-warning:           #f59e0b;
+  --color-danger:            #ef4444;
+  --color-success:           #10b981;
+  --color-background:        #fefefe;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(255, 140, 66, 0.50);
+}
+
+/* ── Ocean ─────────────────────────────────────────────────────────────────── */
+[data-avatar-theme="ocean"] {
+  --color-primary:           #0ea5e9;
+  --color-primary-pressed:   #0284c7;
+  --color-secondary:         #06b6d4;
+  --color-text-primary:      #0c4a6e;
+  --color-text-muted:        #64748b;
+  --color-warning:           #f59e0b;
+  --color-danger:            #ef4444;
+  --color-success:           #14b8a6;
+  --color-background:        #fefefe;
+
+  --focus-ring: 0 0 0 3px rgba(14, 165, 233, 0.50);
+}
+
+/* ── Mystic ─────────────────────────────────────────────────────────────────── */
+[data-avatar-theme="mystic"] {
+  --color-primary:           #8b5cf6;
+  --color-primary-pressed:   #7c3aed;
+  --color-secondary:         #ec4899;
+  --color-text-primary:      #4c1d95;
+  --color-text-muted:        #7c3aed;
+  --color-warning:           #f59e0b;
+  --color-danger:            #ef4444;
+  --color-success:           #10b981;
+  --color-background:        #fefefe;
+
+  --focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.50);
+}
+
+/* ── Motion preferences ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration:   0.01ms !important;
+    transition-duration:  0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ── Global focus ring ──────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: var(--focus-ring);
+}

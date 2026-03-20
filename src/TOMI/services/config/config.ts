@@ -1,11 +1,18 @@
 import Constants from 'expo-constants';
 
-const getEnv = (key:string) => Constants.expoConfig?.extra?.[key];
+const getEnv = (key: string): string | undefined =>
+  Constants.expoConfig?.extra?.[key] ?? undefined;
 
-export const API_BASE_URL = getEnv('TOMI_API_BASE_URL') || 'http://169.254.190.234:8000';
+export const API_BASE_URL = getEnv('TOMI_API_BASE_URL') || 'http://localhost:8000';
 
-export const HTTP_TIMEOUT = 15000; // 15 seconds
+/** API request timeout (ms). Increase if the backend is slow to wake or on poor networks. */
+export const HTTP_TIMEOUT = 30000;
 
-export const SUPABASE_URL = getEnv('SUPABASE_URL');
-export const SUPABASE_KEY = getEnv('SUPABASE_KEY');
+/** History/calendar aggregations can be slower than typical CRUD — avoids spurious timeouts. */
+export const HTTP_TIMEOUT_HISTORY = 90000;
+
+export const SUPABASE_URL =
+  getEnv('SUPABASE_URL') || 'https://rvtrwomwwrrwqelpgxmr.supabase.co';
+export const SUPABASE_KEY =
+  getEnv('SUPABASE_KEY') || '';
 

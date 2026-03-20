@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../../locales/i18n';
-import { historyStyles } from '../../styles/history.styles';
+import { createHistoryStyles } from '../../styles/history.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 import { workoutService } from '../../services/resources/workout.service';
 import type { WorkoutSummaryDto } from '../../models/dto/Workout.dto';
 
 export default function WorkoutDetailScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const historyStyles = useMemo(() => createHistoryStyles(colors), [colors]);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   
@@ -70,11 +73,11 @@ export default function WorkoutDetailScreen() {
   if (loading) {
     return (
       <View style={historyStyles.detailContainer}>
-        <View style={historyStyles.header}>
+        <View style={historyStyles.detailNavRow}>
           <TouchableOpacity style={historyStyles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={historyStyles.headerTitle}>{t('history.workoutDetail')}</Text>
+          <Text style={historyStyles.detailNavTitle}>{t('history.workoutDetail')}</Text>
           <View style={historyStyles.menuButton} />
         </View>
         <View style={historyStyles.loadingContainer}>
@@ -89,11 +92,11 @@ export default function WorkoutDetailScreen() {
   if (error || !workout) {
     return (
       <View style={historyStyles.detailContainer}>
-        <View style={historyStyles.header}>
+        <View style={historyStyles.detailNavRow}>
           <TouchableOpacity style={historyStyles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={historyStyles.headerTitle}>{t('history.workoutDetail')}</Text>
+          <Text style={historyStyles.detailNavTitle}>{t('history.workoutDetail')}</Text>
           <View style={historyStyles.menuButton} />
         </View>
         <View style={historyStyles.errorContainer}>
@@ -109,11 +112,11 @@ export default function WorkoutDetailScreen() {
   return (
     <View style={historyStyles.detailContainer}>
       {/* Header */}
-      <View style={historyStyles.header}>
+      <View style={historyStyles.detailNavRow}>
         <TouchableOpacity style={historyStyles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={historyStyles.headerTitle}>{t('history.workoutDetail')}</Text>
+        <Text style={historyStyles.detailNavTitle}>{t('history.workoutDetail')}</Text>
         <View style={historyStyles.menuButton} />
       </View>
 
@@ -170,7 +173,7 @@ export default function WorkoutDetailScreen() {
 
         {/* Workout Description */}
         <View style={historyStyles.detailCard}>
-          <Text style={historyStyles.sectionTitle}>Description</Text>
+          <Text style={historyStyles.detailSectionTitle}>Description</Text>
           <Text style={{ fontSize: 14, color: '#666', lineHeight: 20 }}>
             {workout.workoutType.description || 'No description available'}
           </Text>
@@ -185,7 +188,7 @@ export default function WorkoutDetailScreen() {
         </View>
 
         <View style={historyStyles.placeholderSection}>
-          <Text style={historyStyles.sectionTitle}>Heart Rate Zone</Text>
+          <Text style={historyStyles.detailSectionTitle}>Heart Rate Zone</Text>
           <View style={historyStyles.placeholderCard}>
             <Text style={historyStyles.placeholderText}>HR Zone Chart (Placeholder)</Text>
           </View>

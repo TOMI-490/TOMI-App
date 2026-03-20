@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # DTO for creating a new avatar
 class AvatarCreateDTO(BaseModel):
@@ -24,12 +24,14 @@ class AvatarUpdateDTO(BaseModel):
 
 # DTO for responding with avatar data
 class AvatarResponseDTO(BaseModel):
-    avatarId: Optional[int] = None
-    name: str
-    imageURL: str
-    animationIdleURL: Optional[str] = None
-    animationActiveURL: Optional[str] = None
-    animationPostWorkoutURL: Optional[str] = None
-    themeColor: str
-    isDefault: bool
-    createdAt: Optional[datetime] = None
+    model_config = ConfigDict(populate_by_name=True)
+
+    avatarId: Optional[int] = Field(None, alias="avatar_id")
+    name: str = ""
+    imageURL: Optional[str] = Field(None, alias="image_url")
+    animationIdleURL: Optional[str] = Field(None, alias="animation_idle_url")
+    animationActiveURL: Optional[str] = Field(None, alias="animation_active_url")
+    animationPostWorkoutURL: Optional[str] = Field(None, alias="animation_post_workout_url")
+    themeColor: Optional[str] = Field(None, alias="theme_color")
+    isDefault: Optional[bool] = Field(False, alias="is_default")
+    createdAt: Optional[datetime] = Field(None, alias="created_at")

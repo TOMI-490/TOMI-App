@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
-import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { Ionicons } from '@expo/vector-icons';
+import MapView, { Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from '../../locales/i18n';
 import { workoutService } from '../../services/resources/workout.service';
 import { workoutTypeService } from '../../services/resources/workoutType.service';
@@ -12,34 +12,61 @@ import type { WorkoutTypeResponseDto } from '../../models/dto/WorkoutType.dto';
 import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { styles } from '../../styles/workout/liveWorkoutScreen.styles';
+import { createLiveWorkoutStyles } from '../../styles/workout/liveWorkoutScreen.styles';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useWorkoutBle } from '../../contexts/WorkoutBleContext';
+import type { FlattenedBLEData } from '../../hooks/useBLE';
+import { useSensorDataCollection } from '../../hooks/useSensorDataCollection';
+import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
+import BLEPopup from '../../components/ble/blePopup';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];
 
-interface LocationPoint {
-  latitude: number;
-  longitude: number;
-  timestamp: number;
+interface IconDef { lib: 'Ionicons' | 'MCI' | 'FA5'; name: string; }
+
+function getWorkoutIcon(typeName: string): IconDef {
+  const l = typeName.toLowerCase();
+  if (l.includes('run'))       return { lib: 'MCI', name: 'run' };
+  if (l.includes('walk'))      return { lib: 'MCI', name: 'walk' };
+  if (l.includes('cycl') || l.includes('bike')) return { lib: 'MCI', name: 'bike' };
+  if (l.includes('swim'))      return { lib: 'MCI', name: 'swim' };
+  if (l.includes('yoga'))      return { lib: 'MCI', name: 'yoga' };
+  if (l.includes('strength') || l.includes('weight')) return { lib: 'Ionicons', name: 'barbell-outline' };
+  if (l.includes('hiit') || l.includes('interval'))   return { lib: 'MCI', name: 'lightning-bolt' };
+  if (l.includes('stretch'))   return { lib: 'MCI', name: 'human-handsup' };
+  if (l.includes('box'))       return { lib: 'MCI', name: 'boxing-glove' };
+  if (l.includes('dance'))     return { lib: 'MCI', name: 'music-note' };
+  if (l.includes('row'))       return { lib: 'MCI', name: 'rowing' };
+  return { lib: 'Ionicons', name: 'fitness-outline' };
 }
+
+function WIcon({ def, size, color }: { def: IconDef; size: number; color: string }) {
+  if (def.lib === 'Ionicons') return <Ionicons name={def.name as any} size={size} color={color} />;
+  if (def.lib === 'MCI')      return <MaterialCommunityIcons name={def.name as any} size={size} color={color} />;
+  return <FontAwesome5 name={def.name as any} size={size} color={color} />;
+}
+
+interface LocationPoint { latitude: number; longitude: number; timestamp: number; }
 
 const LiveWorkoutScreen: React.FC = () => {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createLiveWorkoutStyles(T), [T]);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const workoutId = Number(params.workoutId);
   const workoutTypeId = Number(params.workoutTypeId);
-  const currentLevel = params.currentLevel ? Number(params.currentLevel) : null;
+  const expectedXp = params.expectedXp ? Number(params.expectedXp) : 70;
 
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
 
   const [workoutType, setWorkoutType] = useState<WorkoutTypeResponseDto | null>(null);
-  const [workoutXp, setWorkoutXp] = useState<number | null>(null);
   const [avatarData, setAvatarData] = useState<UserAvatarResponseDto | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [heartRate] = useState(72); // Mock for now
-  const [distance, setDistance] = useState(0); // in km
+  const [showBlePopup, setShowBlePopup] = useState(false);
+  const [distance, setDistance] = useState(0);
   const [locations, setLocations] = useState<LocationPoint[]>([]);
   const [currentLocation, setCurrentLocation] = useState<LocationPoint | null>(null);
   const [isEnding, setIsEnding] = useState(false);
@@ -47,376 +74,343 @@ const LiveWorkoutScreen: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
 
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-  const timerInterval = useRef<NodeJS.Timeout | null>(null);
+  const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const mapRef = useRef<MapView>(null);
 
+  const ble = useWorkoutBle();
+
+  const bleSensorPayload = useMemo((): SmartwatchSensorData | null => {
+    if (!ble.data) return null;
+    const { timestamp: _ts, ...sensor } = ble.data as FlattenedBLEData<SmartwatchSensorData>;
+    return sensor;
+  }, [ble.data]);
+
+  const sensorActive = !isPaused && !isEnding;
+
+  const { currentReading, dataSourceWarning, forceFlush } = useSensorDataCollection({
+    workoutId,
+    isActive: sensorActive,
+    useMockData: false,
+    realTimeData: bleSensorPayload,
+    connectionStatus: ble.connectionStatus,
+    onConnectionLost: () => {
+      console.warn('[LiveWorkout] BLE connection lost during session');
+    },
+  });
+
+  const heartRate =
+    currentReading?.heartRate ?? bleSensorPayload?.heartRate ?? ble.data?.heartRate ?? null;
+  const heartRateDisplay = heartRate != null && heartRate > 0 ? String(heartRate) : '—';
+
   useEffect(() => {
-    console.log('[LiveWorkout] 🏃 Component mounted');
-    console.log('[LiveWorkout]   - Workout ID:', workoutId);
-    console.log('[LiveWorkout]   - Workout Type ID:', workoutTypeId);
     loadWorkoutType();
-    loadWorkoutXp();
     loadAvatar();
     requestLocationPermission();
     startTimer();
-
-    return () => {
-      console.log('[LiveWorkout] 🛑 Component unmounting, cleaning up...');
-      stopTimer();
-      stopLocationTracking();
-    };
+    return () => { stopTimer(); stopLocationTracking(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (workoutType && hasLocationPermission) {
-      if (MAP_WORKOUT_TYPES.includes(workoutType.name)) {
-        setShowMap(true);
-        startLocationTracking();
-      }
+    if (workoutType && hasLocationPermission && MAP_WORKOUT_TYPES.includes(workoutType.name)) {
+      setShowMap(true);
+      startLocationTracking();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workoutType, hasLocationPermission]);
 
-  const loadWorkoutType = async () => {
-    try {
-      console.log('[LiveWorkout] 📋 Loading workout type...');
-      const type = await workoutTypeService.getById(workoutTypeId);
-      console.log('[LiveWorkout] ✓ Workout type loaded:', type.name);
-      setWorkoutType(type);
-    } catch (error) {
-      console.error('[LiveWorkout] ❌ Error loading workout type:', error);
-    }
-  };
-
-  const loadWorkoutXp = async () => {
-    try {
-      console.log('[LiveWorkout] 🎯 Loading workout XP...');
-      const workout = await workoutService.getWorkoutById(workoutId);
-      console.log('[LiveWorkout] ✓ Workout XP loaded:', workout.xpAwarded);
-      setWorkoutXp(workout.xpAwarded || null);
-    } catch (error) {
-      console.error('[LiveWorkout] ❌ Error loading workout XP:', error);
-    }
-  };
-
-  const loadAvatar = async () => {
-    try {
-      if (!user) return;
-      console.log('[LiveWorkout] 🐾 Loading avatar for user:', user.userId);
-      const avatar = await userAvatarService.getByUserId(user.userId);
-      console.log('[LiveWorkout] ✓ Avatar loaded:', avatar.nickname, 'activeUrl:', avatar.animationActiveUrl);
-      setAvatarData(avatar);
-    } catch (error) {
-      console.error('[LiveWorkout] ❌ Error loading avatar:', error);
-    }
-  };
-
-  // Re-fetch avatar once user is available
   useEffect(() => {
-    if (user && !avatarData) {
-      loadAvatar();
-    }
+    if (user && !avatarData) loadAvatar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  /** Format pace as mm:ss per km, or '--' if distance too small */
+  const loadWorkoutType = async () => {
+    try { setWorkoutType(await workoutTypeService.getById(workoutTypeId)); }
+    catch (e) { console.error('[LiveWorkout] Error loading type:', e); }
+  };
+
+  const loadAvatar = async () => {
+    try { if (user) setAvatarData(await userAvatarService.getByUserId(user.userId)); }
+    catch (e) { console.error('[LiveWorkout] Error loading avatar:', e); }
+  };
+
   const formatPace = (): string => {
     if (distance < 0.01 || elapsedSeconds <= 0) return '--';
-    const paceMinutes = (elapsedSeconds / 60) / distance; // min/km
-    if (paceMinutes > 60) return '--'; // cap unreasonable values
-    const mins = Math.floor(paceMinutes);
-    const secs = Math.round((paceMinutes - mins) * 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const p = (elapsedSeconds / 60) / distance;
+    return p > 60 ? '--' : p.toFixed(1);
   };
 
   const requestLocationPermission = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        setHasLocationPermission(true);
-      } else {
-        Alert.alert('Permission Denied', 'Location permission is required for map tracking.');
-      }
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-    }
+      if (status === 'granted') setHasLocationPermission(true);
+    } catch (e) { console.error('Location permission error:', e); }
   };
 
   const startLocationTracking = async () => {
     try {
       locationSubscription.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 1000, // Update every second
-          distanceInterval: 1, // Update every meter
-        },
-        (location: Location.LocationObject) => {
-          const newPoint: LocationPoint = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            timestamp: Date.now(),
-          };
-
-          setCurrentLocation(newPoint);
-          
-          // Animate map to new location
-          if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: newPoint.latitude,
-              longitude: newPoint.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }, 1000);
-          }
-          
-          setLocations((prev) => {
-            const updated = [...prev, newPoint];
-            // Calculate distance
-            if (updated.length > 1) {
-              const newDistance = calculateTotalDistance(updated);
-              setDistance(newDistance);
-            }
+        { accuracy: Location.Accuracy.High, timeInterval: 1000, distanceInterval: 1 },
+        (loc: Location.LocationObject) => {
+          const pt: LocationPoint = { latitude: loc.coords.latitude, longitude: loc.coords.longitude, timestamp: Date.now() };
+          setCurrentLocation(pt);
+          mapRef.current?.animateToRegion({ ...pt, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 1000);
+          setLocations(prev => {
+            const updated = [...prev, pt];
+            if (updated.length > 1) setDistance(calcDist(updated));
             return updated;
           });
-        }
+        },
       );
-    } catch (error) {
-      console.error('Error starting location tracking:', error);
-    }
+    } catch (e) { console.error('Location tracking error:', e); }
   };
 
-  const stopLocationTracking = () => {
-    if (locationSubscription.current) {
-      locationSubscription.current.remove();
-      locationSubscription.current = null;
-    }
-  };
+  const stopLocationTracking = () => { locationSubscription.current?.remove(); locationSubscription.current = null; };
 
-  const calculateTotalDistance = (points: LocationPoint[]): number => {
+  const calcDist = (pts: LocationPoint[]): number => {
     let total = 0;
-    for (let i = 1; i < points.length; i++) {
-      total += calculateDistance(points[i - 1], points[i]);
+    for (let i = 1; i < pts.length; i++) {
+      const R = 6371;
+      const dLat = ((pts[i].latitude - pts[i - 1].latitude) * Math.PI) / 180;
+      const dLon = ((pts[i].longitude - pts[i - 1].longitude) * Math.PI) / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 *
+        Math.cos((pts[i - 1].latitude * Math.PI) / 180) * Math.cos((pts[i].latitude * Math.PI) / 180);
+      total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
     return total;
   };
 
-  // Haversine formula to calculate distance between two points
-  const calculateDistance = (point1: LocationPoint, point2: LocationPoint): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = toRad(point2.latitude - point1.latitude);
-    const dLon = toRad(point2.longitude - point1.longitude);
-    const lat1 = toRad(point1.latitude);
-    const lat2 = toRad(point2.latitude);
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const toRad = (value: number): number => {
-    return (value * Math.PI) / 180;
-  };
-
-  const startTimer = () => {
-    timerInterval.current = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000) as unknown as NodeJS.Timeout;
-  };
-
-  const stopTimer = () => {
-    if (timerInterval.current) {
-      clearInterval(timerInterval.current);
-      timerInterval.current = null;
-    }
-  };
+  const startTimer = () => { timerInterval.current = setInterval(() => setElapsedSeconds(p => p + 1), 1000); };
+  const stopTimer = () => { if (timerInterval.current) { clearInterval(timerInterval.current); timerInterval.current = null; } };
 
   const handlePauseResume = () => {
-    if (isPaused) {
-      startTimer();
-      if (showMap) startLocationTracking();
-    } else {
-      stopTimer();
-      if (showMap) stopLocationTracking();
-    }
+    if (isPaused) { startTimer(); if (showMap) startLocationTracking(); }
+    else { stopTimer(); if (showMap) stopLocationTracking(); }
     setIsPaused(!isPaused);
   };
 
-  const handleEndWorkout = async () => {
-    Alert.alert(
-      t('workout.endWorkoutTitle'),
-      t('workout.endWorkoutMessage'),
-      [
-        { text: t('workout.cancel'), style: 'cancel' },
-        {
-          text: t('workout.end'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsEnding(true);
-              stopTimer();
-              stopLocationTracking();
-
-              console.log('[LiveWorkout] 🏁 Ending workout...');
-              console.log('[LiveWorkout]   - Workout ID:', workoutId);
-              console.log('[LiveWorkout]   - Duration:', elapsedSeconds, 'seconds');
-              console.log('[LiveWorkout]   - Distance:', distance.toFixed(2), 'km');
-
-              // End workout via backend API (backend handles XP awarding)
-              const { workout: endedWorkout, xpAwarded } = await workoutService.endWorkout(workoutId);
-              console.log('[LiveWorkout] ✓ Workout ended successfully');
-              console.log('[LiveWorkout]   - Start:', endedWorkout.start);
-              console.log('[LiveWorkout]   - End:', endedWorkout.end);
-              console.log('[LiveWorkout]   - XP Awarded:', xpAwarded);
-
-              // Navigate to summary screen with replace to prevent back navigation
-              console.log('[LiveWorkout] 📱 Navigating to summary screen...');
-              router.replace({
-                pathname: '/workout-summary',
-                params: {
-                  workoutId: workoutId.toString(),
-                  distance: distance.toFixed(2),
-                  xpAwarded: xpAwarded.toString(),
-                  previousLevel: currentLevel?.toString() || '0',
-                },
-              });
-            } catch (error) {
-              console.error('Error ending workout:', error);
-              Alert.alert(
-                t('workout.errorEndingTitle'),
-                t('workout.errorEndingMessage'),
-                [
-                  { text: t('workout.retry'), onPress: () => handleEndWorkout() },
-                  { text: t('workout.cancel'), style: 'cancel' },
-                ]
-              );
-            } finally {
-              setIsEnding(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleOpenBle = async () => {
+    const ok = await ble.requestPermissions();
+    if (!ok) {
+      Alert.alert(t('workout.bluetoothRequired'), t('workout.blePermissionDenied'));
+      return;
+    }
+    setShowBlePopup(true);
+    ble.startScan();
   };
 
-  const formatTime = (seconds: number): string => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const handleEndWorkout = () => {
+    Alert.alert(t('workout.endWorkoutTitle'), t('workout.endWorkoutMessage'), [
+      { text: t('workout.cancel'), style: 'cancel' },
+      { text: t('workout.end'), style: 'destructive', onPress: async () => {
+        try {
+          setIsEnding(true); stopTimer(); stopLocationTracking();
+          forceFlush();
+          const prevLevel = avatarData?.level ?? 0;
+          const { xpAwarded } = await workoutService.endWorkout(workoutId);
+          router.replace({ pathname: '/workout-summary', params: {
+            workoutId: workoutId.toString(), distance: distance.toFixed(2),
+            xpAwarded: xpAwarded.toString(), previousLevel: prevLevel.toString(),
+          }});
+        } catch (e) {
+          console.error('Error ending workout:', e);
+          Alert.alert(t('workout.errorEndingTitle'), t('workout.errorEndingMessage'), [
+            { text: t('workout.retry'), onPress: handleEndWorkout },
+            { text: t('workout.cancel'), style: 'cancel' },
+          ]);
+        } finally { setIsEnding(false); }
+      }},
+    ]);
   };
+
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const hrs = Math.floor(elapsedSeconds / 3600);
+  const mins = Math.floor((elapsedSeconds % 3600) / 60);
+  const secs = elapsedSeconds % 60;
+  const calories = Math.round((elapsedSeconds / 60) * 6.5);
 
   if (!workoutType) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={T.primary} /></View>;
   }
 
   return (
-    <View style={styles.container}>
-      {/* Map Section */}
-      {showMap && currentLocation ? (
-        <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            provider={PROVIDER_DEFAULT}
-            initialRegion={{
-              latitude: currentLocation.latitude,
-              longitude: currentLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation={true}
-            followsUserLocation={true}
-            showsMyLocationButton={false}
-          >
-            {locations.length > 1 && (
-              <Polyline
-                coordinates={locations.map((loc) => ({
-                  latitude: loc.latitude,
-                  longitude: loc.longitude,
-                }))}
-                strokeColor="#4A90E2"
-                strokeWidth={4}
-              />
-            )}
-          </MapView>
-        </View>
-      ) : (
-        <View style={[styles.mapContainer, styles.noMapPlaceholder]}>
-          {(avatarData?.animationPostWorkoutUrl || avatarData?.animationActiveUrl) ? (
-            <Image
-              source={{ uri: avatarData.animationPostWorkoutUrl || avatarData.animationActiveUrl }}
-              style={{ width: 180, height: 180 }}
-              resizeMode="contain"
-            />
-          ) : (
-            <Ionicons name="walk-outline" size={48} color="#8E8E93" />
-          )}
-          <Text style={styles.workoutTypeName}>{workoutType.name}</Text>
-        </View>
-      )}
+    <View style={styles.screen}>
 
-      {/* Stats Section */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>{t('workout.statTime')}</Text>
-            <Text style={styles.statValue}>{formatTime(elapsedSeconds)}</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>{t('workout.statHeartRate')}</Text>
-            <Text style={styles.statValue}>{heartRate} bpm</Text>
-          </View>
+      {/* ── Header ─────────────────────────────────────── */}
+      <View style={styles.header}>
+        <View style={styles.headerIconBox}>
+          <WIcon def={getWorkoutIcon(workoutType.name)} size={24} color={T.primary} />
         </View>
-
-        <View style={styles.statRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>{t('workout.statDistance')}</Text>
-            <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>{t('workout.statPace')}</Text>
-            <Text style={styles.statValue}>
-              {formatPace()} {formatPace() !== '--' ? t('workout.statPaceUnit') : ''}
+        <View>
+          <Text style={styles.headerTitle}>{workoutType.name}</Text>
+          <View style={styles.headerStatusRow}>
+            <View style={[styles.statusDot, { backgroundColor: isPaused ? T.secondary : T.success }]} />
+            <Text style={[styles.statusText, { color: isPaused ? T.secondary : T.success }]}>
+              {isPaused ? 'Paused' : 'In Progress'}
             </Text>
           </View>
         </View>
+      </View>
 
-        <View style={styles.statusRow}>
-          <Text style={styles.statusText}>
-            {isPaused ? t('workout.statusPaused') : t('workout.statusActive')}
+      <View style={styles.bleRow}>
+        <TouchableOpacity
+          style={styles.bleChip}
+          onPress={handleOpenBle}
+          disabled={isEnding}
+          activeOpacity={0.75}
+        >
+          <Ionicons
+            name="bluetooth"
+            size={16}
+            color={ble.connectionStatus === 'connected' ? T.success : T.secondary}
+          />
+          <Text style={styles.bleChipText} numberOfLines={1}>
+            {ble.connectionStatus === 'connected' && ble.connectedDevice
+              ? ble.connectedDevice.name || t('workout.watchConnected')
+              : t('workout.connectWatch')}
           </Text>
+        </TouchableOpacity>
+      </View>
+
+      {dataSourceWarning ? (
+        <View style={styles.bleWarning}>
+          <Text style={styles.bleWarningText}>{dataSourceWarning}</Text>
         </View>
+      ) : null}
+
+      {/* ── Map ────────────────────────────────────────── */}
+      <View style={styles.mapCard}>
+        {showMap && currentLocation ? (
+          <>
+            <MapView
+              ref={mapRef} style={styles.map} provider={PROVIDER_DEFAULT}
+              initialRegion={{ ...currentLocation, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+              showsUserLocation followsUserLocation showsMyLocationButton={false}
+            >
+              {locations.length > 1 && (
+                <Polyline
+                  coordinates={locations.map(l => ({ latitude: l.latitude, longitude: l.longitude }))}
+                  strokeColor={T.danger} strokeWidth={4}
+                />
+              )}
+            </MapView>
+            <View style={styles.mapOverlay}>
+              <View style={styles.mapPill}>
+                <Ionicons name="location" size={14} color={T.success} />
+                <View>
+                  <Text style={styles.mapPillValue}>{distance.toFixed(2)}</Text>
+                  <Text style={styles.mapPillUnit}>kilometers</Text>
+                </View>
+              </View>
+              <View style={styles.mapPill}>
+                <Ionicons name="heart" size={14} color={T.danger} />
+                <View>
+                  <Text style={styles.mapPillValue}>{heartRateDisplay}</Text>
+                  <Text style={styles.mapPillUnit}>bpm</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        ) : (
+          <View style={styles.noMapPlaceholder}>
+            {avatarData?.animationActiveUrl ? (
+              <Image source={{ uri: avatarData.animationActiveUrl }} style={styles.placeholderAvatar} resizeMode="contain" />
+            ) : (
+              <MaterialCommunityIcons name="dumbbell" size={48} color={T.textMuted} />
+            )}
+            <Text style={styles.placeholderTypeName}>{workoutType.name}</Text>
+          </View>
+        )}
       </View>
 
-      {/* Controls */}
-      <View style={styles.controlsContainer}>
-        <TouchableOpacity
-          style={[styles.controlButton, styles.pauseButton]}
-          onPress={handlePauseResume}
-          disabled={isEnding}
-        >
-          <Text style={styles.controlButtonText}>{isPaused ? t('workout.resume') : t('workout.pause')}</Text>
-        </TouchableOpacity>
+      {!(showMap && currentLocation) ? (
+        <View style={styles.inlineHrRow}>
+          <Ionicons name="heart" size={16} color={T.danger} />
+          <View>
+            <Text style={styles.inlineHrValue}>{heartRateDisplay}</Text>
+            <Text style={styles.inlineHrUnit}>bpm</Text>
+          </View>
+        </View>
+      ) : null}
 
-        <TouchableOpacity
-          style={[styles.controlButton, styles.endButton]}
-          onPress={handleEndWorkout}
-          disabled={isEnding}
-        >
-          {isEnding ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.controlButtonText}>{t('workout.endWorkout')}</Text>
-          )}
+      {/* ── Stats content ──────────────────────────────── */}
+      <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.contentScroll} showsVerticalScrollIndicator={false}>
+
+          {/* Timer */}
+          <View style={styles.timerCard}>
+            <View style={styles.timerLabel}>
+              <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.timerLabelText}>Elapsed Time</Text>
+            </View>
+            <View style={styles.timerRow}>
+              <View style={styles.timerBlock}>
+                <Text style={styles.timerDigit}>{pad(hrs)}</Text>
+                <Text style={styles.timerUnit}>hrs</Text>
+              </View>
+              <Text style={styles.timerColon}>:</Text>
+              <View style={styles.timerBlock}>
+                <Text style={styles.timerDigit}>{pad(mins)}</Text>
+                <Text style={styles.timerUnit}>min</Text>
+              </View>
+              <Text style={styles.timerColon}>:</Text>
+              <View style={styles.timerBlock}>
+                <Text style={styles.timerDigit}>{pad(secs)}</Text>
+                <Text style={styles.timerUnit}>sec</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Calories + Pace + XP */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statCardIconBox, { backgroundColor: '#FDEAEA' }]}>
+                <Ionicons name="flame" size={20} color="#F0545C" />
+              </View>
+              <Text style={styles.statCardLabel}>Calories</Text>
+              <Text style={styles.statCardValue}>{calories}</Text>
+              <Text style={styles.statCardUnit}>kcal burned</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={[styles.statCardIconBox, { backgroundColor: T.primaryTint }]}>
+                <MaterialCommunityIcons name="speedometer" size={20} color={T.primary} />
+              </View>
+              <Text style={styles.statCardLabel}>Pace</Text>
+              <Text style={styles.statCardValue}>{formatPace()}</Text>
+              <Text style={styles.statCardUnit}>min/km</Text>
+            </View>
+          </View>
+
+          {/* XP row */}
+          <View style={styles.xpRow}>
+            <View style={styles.xpIconBox}>
+              <MaterialCommunityIcons name="lightning-bolt" size={20} color={T.primary} />
+            </View>
+            <View>
+              <Text style={styles.xpLabel}>XP Earned</Text>
+              <Text style={styles.xpValue}>+{expectedXp}</Text>
+            </View>
+            <View style={styles.xpSpacer} />
+            <View style={styles.xpBadge}>
+              <MaterialCommunityIcons name="medal-outline" size={18} color={T.primary} />
+            </View>
+          </View>
+
+        </ScrollView>
+      </View>
+
+      {/* ── Controls (pinned) ──────────────────────────── */}
+      <View style={styles.controlsRow}>
+        <TouchableOpacity style={styles.pauseBtn} onPress={handlePauseResume} disabled={isEnding} activeOpacity={0.8}>
+          <Ionicons name={isPaused ? 'play' : 'pause'} size={20} color="#FFF" />
+          <Text style={styles.pauseBtnText}>{isPaused ? 'Resume' : 'Pause'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.endBtn} onPress={handleEndWorkout} disabled={isEnding} activeOpacity={0.7}>
+          {isEnding ? <ActivityIndicator color={T.danger} /> : <Ionicons name="stop" size={22} color={T.danger} />}
         </TouchableOpacity>
       </View>
+
+      <BLEPopup visible={showBlePopup} onClose={() => setShowBlePopup(false)} bleHook={ble} />
     </View>
   );
 };

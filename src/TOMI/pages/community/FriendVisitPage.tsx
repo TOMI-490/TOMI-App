@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,8 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../locales/i18n';
 import { communityService } from '../../services/community';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
-import { friendProfileStyles as styles } from '../../styles/friendProfile.styles';
+import { useTheme } from '../../contexts/ThemeContext';
+import { createFriendProfileStyles } from '../../styles/friendProfile.styles';
 import type { UserAvatarResponseDto } from '../../models/dto/UserAvatar.dto';
 import type { 
   FriendDashboardSummary,
@@ -26,6 +27,8 @@ import type {
 
 export default function FriendVisitPage() {
   const router = useRouter();
+  const { colors: T } = useTheme();
+  const styles = useMemo(() => createFriendProfileStyles(T), [T]);
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { authId } = useAuth();
   const { user } = useCurrentUser(authId || undefined);
@@ -50,10 +53,9 @@ export default function FriendVisitPage() {
     if (!user || !friendId) return;
 
     try {
-      setLoading(true);
       setError(null);
+      if (!dashboardSummary) setLoading(true);
 
-      // Load dashboard summary, recent workouts, and friend avatar in parallel
       const [summaryData, workoutsData, avatarData] = await Promise.all([
         communityService.getFriendDashboardSummary(user.userId, parseInt(friendId, 10)),
         communityService.getFriendRecentWorkouts(user.userId, parseInt(friendId, 10), 5),
@@ -137,7 +139,7 @@ export default function FriendVisitPage() {
     return (
       <ScreenWrapper style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color={T.secondary} />
           <Text style={styles.loadingText}>{t('community.loading')}</Text>
         </View>
       </ScreenWrapper>
@@ -222,7 +224,7 @@ export default function FriendVisitPage() {
           {/* Streak Badge */}
           {dashboardSummary.streak.days > 0 && (
             <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={16} color="#FF6B35" style={{ marginRight: 4 }} />
+              <Ionicons name="flame" size={16} color={T.primary} style={{ marginRight: 4 }} />
               <Text style={styles.streakText}>
                 {t('friendProfile.streakDays').replace('{days}', dashboardSummary.streak.days.toString())}
               </Text>

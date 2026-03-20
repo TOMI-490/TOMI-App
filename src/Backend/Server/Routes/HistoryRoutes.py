@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from ...Core.DTO.HistoryDTO import (
     WeeklySummaryResponseDTO,
     CalendarResponseDTO,
     PaginatedWorkoutsResponseDTO,
-    WorkoutListItemDTO
+    FullWorkoutsListResponseDTO,
+    WorkoutListItemDTO,
 )
 from ...Infrastructure.Repository.WorkoutRepository import WorkoutRepository
 from ...Infrastructure.Repository.WorkoutTypeRepository import WorkoutTypeRepository
@@ -23,6 +24,16 @@ def get_workout_type_name(workout_type_id: int) -> str:
     # Get workout type name by ID. Returns name or 'Unknown' if not found.
     workout_type = workoutTypeRepo.fetchWorkoutTypeById(workout_type_id)
     return workout_type.name if workout_type else "Unknown"
+
+
+def _first_day_of_month_n_months_before(today: date, months_before: int) -> date:
+    """First calendar day of the month that is `months_before` months before `today`'s month (0 = same month)."""
+    y, m = today.year, today.month
+    m -= months_before
+    while m <= 0:
+        m += 12
+        y -= 1
+    return date(y, m, 1)
 
 
 @router.get("/weekly-summary", response_model=WeeklySummaryResponseDTO)
@@ -107,14 +118,58 @@ async def getCalendarActivity(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/workouts/full", response_model=FullWorkoutsListResponseDTO)
+async def getWorkoutsFullList(
+    user_id: int = Query(..., description="User ID to get workouts for"),
+    months_back: int = Query(
+        60,
+        ge=1,
+        le=120,
+        description="Number of calendar months to include (including current month). Default 60 (~5 years).",
+    ),
+):
+    # All completed workouts in one response (mobile History tab). Avoids N per-month round trips.
+    try:
+        today = datetime.now().date()
+        start_date = _first_day_of_month_n_months_before(today, months_back - 1)
+        end_date = today
+
+        completed_workouts = HistoryService.get_completed_workouts(
+            workoutRepo, user_id, start_date, end_date
+        )
+        completed_workouts.sort(key=lambda w: w.start, reverse=True)
+
+        types = workoutTypeRepo.fetchAllWorkoutTypes()
+        type_names = {t.workout_type_id: t.name for t in types}
+
+        items = []
+        for workout in completed_workouts:
+            type_name = type_names.get(workout.workout_type_id) or "Unknown"
+            duration_minutes = HistoryService.get_workout_duration_minutes(workout)
+            items.append(
+                HistoryService.build_workout_list_item(workout, type_name, duration_minutes)
+            )
+
+        return FullWorkoutsListResponseDTO(
+            items=items,
+            total=len(items),
+            rangeStart=start_date.strftime("%Y-%m-%d"),
+            rangeEnd=end_date.strftime("%Y-%m-%d"),
+        )
+    except Exception as e:
+        logger.error(f"Error fetching full workouts list: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/workouts", response_model=PaginatedWorkoutsResponseDTO)
 async def getWorkoutsList(
     user_id: int = Query(..., description="User ID to get workouts for"),
     date: Optional[str] = Query(None, description="Filter by specific date (YYYY-MM-DD)"),
+    month: Optional[str] = Query(None, description="Filter by month (YYYY-MM); ignored if date is set"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=50, description="Items per page")
+    page_size: int = Query(10, ge=1, le=200, description="Items per page")
 ):
-    # Get paginated list of workouts for a user, optionally filtered by date.
+    # Get paginated list of workouts for a user, optionally filtered by date or month.
     # Returns workout details with computed stats (duration, calories, etc.).
     # Sorted by most recent first.
     try:
@@ -123,6 +178,8 @@ async def getWorkoutsList(
             filter_date = datetime.strptime(date, "%Y-%m-%d").date()
             start_date = filter_date
             end_date = filter_date
+        elif month:
+            start_date, end_date = HistoryService.parse_month_string(month)
         else:
             # Default: last 30 days
             end_date = datetime.now().date()

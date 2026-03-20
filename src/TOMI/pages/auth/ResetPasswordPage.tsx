@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import strings from '../../locales/en.json';
@@ -11,10 +11,13 @@ import {
   SecondaryButton,
   PasswordStrengthIndicator,
 } from '../../components/auth';
-import { authStyles } from '../../styles/auth.styles';
+import { createAuthStyles } from '../../styles/auth.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const authStyles = useMemo(() => createAuthStyles(colors), [colors]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});

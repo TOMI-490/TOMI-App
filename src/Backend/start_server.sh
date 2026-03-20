@@ -27,9 +27,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "unknown")
 echo "✓ Starting server on http://0.0.0.0:8000"
 echo "✓ API Documentation: http://localhost:8000/api/docs"
-echo "✓ Accessible from mobile: http://192.168.2.27:8000"
+echo "✓ Accessible from mobile: http://$LOCAL_IP:8000"
 echo ""
 echo "Press CTRL+C to stop the server"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

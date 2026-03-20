@@ -1,13 +1,21 @@
-import { useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { Stack } from 'expo-router';
+import '../global.css';
+import { useEffect, useRef } from 'react';
+import { useRouter, Stack } from 'expo-router';
 import { Linking } from 'react-native';
-import { AuthProvider } from '../contexts/AuthContext';
+import { useFonts } from 'expo-font';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
+import { WorkoutBleProvider } from '../contexts/WorkoutBleContext';
 import { supabase } from '../services/core/supabase';
-import { initializeLocalDatabase } from '../services/localDatabase/localDb'; // Import the database initialization
+import { initializeLocalDatabase } from '../services/localDatabase/localDb';
+import { FONT_MAP } from '../constants/fonts';
+import { preloadAllData } from '../utils/dataPreloader';
 
 export default function RootLayout() {
   const router = useRouter();
+
+  // Load Montserrat (bundled) + SangBleu (local files when present in assets/fonts/)
+  const [fontsLoaded] = useFonts(FONT_MAP);
 
   useEffect(() => {
     // ==========================================
@@ -82,10 +90,16 @@ export default function RootLayout() {
       subscription.remove();
       authListener?.subscription.unsubscribe();
     };
-  }, []); // Empty dependency array - only runs once on app start
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // router from useRouter is stable — intentionally omitted from deps
+
+  if (!fontsLoaded) return null;
 
   return (
+    <ThemeProvider>
     <AuthProvider>
+      <WorkoutBleProvider>
+      <DataPreloader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -106,6 +120,22 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      </WorkoutBleProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
+}
+
+function DataPreloader() {
+  const { authId } = useAuth();
+  const didPreload = useRef(false);
+
+  useEffect(() => {
+    if (authId && !didPreload.current) {
+      didPreload.current = true;
+      preloadAllData(authId);
+    }
+  }, [authId]);
+
+  return null;
 }

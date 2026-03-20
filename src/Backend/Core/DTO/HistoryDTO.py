@@ -38,3 +38,11 @@ class PaginatedWorkoutsResponseDTO(BaseModel):
     pageSize: int
     hasNext: bool
     total: int
+
+
+class FullWorkoutsListResponseDTO(BaseModel):
+    """All completed workouts in a date window (for mobile History — one round trip)."""
+    items: List[WorkoutListItemDTO]
+    total: int
+    rangeStart: str  # YYYY-MM-DD
+    rangeEnd: str    # YYYY-MM-DD

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import strings from '../../locales/en.json';
@@ -10,10 +10,13 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/auth';
-import { authStyles } from '../../styles/auth.styles';
+import { createAuthStyles } from '../../styles/auth.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const authStyles = useMemo(() => createAuthStyles(colors), [colors]);
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

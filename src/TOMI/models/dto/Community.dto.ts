@@ -13,6 +13,11 @@ export interface FriendListItem {
   displayName: string;
   level?: number;
   avatarUrl?: string;
+  xp?: number;
+  badgesCount?: number;
+  currentXp?: number;
+  nextLevelXp?: number;
+  xpProgress?: number;
 }
 
 export interface FriendRequestItem {

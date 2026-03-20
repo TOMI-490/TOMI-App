@@ -1,0 +1,303 @@
+    mp * Day\')  <Vie  eAc      <    mp yl      mp ylimCoi
+    ee    mp * Dat =   <Vie  ecoi
+    mp * Dailcti
+    mp * Da{ if  (1)).curre====    mp===========  const i
+    mp * Dan  =  <V==    mp *==     0    mp * Dat =   <Vie  erui
+    mp * Dailcti
+    mp==  ================================    mp * Da{ iftume    mp =>    mp --im--i
+    mtive\'), 8000);
+    } r------------me    mp =>  f     mtive\'), 8000);
+    r    } reVe    mtive\'), 8000);
+ {fal    } r------------==    r    } rent >= 2Screenme    mp =>    mp --im--i
+ == ()mon ()me    mp =>  li    mtty   ct    } el    m      mp *to     i    mror || !data) {
+    return (
+         <RegistryIc  mp * Daily queColor = n_  co>
+  st  st  st  st  st  st  st  st  st  s           <Rle  st  st  st  st  st  st  st  st  st  s           ex  st  st  st  st  w>  st  st  st  st st  st  st  st  st  st  st  st  st  st  s           <Rle  st  st  st  st  st  st  st  st  st  s           ex  st  st  \'  st  st  st goal  st  st  st  st    st  st  st  st      st  st  ste={sty  stsectionGap} />
+
+        {/* =================================================================
+            Section 2 — Stats Overview (3-column grid)
+            ================================================================= */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.warningTint }]}>
+              <Ionicons name=\"trophy\" size={20} color={T.warning} />
+            </View>
+            <Text style={styles.statValue}>{tomiData?.level ?? 0}</Text>
+            <Text style={styles.statLabel}>Level</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.dangerTint }]}>
+              <Ionicons name=\"flame\" size={20} color={T.danger} />
+            </View>
+            <Text style={styles.statValue}>{workoutStreak?.current ?? 0}</Text>
+            <Text style={styles.statLabel}>Day Streak</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: T.primaryTint }]}>
+              <MaterialCommunityIcons name=\"lightning-bolt\" size={22} color={T.primary} />
+            </View>
+            <Text style={styles.statValue}>{tomiData?.xp ?? 0}</Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* =================================================================
+            Section 3 — Avatar Living-Room Card
+            ================================================================= */}
+        <View style={styles.avatarCard}>
+          <View style={styles.avatarCardGlassOverlay} pointerEvents=\"none\" />
+          <View style={styles.avatarCardInner}>
+
+            {/* 3a — Card header */}
+            <View style={styles.avatarCardHeader}>
+              <View>
+                <Text style={styles.avatarName}>{tomiData?.nickname ?? \'Your TOMI\'}</Text>
+                <Text style={styles.avatarSubtitle}>Tap avatar to customize</Text>
+              </View>
+              <View style={styles.xpPill}>
+                <Text style={styles.xpPillLabel}>Level Progress</Text>
+                <Text style={styles.xpPillValue}>{tomiData?.xp ?? 0}/{nextLevelXp} XP</Text>
+              </View>
+            </View>
+
+            {/* 3b — Living-room scene */}
+            <View style={styles.livingRoom}>
+              <View style={styles.roomFloor} pointerEvents=\"none\" />
+              <View style={styles.roomWindow} pointerEvents=\"none\">
+                <View style={styles.windowPane} />
+                <View style={styles.windowPane} />
+                <View style={styles.windowPane} />
+                <View style={styles.windowPane} />
+              </View>
+              <View style={styles.roomSofa} pointerEvents=\"none\">
+                <MaterialCommunityIcons name=\"sofa\" size={32} color={T.primary} />
+              </View>
+              <View style={styles.roomLampContainer} pointerEvents=\"none\">
+                <View style={styles.roomLampShade}>
+                  <Ionicons name=\"bulb\" size={16} color={T.warning} />
+                </View>
+                <View style={styles.roomLampPole} />
+                <View style={styles.roomTable} />
+                <View style={styles.roomTableBase} />
+              </View>
+              <View style={styles.roomCoffeeCup} pointerEvents=\"none\">
+                <Ionicons name=\"cafe\" size={16} color=\"#92400e\" />
+              </View>
+
+              {/* Avatar — clickable */}
+              <TouchableOpacity
+                style={styles.avatarTouchable}
+                onPress={() => router.push(\'/(tabs)/avatar\')}
+                activeOpacity={0.90}
+                accessibilityRole=\"button\"
+                accessibilityLabel={`Customize ${tomiData?.nickname ?? \'TOMI\'}`}
+              >
+                <View style={styles.avatarCircle}>
+                  {avatarGifUrl ? (
+                    <Image
+                      source={{ uri: avatarGifUrl }}
+                      style={{ width: 88, height: 88 }}
+                      contentFit=\"contain\"
+                      autoplay
+                    />
+                  ) : (
+                    <Ionicons name=\"sparkles\" size={48} color=\"#FFF\" />
+                  )}
+                </View>
+                <View style={styles.avatarShadowPlatform} />
+              </TouchableOpacity>
+            </View>
+
+            {/* 3c — XP progress bar */}
+            <View style={styles.xpBarTrack}>
+              <View
+                style={[
+                  styles.xpBarFill,
+                  {
+                    width: `${Math.min(((tomiData?.xp ?? 0) / Math.max(nextLevelXp, 1)) * 100, 100)}%`,
+                    backgroundColor: tomiData?.themeColor ?? T.primary,
+                  },
+                ]}
+              />
+            </View>
+
+            {/* 3d — Mood indicators */}
+            <View style={styles.moodGrid}>
+              <View style={styles.moodCard}>
+                <View style={styles.moodLabelRow}>
+                  <Ionicons name=\"heart\" size={14} color={T.success} />
+                  <Text style={styles.moodLabel}>Happiness</Text>
+                </View>
+                <Text style={[styles.moodValue, { color: T.success }]}>
+                  {100 - (tomiData?.hungerLevel ?? 0)}%
+                </Text>
+              </View>
+              <View style={styles.moodCard}>
+                <View style={styles.moodLabelRow}>
+                  <MaterialCommunityIcons name=\"lightning-bolt\" size={14} color={T.secondary} />
+                  <Text style={styles.moodLabel}>Energy</Text>
+                </View>
+                <Text style={[styles.moodValue, { color: T.secondary }]}>
+                  {100 - (tomiData?.sleepinessLevel ?? 0)}%
+                </Text>
+              </View>
+            </View>
+
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* =================================================================
+            Section 4 — Start Workout CTA
+            ================================================================= */}
+        <Animated.View style={{ transform: [{ scale: startBtnScale }] }}>
+          <TouchableOpacity
+            style={styles.startWorkoutBtn}
+            onPress={() => router.push(\'/(tabs)/workout\')}
+            onPressIn={onStartPressIn}
+            onPressOut={onStartPressOut}
+            activeOpacity={1}
+            accessibilityRole=\"button\"
+            accessibilityLabel=\"Start Workout\"
+          >
+            <View style={styles.startWorkoutGloss} pointerEvents=\"none\" />
+            <View style={styles.startWorkoutLeft}>
+              <Text style={styles.startWorkoutLabel}>Ready to move?</Text>
+              <Text style={styles.startWorkoutTitle}>Start Workout</Text>
+            </View>
+            <View style={styles.startWorkoutIconBox}>
+              <Ionicons name=\"play\" size={28} color=\"#FFF\" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.sectionGap} />
+
+        {/* =================================================================
+            Section 5 — Daily Challenges
+            ================================================================= */}
+        <View>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Daily Challenges</Text>
+            <TouchableOpacity
+              style={styles.viewAllBtn}
+              onPress={() => router.push(\'/(tabs)/history\')}
+              accessibilityRole=\"button\"
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name=\"chevron-forward\" size={14} color={T.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {questsError && !questsLoading && (
+            <View style={styles.inlineErrorPill}>
+              <Text style={styles.inlineErrorText}>Daily quests are coming soon.</Text>
+            </View>
+          )}
+
+          {questsLoading && <><QuestSkeleton /><QuestSkeleton /></>}
+
+          {!questsLoading && !questsError && dailyQuests.length === 0 && (
+            <View style={styles.inlineErrorPill}>
+              <Text style={styles.inlineErrorText}>No quests for today — check back later!</Text>
+            </View>
+          )}
+
+          {!questsLoading && dailyQuests.map(q => <QuestCard key={q.id} quest={q} />)}
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* =================================================================
+            Section 6 — Achievements Preview
+            ================================================================= */}
+        <View>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Achievements</Text>
+            <TouchableOpacity
+              style={styles.viewAllBtn}
+              onPress={() => router.push(\'/(tabs)/history\')}
+              accessibilityRole=\"button\"
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name=\"chevron-forward\" size={14} color={T.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {questsLoading && (
+            <View style={styles.achievementsGrid}>
+              {[0,1,2,3].map(i => <AchievementSkeleton key={i} itemWidth={ACHI_CARD_WIDTH} />)}
+            </View>
+          )}
+
+          {!questsLoading && achievements.length > 0 && (
+            <View style={styles.achievementsGrid}>
+              {achievements.map(a => (
+                <AchievementCard key={a.id} achievement={a} itemWidth={ACHI_CARD_WIDTH} />
+              ))}
+            </View>
+          )}
+
+          {!questsLoading && achievements.length === 0 && (
+            <View style={styles.inlineErrorPill}>
+              <Text style={styles.inlineErrorText}>Complete a workout to earn your first achievement!</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.sectionGap} />
+
+        {/* =================================================================
+            Section 7 — Rewards Shop CTA
+            ================================================================= */}
+        <View style={styles.rewardsCard}>
+          <View style={styles.rewardsGloss} pointerEvents=\"none\" />
+          <View style={styles.rewardsLeft}>
+            <Text style={styles.rewardsTitle}>Rewards Shop</Text>
+            <Text style={styles.rewardsSubtitle}>Unlock exclusive items with your XP</Text>
+            <TouchableOpacity
+              style={styles.rewardsShopBtn}
+              onPress={() => console.log(\'TODO: navigate to rewards shop\')}
+              accessibilityRole=\"button\"
+            >
+              <Text style={styles.rewardsShopBtnText}>Browse Shop</Text>
+              <Ionicons name=\"arrow-forward\" size={16} color=\"#FFF\" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.rewardsIconBox}>
+            <Ionicons name=\"star\" size={32} color={T.secondary} />
+          </View>
+        </View>
+
+        <View style={styles.sectionGap} />
+
+      </ScrollView>
+
+      {/* XP Toast */}
+      {tomiEffects.showXpToast && tomiEffects.xpDelta && (
+        <XpToast
+          xpDelta={tomiEffects.xpDelta}
+          visible={tomiEffects.showXpToast}
+          onDismiss={tomiEffects.dismissXpToast}
+        />
+      )}
+
+      {/* Level-Up Modal */}
+      <LevelUpModal
+        visible={tomiEffects.showLevelUpModal}
+        level={tomiEffects.newLevel}
+        onDismiss={tomiEffects.dismissLevelUpModal}
+      />
+    </ScreenWrapper>
+  );
+}
+'''
+
+pathlib.Path('/Users/thomasmejia/Documents/GITHUB_DOCUMENTS/TOMI-App/src/TOMI/pages/main/HomePage.tsx').write_text(content)
+print('Written', len(content.split(chr(10))), 'lines')
+"

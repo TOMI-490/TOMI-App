@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableWithoutFeedback, GestureResponderEvent } from 'react-native';
 import Svg, { Line, Circle, Defs, LinearGradient, Stop, Path, Text as SvgText, G } from 'react-native-svg';
-import { historyStyles } from '../../styles/history.styles';
+import { createHistoryStyles } from '../../styles/history.styles';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface XpDataPoint {
   date: string;
@@ -27,6 +28,8 @@ export const XpMiniChart: React.FC<XpMiniChartProps> = ({
   rangeLabel,
   showLabels = true,
 }) => {
+  const { colors } = useTheme();
+  const historyStyles = useMemo(() => createHistoryStyles(colors), [colors]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(
     data && data.length > 0 ? data.length - 1 : null
   );
