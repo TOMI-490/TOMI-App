@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import useBLE from '../hooks/useBLE';
 import { smartwatchBleConfig } from '../config/smartwatchBleConfig';
-import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
+import type { SmartwatchSensorData } from '../models/smartwatchSensorData';
 import type { UseBLEReturn } from '../hooks/useBLE';
 
 type WorkoutBleValue = UseBLEReturn<SmartwatchSensorData>;

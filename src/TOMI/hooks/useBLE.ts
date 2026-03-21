@@ -258,7 +258,17 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
     setConnectedDevice(device);
     setError(null);
 
+    config.resetDecodeState?.();
+
     await device.discoverAllServicesAndCharacteristics();
+
+    if (Platform.OS === 'android') {
+      try {
+        await device.requestMTU(247);
+      } catch (e) {
+        console.warn('[BLE] requestMTU optional failed:', e);
+      }
+    }
 
     notificationCleanup.current?.();
     notificationCleanup.current = null;
@@ -268,27 +278,28 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
       config.characteristicUUID,
       (error, characteristic) => {
         if (error) {
-      console.error('[BLE] Monitor error:', error); // ADD
-      return;
-    }
-    
-    if (!characteristic?.value) {
-      console.log('[BLE] Received empty characteristic'); // ADD
-      return;
-    }
+          console.error('[BLE] Monitor error:', error);
+          return;
+        }
 
-    console.log('[BLE] Raw data received:', characteristic.value); // ADD
+        if (!characteristic?.value) {
+          if (__DEV__) console.log('[BLE] Notification with empty value');
+          return;
+        }
+
+        if (__DEV__) console.log('[BLE] Raw notification (b64 len):', characteristic.value.length);
 
         try {
           const decoded = config.decode(characteristic.value);
-          console.log('[BLE] Decoded data:', decoded); // ADD
-
-          setData({
-            ...decoded,
-            timestamp: Date.now(),
-          });
+          if (decoded != null) {
+            if (__DEV__) console.log('[BLE] Decoded sample:', decoded);
+            setData({
+              ...decoded,
+              timestamp: Date.now(),
+            });
+          }
         } catch (e) {
-          console.warn("BLE decode error:", e);
+          console.warn('[BLE] decode error:', e);
         }
       }
     );
@@ -311,7 +322,7 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
   /* ---------- Connection ---------- */
 
   const connectToDevice = async (device: Device) => {
-    if (!bleManager || bluetoothState !== State.PoweredOn) {
+    if (!bleManager || bluetoothStateRef.current !== State.PoweredOn) {
       const err = new Error("Bluetooth is not powered on");
       setError(err);
       throw err;
@@ -356,6 +367,7 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
 
       notificationCleanup.current?.();
       notificationCleanup.current = null;
+      config.resetDecodeState?.();
 
       if (connectedDevice && bleManager) {
         await bleManager.cancelDeviceConnection(connectedDevice.id);

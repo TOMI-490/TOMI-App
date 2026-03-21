@@ -1,6 +1,6 @@
 // utils/sensorProcessing.ts
 import { FlattenedBLEData } from '../hooks/useBLE';
-import { SmartwatchSensorData } from '../models/SmartwatchSensorData';
+import { SmartwatchSensorData } from '../models/smartwatchSensorData';
 
 export interface ProcessedSensorData {
   // Flattened IMU data

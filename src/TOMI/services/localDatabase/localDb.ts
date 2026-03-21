@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
+import type { SmartwatchSensorData } from '../../models/smartwatchSensorData';
 
 // Local SQLite database for high-frequency sensor data
 // Lazy-initialized to avoid holding the JS thread at module load time (New Architecture)

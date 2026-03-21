@@ -1,10 +1,11 @@
 // screens/SensorScreen.tsx - UPDATED VERSION
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutBle } from '../contexts/WorkoutBleContext';
 import { useSensorDataCollection } from '../hooks/useSensorDataCollection';
-import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
+import type { FlattenedBLEData } from '../hooks/useBLE';
+import type { SmartwatchSensorData } from '../models/smartwatchSensorData';
 import BLEPopup from '../components/ble/blePopup';
 
 /**
@@ -52,10 +53,17 @@ export default function SensorScreen() {
     writeData,
   } = useWorkoutBle();
 
+  /** Strip timestamp for the collection hook (expects SmartwatchSensorData). */
+  const sensorPayload = useMemo((): SmartwatchSensorData | null => {
+    if (!data) return null;
+    const { timestamp: _ts, ...sensor } = data as FlattenedBLEData<SmartwatchSensorData>;
+    return sensor;
+  }, [data]);
+
   useEffect(() => {
-  console.log('[SensorScreen] Connection Status:', connectionStatus);
-  console.log('[SensorScreen] Connected Device:', connectedDevice?.name);
-}, [connectionStatus, connectedDevice]);
+    console.log('[SensorScreen] Connection Status:', connectionStatus);
+    console.log('[SensorScreen] Connected Device:', connectedDevice?.name);
+  }, [connectionStatus, connectedDevice]);
 
   // ==========================================
   // DATA COLLECTION
@@ -72,13 +80,20 @@ export default function SensorScreen() {
     workoutId: TEST_WORKOUT_ID,
     isActive: isCollecting,
     useMockData,
-    realTimeData: data,
+    realTimeData: sensorPayload,
     connectionStatus,
     onConnectionLost: () => {
       console.warn('[Test] Connection lost during data collection!');
       setIsCollecting(false);
     },
   });
+
+  /** Show live BLE as soon as packets decode; collection view adds DB stats. */
+  const displaySample = useMemo(() => {
+    if (currentReading) return currentReading;
+    if (connectionStatus === 'connected' && sensorPayload) return sensorPayload;
+    return null;
+  }, [currentReading, connectionStatus, sensorPayload]);
 
   // ==========================================
   // HANDLERS
@@ -173,28 +188,32 @@ export default function SensorScreen() {
       {/* ========== REAL-TIME DATA ========== */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Real-Time Data</Text>
-        {currentReading ? (
+        {displaySample ? (
           <>
             <View style={styles.metricRow}>
               <Text style={styles.metricLabel}>Heart Rate:</Text>
-              <Text style={styles.metricValue}>{currentReading.heartRate} bpm</Text>
+              <Text style={styles.metricValue}>{displaySample.heartRate} bpm</Text>
             </View>
             <View style={styles.metricRow}>
               <Text style={styles.metricLabel}>SpO2:</Text>
-              <Text style={styles.metricValue}>{currentReading.spo2}%</Text>
+              <Text style={styles.metricValue}>{displaySample.spo2}%</Text>
             </View>
             
             {/* IMU Data (Debug) */}
             <Text style={styles.debugTitle}>IMU Data:</Text>
             <Text style={styles.debugText}>
-              Accel: ({currentReading.imu.ax.toFixed(2)}, {currentReading.imu.ay.toFixed(2)}, {currentReading.imu.az.toFixed(2)})
+              Accel: ({displaySample.imu.ax.toFixed(2)}, {displaySample.imu.ay.toFixed(2)}, {displaySample.imu.az.toFixed(2)})
             </Text>
             <Text style={styles.debugText}>
-              Gyro: ({currentReading.imu.gx.toFixed(2)}, {currentReading.imu.gy.toFixed(2)}, {currentReading.imu.gz.toFixed(2)})
+              Gyro: ({displaySample.imu.gx.toFixed(2)}, {displaySample.imu.gy.toFixed(2)}, {displaySample.imu.gz.toFixed(2)})
             </Text>
           </>
         ) : (
-          <Text style={styles.noData}>No data received yet</Text>
+          <Text style={styles.noData}>
+            {connectionStatus === 'connected'
+              ? 'Waiting for sensor packets… (watch must stream CSV on Nordic UART TX)'
+              : 'No data — connect to the watch first'}
+          </Text>
         )}
       </View>
 

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { sensorDataDb } from '../services/localDatabase/localDb';
 import { startMockDataStream, generateMockSensorData } from '../utils/mockSensorData';
-import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
+import type { SmartwatchSensorData } from '../models/smartwatchSensorData';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error';
 
