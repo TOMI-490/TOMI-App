@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Device } from "react-native-ble-plx";
 import { UseBLEReturn, FlattenedBLEData } from "./useBLE";
-import { SmartwatchSensorData } from "../models/SmartwatchSensorData";
+import { SmartwatchSensorData } from "../models/smartwatchSensorData";
 import { bleConfig } from "../models/bleConfig";
 
 function random(min: number, max: number) {

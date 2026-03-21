@@ -1,5 +1,5 @@
 // utils/mockSensorData.ts
-import type { SmartwatchSensorData } from '../models/SmartwatchSensorData';
+import type { SmartwatchSensorData } from '../models/smartwatchSensorData';
 
 /**
  * Generates realistic mock sensor data

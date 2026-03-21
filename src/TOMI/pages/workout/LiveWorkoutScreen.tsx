@@ -17,7 +17,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useWorkoutBle } from '../../contexts/WorkoutBleContext';
 import type { FlattenedBLEData } from '../../hooks/useBLE';
 import { useSensorDataCollection } from '../../hooks/useSensorDataCollection';
-import type { SmartwatchSensorData } from '../../models/SmartwatchSensorData';
+import type { SmartwatchSensorData } from '../../models/smartwatchSensorData';
 import BLEPopup from '../../components/ble/blePopup';
 
 const MAP_WORKOUT_TYPES = ['Running', 'Walking', 'Cycling'];

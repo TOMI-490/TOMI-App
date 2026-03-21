@@ -2,6 +2,9 @@ export interface bleConfig<T> {
   deviceNameFilter?: (name: string | null) => boolean;
   serviceUUID: string;
   characteristicUUID: string;
-  decode: (value: string) => T;
-  encode?: (command: string) => string; // NEW: Optional encode function
+  /** Base64 notification payload → decoded sample, or `null` if more bytes needed (partial frame). */
+  decode: (value: string) => T | null;
+  encode?: (command: string) => string;
+  /** Clear any decode-side buffer when connecting/disconnecting */
+  resetDecodeState?: () => void;
 }
