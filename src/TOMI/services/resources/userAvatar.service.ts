@@ -9,6 +9,9 @@ const avatarByUserCache = createAPICache<UserAvatarResponseDto>(120_000); // 2 m
 
 const norm = (d: UserAvatarResponseDto) => normalizeUserAvatarDto(d);
 
+/** Axios treats 404 as success so optional resources don't spam the HTTP error logger. */
+const OK_OR_NOT_FOUND = (status: number) => status === 200 || status === 404;
+
 export const userAvatarService = {
   getAll: (params?: Record<string, any>) =>
     httpClient
@@ -18,15 +21,22 @@ export const userAvatarService = {
   getById: (id: Id) =>
     httpClient.get<UserAvatarResponseDto>(`/api/v1/userAvatars/${id}`).then((r) => norm(r.data)),
 
-  getByUserId: async (userId: Id): Promise<UserAvatarResponseDto> => {
+  /** Returns null when the user has no avatar row yet (API 404). */
+  getByUserId: async (userId: Id): Promise<UserAvatarResponseDto | null> => {
     const key = `user:${userId}`;
     const fresh = avatarByUserCache.getFresh(key);
     if (fresh) return fresh;
 
     const stale = avatarByUserCache.get(key);
     const fetchPromise = httpClient
-      .get<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}`)
+      .get<UserAvatarResponseDto>(`/api/v1/userAvatars/user/${userId}`, {
+        validateStatus: OK_OR_NOT_FOUND,
+      })
       .then((r) => {
+        if (r.status === 404) {
+          avatarByUserCache.invalidate(key);
+          return null;
+        }
         const data = norm(r.data);
         avatarByUserCache.set(key, data);
         return data;

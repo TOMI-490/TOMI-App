@@ -14,7 +14,7 @@ import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useLanguage } from '../../hooks/useLanguage';
-import { useTranslation } from '../../locales/i18n';
+import { useTranslation, i18n } from '../../locales/i18n';
 import { communityService } from '../../services/community';
 import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -104,7 +104,7 @@ export default function FriendVisitPage() {
       Alert.alert(
         t('common.success'),
         t('friendProfile.removeSuccess'),
-        [{ text: t('common.yes'), onPress: () => router.back() }]
+        [{ text: t('common.ok'), onPress: () => router.back() }]
       );
     } catch (err: any) {
       console.error('[FriendVisitPage] Error removing friend:', err);
@@ -117,23 +117,20 @@ export default function FriendVisitPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}${t('history.min')} ${t('home.ago')}`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ${t('home.ago')}`;
-    } else if (diffDays < 7) {
-      return `${diffDays}d ${t('home.ago')}`;
-    }
-    return date.toLocaleDateString();
+  /** Readable date for workout rows (not raw ISO). */
+  const formatWorkoutDate = (iso: string) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    const loc = i18n.locale === 'fr' ? 'fr-FR' : 'en-US';
+    return date.toLocaleDateString(loc, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
+
+  const minLabel = t('home.min');
 
   if (loading) {
     return (
@@ -255,40 +252,58 @@ export default function FriendVisitPage() {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionHeaderTitle}>{t('friendProfile.recentWorkouts')}</Text>
-            {recentWorkouts.length > 3 && (
-              <TouchableOpacity onPress={() => {/* TODO: Navigate to full workouts list */}}>
+            {recentWorkouts.length > 5 && (
+              <TouchableOpacity onPress={() => { /* future: full list */ }} activeOpacity={0.7}>
                 <Text style={styles.sectionHeaderAction}>{t('common.seeAll')}</Text>
               </TouchableOpacity>
             )}
           </View>
           {recentWorkouts.length > 0 ? (
             <View style={styles.workoutsList}>
-              {recentWorkouts.slice(0, 3).map((workout) => (
-                <View key={workout.id} style={styles.workoutCard}>
-                  <View style={styles.workoutHeader}>
-                    <Text style={styles.workoutType}>{workout.type}</Text>
-                    <Text style={styles.workoutDate}>{formatDate(workout.startedAt)}</Text>
-                  </View>
-                  <View style={styles.workoutStats}>
-                    <View style={styles.workoutStat}>
-                      <Text style={styles.workoutStatLabel}>{t('history.duration')}</Text>
-                      <Text style={styles.workoutStatValue}>{workout.durationMinutes} {t('history.min')}</Text>
+              {recentWorkouts.map((workout) => {
+                const cals = workout.calories;
+                const hasCals = cals != null && cals > 0;
+                return (
+                  <View key={workout.id} style={styles.workoutCard}>
+                    <View style={styles.workoutHeader}>
+                      <Text style={styles.workoutType}>{workout.type}</Text>
+                      <Text style={styles.workoutDate}>{formatWorkoutDate(workout.startedAt)}</Text>
                     </View>
-                    {workout.xpEarned !== undefined && (
+                    <View style={styles.workoutStats}>
                       <View style={styles.workoutStat}>
-                        <Text style={styles.workoutStatLabel}>XP</Text>
-                        <Text style={styles.workoutStatValue}>{workout.xpEarned}</Text>
+                        <View style={styles.workoutStatLabelRow}>
+                          <Ionicons name="time-outline" size={12} color={T.textMuted} />
+                          <Text style={styles.workoutStatLabel}>{t('history.duration')}</Text>
+                        </View>
+                        <Text style={styles.workoutStatValue}>
+                          {workout.durationMinutes} {minLabel}
+                        </Text>
                       </View>
-                    )}
-                    {workout.calories !== undefined && (
                       <View style={styles.workoutStat}>
-                        <Text style={styles.workoutStatLabel}>{t('history.calories')}</Text>
-                        <Text style={styles.workoutStatValue}>{workout.calories}</Text>
+                        <View style={styles.workoutStatLabelRow}>
+                          <Ionicons name="flash-outline" size={12} color={T.textMuted} />
+                          <Text style={styles.workoutStatLabel}>{t('avatar.xpLabel')}</Text>
+                        </View>
+                        <Text style={styles.workoutStatValue}>{workout.xpEarned ?? 0}</Text>
                       </View>
-                    )}
+                      <View style={styles.workoutStat}>
+                        <View style={styles.workoutStatLabelRow}>
+                          <Ionicons name="flame-outline" size={12} color={T.textMuted} />
+                          <Text style={styles.workoutStatLabel}>{t('history.calories')}</Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.workoutStatValue,
+                            !hasCals && styles.workoutStatValueMuted,
+                          ]}
+                        >
+                          {hasCals ? Math.round(cals).toLocaleString() : '—'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           ) : (
             <View style={styles.emptyWorkouts}>

@@ -169,9 +169,8 @@ class DashboardService:
             else:
                 logger.info(f"[DASHBOARD] No goals found for user {user_id}")
             
-            # Calculate today's progress
+            # Calculate today's progress (must always be a TodayProgressDTO — never None, or Pydantic rejects DashboardDTO)
             logger.info(f"[DASHBOARD] Calculating today's progress")
-            today_progress_dto = None
             if workout_entities:
                 logger.info(f"[DASHBOARD] Found {len(workout_entities)} total workouts")
                 today_progress = calculate_today_progress(workout_entities)
@@ -184,6 +183,7 @@ class DashboardService:
                 logger.info(f"[DASHBOARD] Today progress DTO created: workouts={today_progress['workouts_count']}, minutes={today_progress['minutes']}, xp={today_progress['xp_earned']}")
             else:
                 logger.info(f"[DASHBOARD] No workouts found, using default progress")
+                today_progress_dto = TodayProgressDTO()
             
             # Build dashboard response
             logger.info(f"[DASHBOARD] Building dashboard response")
@@ -193,7 +193,7 @@ class DashboardService:
                 tomi=user_avatar_dto,
                 streaks=streak_dtos,
                 recentWorkouts=recent_workouts,
-                activeGoals=active_goals,
+                goals=active_goals,
                 todayProgress=today_progress_dto
             )
             

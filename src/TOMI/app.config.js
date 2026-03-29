@@ -13,6 +13,12 @@ module.exports = {
     ios: {
       bundleIdentifier: "com.tomi.workout",
       supportsTablet: true,
+      // Allow HTTP to your Mac/LAN during dev (FastAPI on :8000). Revisit for production HTTPS.
+      infoPlist: {
+        NSAppTransportSecurity: {
+          NSAllowsLocalNetworking: true,
+        },
+      },
       config: {
         googleMapsApiKey: process.env.MAP_API_KEY
       }
@@ -36,6 +42,14 @@ module.exports = {
       // favicon: "./assets/images/favicon.png"
     },
     plugins: [
+      [
+        "expo-build-properties",
+        {
+          android: {
+            usesCleartextTraffic: true,
+          },
+        },
+      ],
       "expo-router",
       "expo-sqlite",
       [

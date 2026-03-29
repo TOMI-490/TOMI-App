@@ -223,6 +223,9 @@ export default function CommunityPage() {
     try {
       const data = await communityService.getLeaderboard(user.userId, scope, leaderboardPeriod);
       setLeaderboard(data);
+      if (data?.entries?.length) {
+        fetchAvatarsForUsers(data.entries.map((e) => e.userId));
+      }
     } catch (err: any) {
       console.error('[CommunityPage] Error loading leaderboard:', err);
     }
@@ -234,10 +237,16 @@ export default function CommunityPage() {
     try {
       const data = await communityService.getLeaderboard(user.userId, leaderboardScope, period);
       setLeaderboard(data);
+      if (data?.entries?.length) {
+        fetchAvatarsForUsers(data.entries.map((e) => e.userId));
+      }
     } catch (err: any) {
       console.error('[CommunityPage] Error loading leaderboard:', err);
     }
   };
+
+  const formatXp = (xp: number) =>
+    xp.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   // ── Avatar renderer using expo-image (same as FriendVisitPage) ──
   const renderAvatar = (userId: number, size: number) => {
@@ -574,20 +583,20 @@ export default function CommunityPage() {
             {renderAvatar(entry.userId, avatarSize)}
             <View style={[styles.podiumBadge, badgeStyle]}>
               {isFirst ? (
-                <Ionicons name="star" size={11} color="#FFF" />
+                <Ionicons name="star" size={12} color="#FFF" />
               ) : (
-                <Text style={{ color: '#FFF', fontSize: 10, fontFamily: 'Montserrat-Bold' }}>{rank}</Text>
+                <Text style={{ color: '#FFF', fontSize: 11, fontFamily: 'Montserrat-Bold' }}>{rank}</Text>
               )}
             </View>
           </View>
           <Text
-            style={[styles.podiumName, isFirst && { fontFamily: 'Montserrat-Bold' }]}
-            numberOfLines={1}
+            style={[styles.podiumName, isFirst && styles.podiumNameFirst]}
+            numberOfLines={2}
           >
             {entry.displayName}
           </Text>
-          <Text style={isFirst ? styles.podiumXpFirst : styles.podiumXp}>{entry.xp}</Text>
-          <Text style={[styles.podiumXpLabel, isFirst && { color: T.primary }]}>XP</Text>
+          <Text style={isFirst ? styles.podiumXpFirst : styles.podiumXp}>{formatXp(entry.xp)}</Text>
+          <Text style={[styles.podiumXpLabel, isFirst && styles.podiumXpLabelFirst]}>XP</Text>
         </View>
       );
     };
@@ -598,13 +607,67 @@ export default function CommunityPage() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {/* ── Weekly Leaderboard Header ── */}
+        {/* ── Scope & period ── */}
+        <View style={styles.leaderboardFilterSection}>
+          <View>
+            <Text style={styles.leaderboardFilterLabel}>{t('community.leaderboardFilterScope')}</Text>
+            <View style={styles.leaderboardFilterRow}>
+              <TouchableOpacity
+                style={[styles.filterChip, leaderboardScope === 'friends' && styles.filterChipActive]}
+                onPress={() => handleLeaderboardScopeChange('friends')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.filterChipText, leaderboardScope === 'friends' && styles.filterChipTextActive]}>
+                  {t('community.leaderboardScopeFriends')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, leaderboardScope === 'global' && styles.filterChipActive]}
+                onPress={() => handleLeaderboardScopeChange('global')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.filterChipText, leaderboardScope === 'global' && styles.filterChipTextActive]}>
+                  {t('community.leaderboardScopeGlobal')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View>
+            <Text style={styles.leaderboardFilterLabel}>{t('community.leaderboardFilterPeriod')}</Text>
+            <View style={styles.leaderboardFilterRow}>
+              <TouchableOpacity
+                style={[styles.filterChip, leaderboardPeriod === 'week' && styles.filterChipActive]}
+                onPress={() => handleLeaderboardPeriodChange('week')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.filterChipText, leaderboardPeriod === 'week' && styles.filterChipTextActive]}>
+                  {t('community.leaderboardPeriodWeek')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, leaderboardPeriod === 'month' && styles.filterChipActive]}
+                onPress={() => handleLeaderboardPeriodChange('month')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.filterChipText, leaderboardPeriod === 'month' && styles.filterChipTextActive]}>
+                  {t('community.leaderboardPeriodMonth')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Hero card ── */}
         <View style={styles.leaderboardWeeklyCard}>
           <View style={styles.leaderboardTrophyCircle}>
-            <Ionicons name="trophy" size={30} color={T.warning} />
+            <Ionicons name="trophy" size={28} color={T.warning} />
           </View>
-          <Text style={styles.leaderboardWeeklyTitle}>{t('community.weeklyLeaderboard')}</Text>
-          <Text style={styles.leaderboardWeeklySubtitle}>{t('community.resetsEveryMonday')}</Text>
+          <Text style={styles.leaderboardWeeklyTitle}>
+            {leaderboardPeriod === 'week' ? t('community.weeklyLeaderboard') : t('community.monthlyLeaderboard')}
+          </Text>
+          <Text style={styles.leaderboardWeeklySubtitle}>
+            {leaderboardPeriod === 'week' ? t('community.resetsEveryMonday') : t('community.resetsFirstOfMonth')}
+          </Text>
         </View>
 
         {/* ── Podium ── */}
@@ -618,26 +681,44 @@ export default function CommunityPage() {
 
         {/* ── Divider ── */}
         {rest.length > 0 && (
-          <View style={styles.leaderboardDivider}>
+          <View style={[styles.leaderboardDivider, { marginTop: 16 }]}>
             <View style={styles.leaderboardDividerLine} />
-            <Text style={styles.leaderboardDividerText}>Rankings</Text>
+            <Text style={styles.leaderboardDividerText}>{t('community.leaderboardRankingsSection')}</Text>
             <View style={styles.leaderboardDividerLine} />
           </View>
         )}
 
         {/* ── Leaderboard List ── */}
         {rest.length === 0 && (!leaderboard || leaderboard.entries.length === 0) ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="trophy-outline" size={48} color={T.textLight} />
-            <Text style={styles.emptyStateText}>{t('community.leaderboardEmpty')}</Text>
+          <View style={styles.leaderboardEmptyWrap}>
+            <View style={styles.leaderboardEmptyIconCircle}>
+              <Ionicons name="trophy-outline" size={36} color={T.secondary} />
+            </View>
+            <Text style={styles.leaderboardEmptyText}>{t('community.leaderboardEmpty')}</Text>
+            <Text style={[styles.leaderboardWeeklySubtitle, { marginTop: 10 }]}>
+              {t('community.leaderboardOverview')}
+            </Text>
           </View>
         ) : (
           rest.map((entry) => {
             const isYou = user != null && entry.userId === user.userId;
+            const rank = entry.rank;
+            const accent =
+              rank === 4
+                ? styles.leaderboardRowAccent1
+                : rank === 5
+                  ? styles.leaderboardRowAccent2
+                  : rank === 6
+                    ? styles.leaderboardRowAccent3
+                    : styles.leaderboardRowList;
             return (
               <View
                 key={entry.userId}
-                style={[styles.leaderboardRow, isYou && styles.leaderboardRowCurrent]}
+                style={[
+                  styles.leaderboardRow,
+                  !isYou && accent,
+                  isYou && styles.leaderboardRowCurrent,
+                ]}
               >
                 <Text style={[styles.leaderboardRankText, isYou && { color: T.primary }]}>
                   {entry.rank}
@@ -675,7 +756,7 @@ export default function CommunityPage() {
                   <View style={styles.leaderboardXpRow}>
                     <Ionicons name="flash" size={14} color={T.primary} />
                     <Text style={[styles.leaderboardXp, isYou && { color: T.primary }]}>
-                      {entry.xp}
+                      {formatXp(entry.xp)}
                     </Text>
                   </View>
                   <Text style={styles.leaderboardXpLabel}>XP</Text>
@@ -728,12 +809,13 @@ export default function CommunityPage() {
         </View>
       </View>
 
-      {/* ── Tab Control ── */}
+      {/* ── Segmented tab rail ── */}
       <View style={styles.tabContainer}>
-        <View style={styles.tabControl}>
+        <View style={styles.tabRail}>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'friends' ? styles.tabButtonActive : styles.tabButtonInactive]}
             onPress={() => setActiveTab('friends')}
+            activeOpacity={0.88}
           >
             <Ionicons name="people" size={18} color={activeTab === 'friends' ? '#FFFFFF' : T.textMuted} />
             <Text style={[styles.tabButtonText, activeTab === 'friends' ? styles.tabButtonTextActive : styles.tabButtonTextInactive]}>
@@ -744,6 +826,7 @@ export default function CommunityPage() {
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'leaderboard' ? styles.tabButtonActive : styles.tabButtonInactive]}
             onPress={() => setActiveTab('leaderboard')}
+            activeOpacity={0.88}
           >
             <Ionicons name="trophy" size={18} color={activeTab === 'leaderboard' ? '#FFFFFF' : T.textMuted} />
             <Text style={[styles.tabButtonText, activeTab === 'leaderboard' ? styles.tabButtonTextActive : styles.tabButtonTextInactive]}>

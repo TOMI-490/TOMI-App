@@ -49,8 +49,8 @@ export function useTomiEffects(currentTomi: UserAvatarResponseDto | null | undef
     if (!userId) return;
     setEvolutionLoading(true);
     try {
-      const state: EvolutionStateDto = await evolutionService.getEvolutionState(userId, true);
-      if (state.isEligible && state.availableOptions.length > 0) {
+      const state = await evolutionService.getEvolutionState(userId, true);
+      if (state?.isEligible && state.availableOptions.length > 0) {
         console.log('[useTomiEffects] 🧬 EVOLUTION AVAILABLE! Options:', state.availableOptions.length);
         setEvolutionOptions(state.availableOptions);
         setShowEvolutionModal(true);

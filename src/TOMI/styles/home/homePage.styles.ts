@@ -161,6 +161,12 @@ export function createHomePageStyles(T: TomiThemeColors) {
     paddingRight: 10,
     minWidth:     0,
   },
+  headerActionsRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            8,
+    marginTop:      2,
+  },
   themeToggleBtn: {
     width:           44,
     height:          44,

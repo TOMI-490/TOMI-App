@@ -17,7 +17,7 @@ import { gamificationService } from '../services/gamification';
 import { populateUserCache } from '../hooks/useCurrentUser';
 import { populateDashboardCache, type DashboardData } from '../hooks/useDashboardData';
 import { populateGamificationCache } from '../hooks/useGamification';
-import { populateAvatarPageCache } from '../hooks/useAvatarPage';
+import { populateAvatarPageCache, invalidateAvatarPageCache } from '../hooks/useAvatarPage';
 import { populateHistorySummaryCache, populateHistoryFullWorkoutsCache } from '../pages/main/HistoryPage';
 import { evolutionService } from '../services/resources/evolution.service';
 
@@ -62,7 +62,8 @@ export async function preloadAllData(authId: string): Promise<void> {
 
       // AvatarPage — same as useAvatarPage / userAvatarService.getByUserId
       userAvatarService.getByUserId(userId).then((avatar) => {
-        populateAvatarPageCache(userId, avatar);
+        if (avatar) populateAvatarPageCache(userId, avatar);
+        else invalidateAvatarPageCache(userId);
       }),
 
       // AvatarPage evolution tab — evolutionService APICache (same as AvatarPage / Evolve flows)

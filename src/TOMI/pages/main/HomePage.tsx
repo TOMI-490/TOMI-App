@@ -42,6 +42,8 @@ import { userAvatarService } from '../../services/resources/userAvatar.service';
 import { invalidateDashboardCache } from '../../hooks/useDashboardData';
 import { invalidateAvatarPageCache } from '../../hooks/useAvatarPage';
 import { DailyChallengesList } from '../../components/DailyChallengesList';
+import { signOut } from '../../services/auth';
+import { clearAllCaches } from '../../utils/cacheManager';
 import { EarnedBadge, UpcomingBadge } from '../../services/gamification';
 import type { EvolutionNodeDto } from '../../models/dto/Evolution.dto';
 
@@ -142,6 +144,18 @@ export default function HomePage() {
   const onThemeIconPress = useCallback(() => {
     void setPreference(resolvedScheme === 'dark' ? 'light' : 'dark');
   }, [resolvedScheme, setPreference]);
+
+  const onLogoutPress = useCallback(async () => {
+    try {
+      clearAllCaches();
+      await signOut();
+    } catch (e) {
+      console.error('[HomePage] Logout failed:', e);
+    } finally {
+      router.replace('/(auth)/login');
+    }
+  }, [router]);
+
   useLanguage(user);
 
   const { data, loading, error, refresh } = useDashboard(user);
@@ -264,19 +278,30 @@ export default function HomePage() {
             <Text style={styles.greetingTitle}>Hey {userName}!</Text>
             <Text style={styles.greetingSubtitle}>{"Let's crush your goals today"}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.themeToggleBtn}
-            onPress={onThemeIconPress}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel={resolvedScheme === 'dark' ? 'Switch to light mode' : 'Switch to night mode'}
-          >
-            <Ionicons
-              name={resolvedScheme === 'dark' ? 'sunny' : 'moon'}
-              size={22}
-              color={T.primary}
-            />
-          </TouchableOpacity>
+          <View style={styles.headerActionsRow}>
+            <TouchableOpacity
+              style={styles.themeToggleBtn}
+              onPress={onLogoutPress}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.logOut')}
+            >
+              <Ionicons name="log-out-outline" size={22} color={T.danger} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.themeToggleBtn}
+              onPress={onThemeIconPress}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={resolvedScheme === 'dark' ? 'Switch to light mode' : 'Switch to night mode'}
+            >
+              <Ionicons
+                name={resolvedScheme === 'dark' ? 'sunny' : 'moon'}
+                size={22}
+                color={T.primary}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {error && !loading && (

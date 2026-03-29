@@ -63,10 +63,18 @@ export function useAvatarPage(userId: number | undefined): UseAvatarPageResult {
         console.log('[useAvatarPage] 🐾 Fetching avatar for user:', userId);
       }
       const data = await userAvatarService.getByUserId(userId);
-      avatarPageCache.set(userId, { data, timestamp: Date.now() });
-      setAvatar(data);
-      if (__DEV__) {
-        console.log('[useAvatarPage] ✓ Avatar loaded:', data.nickname, 'Level', data.level);
+      if (data) {
+        avatarPageCache.set(userId, { data, timestamp: Date.now() });
+        setAvatar(data);
+        if (__DEV__) {
+          console.log('[useAvatarPage] ✓ Avatar loaded:', data.nickname, 'Level', data.level);
+        }
+      } else {
+        avatarPageCache.delete(userId);
+        setAvatar(null);
+        if (__DEV__) {
+          console.log('[useAvatarPage] No avatar row yet (404) — expected for new accounts');
+        }
       }
     } catch (err) {
       const e = err instanceof Error ? err : new Error('Failed to load avatar');

@@ -139,6 +139,7 @@
     "no": "Non",
     "back": "Retour",
     "confirm": "Confirmer",
+    "ok": "OK",
     "seeAll": "Voir tout"
   },
   "avatar": {
@@ -267,7 +268,8 @@
     "needActivity": "Activité",
     "needNutrition": "Nutrition",
     "needHealth": "Santé",
-    "needRest": "Repos"
+    "needRest": "Repos",
+    "logOut": "Déconnexion"
   },
   "nav": {
     "home": "Accueil",
@@ -349,6 +351,7 @@
     "noData": "Aucune donnée disponible",
     "workoutDetail": "Détails de l'entraînement",
     "duration": "Durée",
+    "min": "min",
     "calories": "Calories",
     "avgHR": "FC moy",
     "distance": "Distance",
@@ -383,7 +386,12 @@
     "findMoreFriendsSubtitle": "Rivalisez avec les autres et restez motivé",
     "browseUsers": "Parcourir les utilisateurs",
     "weeklyLeaderboard": "Classement hebdomadaire",
+    "monthlyLeaderboard": "Classement mensuel",
     "resetsEveryMonday": "Réinitialisation chaque lundi à minuit",
+    "resetsFirstOfMonth": "Réinitialisation le 1er de chaque mois",
+    "leaderboardRankingsSection": "Classement",
+    "leaderboardFilterScope": "Portée",
+    "leaderboardFilterPeriod": "Période",
     "xpThisWeek": "{xp} XP cette semaine",
     "friendsOverview": "Ajoutez des amis pour comparer les XP et visiter leurs avatars.",
     "friendsCount": "Amis: {count}",

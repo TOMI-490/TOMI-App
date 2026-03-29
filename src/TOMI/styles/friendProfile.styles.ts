@@ -233,9 +233,12 @@ export function createFriendProfileStyles(T: TomiThemeColors) {
     gap: 10,
   },
   workoutCard: {
-    backgroundColor: T.cardBgAlt,
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: T.cardBg,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: T.borderLight,
+    ...shadowSm,
   },
   workoutHeader: {
     flexDirection: 'row',
@@ -255,23 +258,37 @@ export function createFriendProfileStyles(T: TomiThemeColors) {
   },
   workoutStats: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 2,
   },
   workoutStat: {
     flex: 1,
+    minWidth: 88,
+  },
+  workoutStatLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
   },
   workoutStatLabel: {
     fontFamily: 'Montserrat-SemiBold',
     fontSize: 10,
     color: T.textMuted,
-    marginBottom: 2,
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
   workoutStatValue: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 15,
+    fontSize: 16,
     color: T.textPrimary,
+    letterSpacing: -0.3,
+  },
+  workoutStatValueMuted: {
+    color: T.textLight,
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 15,
   },
   emptyWorkouts: {
     padding: 32,

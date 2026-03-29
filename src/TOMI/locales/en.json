@@ -135,7 +135,8 @@
     "needActivity": "Activity",
     "needNutrition": "Nutrition",
     "needHealth": "Health",
-    "needRest": "Rest"
+    "needRest": "Rest",
+    "logOut": "Log out"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -175,6 +176,7 @@
     "no": "No",
     "back": "Back",
     "confirm": "Confirm",
+    "ok": "OK",
     "seeAll": "See all"
   },
   "avatar": {
@@ -295,6 +297,7 @@
     "noData": "No data available",
     "workoutDetail": "Workout Details",
     "duration": "Duration",
+    "min": "min",
     "calories": "Calories",
     "avgHR": "Avg HR",
     "distance": "Distance",
@@ -381,7 +384,12 @@
     "findMoreFriendsSubtitle": "Compete with others and stay motivated",
     "browseUsers": "Browse Users",
     "weeklyLeaderboard": "Weekly Leaderboard",
+    "monthlyLeaderboard": "Monthly Leaderboard",
     "resetsEveryMonday": "Resets every Monday at midnight",
+    "resetsFirstOfMonth": "Resets on the 1st of each month",
+    "leaderboardRankingsSection": "Rankings",
+    "leaderboardFilterScope": "Scope",
+    "leaderboardFilterPeriod": "Period",
     "xpThisWeek": "{xp} XP this week",
     "friendsOverview": "Add friends to compare XP and visit their avatars.",
     "friendsCount": "Friends: {count}",

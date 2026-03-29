@@ -107,6 +107,22 @@ export default function AvatarPage() {
     );
   }
 
+  if (!loading && !avatar && !error) {
+    return (
+      <ScreenWrapper style={styles.screen}>
+        <View style={styles.centered}>
+          <MaterialCommunityIcons name="emoticon-happy-outline" size={48} color={T.textMuted} />
+          <Text style={[styles.loadingText, { marginTop: 16, textAlign: 'center', paddingHorizontal: 24 }]}>
+            {t('avatar.noAvatarFound')}
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refresh}>
+            <Text style={styles.retryText}>{t('avatar.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
   const nickname = avatar?.nickname ?? 'Buddy';
   const level = avatar?.level ?? 1;
   const xp = avatar?.xp ?? 0;
@@ -367,6 +383,7 @@ function EvolutionContent({
   styles: AvatarPageStyles;
   T: TomiThemeColors;
 }) {
+  const { t } = useTranslation();
   const [evoState, setEvoState] = useState<EvolutionStateDto | null>(null);
   const [loadingEvo, setLoadingEvo] = useState(true);
   const [showEvoModal, setShowEvoModal] = useState(false);
@@ -378,7 +395,7 @@ function EvolutionContent({
       const state = await evolutionService.getEvolutionState(userId, force);
       setEvoState(state);
       // Auto-trigger the evolution modal if eligible
-      if (state.isEligible && state.availableOptions.length > 0) {
+      if (state?.isEligible && state.availableOptions.length > 0) {
         setShowEvoModal(true);
       }
     } catch {
@@ -401,7 +418,7 @@ function EvolutionContent({
         invalidateAvatarPageCache(userId);
         setShowEvoModal(false);
         const freshState = await evolutionService.getEvolutionState(userId, true);
-        setEvoState(freshState);
+        if (freshState) setEvoState(freshState);
         onEvolved();
         Alert.alert('Evolution Complete!', resp.message);
       } else {
@@ -426,8 +443,10 @@ function EvolutionContent({
   if (!evoState) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={40} color={T.textMuted} />
-        <Text style={styles.errorText}>Unable to load evolution data.</Text>
+        <Ionicons name="git-branch-outline" size={40} color={T.textMuted} />
+        <Text style={[styles.errorText, { textAlign: 'center', paddingHorizontal: 24 }]}>
+          {t('avatar.noAvatarFound')}
+        </Text>
       </View>
     );
   }
