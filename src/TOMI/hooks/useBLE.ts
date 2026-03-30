@@ -184,14 +184,14 @@ function useBLE<T>(config: bleConfig<T>): UseBLEReturn<T> {
 
     // First, check for already-connected devices (paired in iOS Settings)
     const serviceUUIDs = config.serviceUUID ? [config.serviceUUID] : [];
+    // OS-reported peripherals already connected for our GATT service — trust that over name filter
+    // so watches like "Ophelia3" still appear even if deviceNameFilter is strict for scan noise.
     bleManager.connectedDevices(serviceUUIDs).then((connectedDevices) => {
-      console.log('[BLE] Already connected devices:', connectedDevices.map(d => d.name));
+      console.log('[BLE] Already connected devices:', connectedDevices.map((d) => d.name));
       connectedDevices.forEach((device) => {
-        if (config.deviceNameFilter?.(device.name ?? device.localName) ?? true) {
-          setDevices((prev) =>
-            prev.some((d) => d.id === device.id) ? prev : [...prev, device]
-          );
-        }
+        setDevices((prev) =>
+          prev.some((d) => d.id === device.id) ? prev : [...prev, device],
+        );
       });
     }).catch((e) => {
       console.warn('[BLE] Error checking connected devices:', e);

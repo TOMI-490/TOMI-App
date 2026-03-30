@@ -28,9 +28,15 @@ export function resetSmartwatchBleDecodeBuffer(): void {
 }
 
 export const smartwatchBleConfig: bleConfig<SmartwatchSensorData> = {
+  /** Match common dev-board / smartwatch BLE names (extend as you add hardware). */
   deviceNameFilter: (name) => {
     if (!name) return false;
-    const match = name.toUpperCase().includes('XIAO');
+    const u = name.toUpperCase();
+    const match =
+      u.includes('XIAO') ||
+      u.includes('OPHELIA') ||
+      u.includes('NRF') ||
+      u.includes('UART');
     if (__DEV__ && match) {
       console.log(`[BLE Filter] Accepted device: "${name}"`);
     }
