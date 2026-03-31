@@ -1,490 +1,225 @@
 # TOMI App
 
-A full-stack fitness and wellness application with a Python FastAPI backend and React Native (Expo) mobile frontend.
+**Capstone deliverable (TOMI-490)** — A full-stack fitness and wellness application with a Python FastAPI backend and a React Native (Expo) mobile app. This repository reflects the **completed** capstone: core product features, smartwatch BLE integration, offline-friendly data paths, and gamification are implemented end-to-end.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
 - [Features](#features)
 - [API Documentation](#api-documentation)
 - [Database](#database)
 - [Contributing](#contributing)
 
-## 🎯 Overview
+## Overview
 
-TOMI is a comprehensive fitness and wellness tracking application that helps users monitor their workouts, achieve their fitness goals, connect with friends, and earn badges for their accomplishments. The app integrates with wearable devices to track activity and provides a gamified experience with avatars, streaks, and leaderboards.
+TOMI helps users track workouts, set goals, connect with friends, and stay motivated through XP, levels, badges, streaks, and leaderboards. The mobile app can connect to a compatible smartwatch over **Bluetooth Low Energy (BLE)** during workouts, buffer sensor-related data locally with **SQLite**, and sync with the backend when online. Deep links use the `tomi` URL scheme (see `src/TOMI/app.config.js`).
 
-## 🏗️ Architecture
+## Architecture
 
-The project follows a clean architecture pattern with clear separation of concerns:
+- **Mobile app**: Expo Router, TypeScript, themed UI (including NativeWind / Tailwind where used), Supabase client for auth/data, Axios for the FastAPI backend.
+- **Backend**: FastAPI with route modules under `Server/Routes`, domain logic in `Core/Services`, DTOs/entities in `Core`, and Supabase-backed repositories in `Infrastructure`.
+- **Database**: Supabase (PostgreSQL) as the system of record; on-device SQLite for offline-oriented flows.
 
-- **Frontend**: React Native mobile app built with Expo
-- **Backend**: FastAPI REST API with a layered architecture
-- **Database**: Supabase (PostgreSQL)
+Backend request/response shaping uses a consistent `MobileResponse` wrapper (see `src/Backend/Server/program.py`).
 
-### Backend Architecture Layers
-
-```
-Server Layer (Routes)
-    ↓
-Core Layer (DTOs, Entities)
-    ↓
-Infrastructure Layer (Repositories, Database)
-```
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
-- **Framework**: FastAPI 
-- **Language**: Python 3.x
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: HTTP Bearer Token
-- **ORM**: Supabase Python Client
-- **Environment**: python-dotenv
-- **Server**: Uvicorn (ASGI)
 
-### Frontend
-- **Framework**: React Native with Expo (~54.0.27)
-- **Language**: TypeScript
-- **Navigation**: Expo Router (~6.0.17)
-- **UI Components**: React Navigation, Expo Vector Icons
-- **State Management**: React 19.1.0
-- **Styling**: React Native StyleSheet
+- **Framework**: FastAPI  
+- **Language**: Python 3.9+  
+- **Database**: Supabase (PostgreSQL)  
+- **Server**: Uvicorn (ASGI)  
+- **Config**: python-dotenv  
 
-## 📁 Project Structure
+### Frontend (`src/TOMI`)
+
+- **Framework**: React Native with Expo ~54.x  
+- **Language**: TypeScript  
+- **Navigation**: Expo Router ~6.x  
+- **HTTP**: Axios  
+- **Auth / cloud**: `@supabase/supabase-js`, Expo Secure Store  
+- **Offline**: Expo SQLite  
+- **BLE**: react-native-ble-plx (Expo config plugin in `app.config.js`)  
+- **Maps**: react-native-maps (Google Maps API key via `MAP_API_KEY` in `.env`)  
+- **UI**: React Native StyleSheet, NativeWind / Tailwind (v4), vector icons, Reanimated  
+
+## Project Structure
+
+High-level layout (not every file):
 
 ```
 TOMI-App/
 ├── README.md
 ├── .gitignore
-├── .venv/                          # Python virtual environment
+├── .venv/                          # Python virtual environment (local)
 └── src/
     ├── Backend/
-    │   ├── README.md
-    │   ├── start_server.sh
     │   ├── Core/
-    │   │   ├── DTO/                # Data Transfer Objects
-    │   │   │   ├── UserDTO.py
-    │   │   │   ├── WorkoutDTO.py
-    │   │   │   ├── GoalDTO.py
-    │   │   │   ├── ProfileDTO.py
-    │   │   │   ├── BadgeDTO.py
-    │   │   │   ├── AvatarDTO.py
-    │   │   │   ├── FriendDTO.py
-    │   │   │   ├── StreakDTO.py
-    │   │   │   ├── LeaderboardDTO.py
-    │   │   │   ├── NotificationDTO.py
-    │   │   │   ├── DashboardDTO.py  # Dashboard with Today's Progress
-    │   │   │   ├── GamificationDTO.py
-    │   │   │   └── WatchDeviceDTO.py
-    │   │   ├── Entity/             # Database Entities
-    │   │   │   ├── UserEntity.py
-    │   │   │   ├── WorkoutEntity.py  # Includes xp_awarded field
-    │   │   │   ├── GoalEntity.py
-    │   │   │   ├── ProfileEntity.py
-    │   │   │   ├── BadgeEntity.py
-    │   │   │   ├── AvatarEntity.py
-    │   │   │   ├── FriendEntity.py
-    │   │   │   ├── StreakEntity.py
-    │   │   │   ├── LeaderboardEntity.py
-    │   │   │   ├── Notifications.py
-    │   │   │   └── WatchDeviceEntity.py
-    │   │   └── Utils/              # Utility functions
-    │   │       └── xp_service.py   # XP calculation and progression logic
-    │   │
+    │   │   ├── DTO/
+    │   │   ├── Entity/
+    │   │   ├── Services/           # Domain services (workouts, dashboard, evolution, etc.)
+    │   │   └── Utils/              # e.g. XP helpers, history helpers
     │   ├── Infrastructure/
-    │   │   ├── Repository/         # Data Access Layer
-    │   │   │   ├── __init__.py
-    │   │   │   ├── UserRepository.py
-    │   │   │   ├── WorkoutRepository.py
-    │   │   │   ├── GoalRepository.py
-    │   │   │   ├── ProfileRepository.py
-    │   │   │   ├── BadgeRepository.py
-    │   │   │   ├── AvatarRepository.py
-    │   │   │   ├── FriendRepository.py
-    │   │   │   ├── StreakRepository.py
-    │   │   │   ├── LeaderboardRepository.py
-    │   │   │   ├── NotificationRepository.py
-    │   │   │   └── WatchDeviceRepository.py
+    │   │   ├── Repository/
     │   │   └── Supabase/
-    │   │       └── db_connection.py # Database connection management
-    │   │
     │   └── Server/
-    │       ├── program.py          # FastAPI application entry point
-    │       └── Routes/             # API endpoints
-    │           ├── UserRoutes.py
-    │           ├── WorkoutRoutes.py
-    │           ├── GoalRoutes.py
-    │           ├── AvatarRoutes.py
-    │           ├── BadgeRoutes.py
-    │           ├── FriendRoutes.py
-    │           ├── ProfileRoutes.py
-    │           ├── StreakRoutes.py
-    │           ├── LeaderboardRoutes.py
-    │           ├── NotificationRoutes.py
-    │           └── WatchDeviceRoutes.py
+    │       ├── program.py          # FastAPI app, CORS, router registration
+    │       └── Routes/             # Versioned under /api/v1/...
     │
-    └── TOMI/                       # React Native Frontend
-        ├── app/                    # Expo Router app directory
-        │   ├── _layout.tsx        # Root layout with deep link handling
-        │   ├── (auth)/            # Authentication screens
-        │   │   ├── login.tsx
-        │   │   ├── register.tsx
-        │   │   ├── forgot-password.tsx
-        │   │   └── reset-password.tsx
-        │   └── (tabs)/            # Tab navigation screens
-        │
-        ├── pages/                  # Main page components
-        │   ├── HomePage.tsx        # Dashboard with Today's Progress & Past Workouts
-        │   ├── LoginPage.tsx
-        │   ├── RegisterPage.tsx   # Registration with email pre-check
-        │   ├── ForgotPasswordPage.tsx  # Password reset request (⚠️ deep linking needs configuration)
-        │   ├── ResetPasswordPage.tsx   # Password reset form (⚠️ deep linking needs configuration)
-        │   ├── WorkoutPage.tsx
-        │   ├── WorkoutStartScreen.tsx  # Workout type selection with XP preview
-        │   ├── LiveWorkoutScreen.tsx   # Active workout tracking
-        │   ├── WorkoutSummaryScreen.tsx # Workout completion summary
-        │   ├── CommunityPage.tsx
-        │   ├── HistoryPage.tsx
-        │   └── AvatarPage.tsx
-        │
-        ├── components/             # Reusable UI components
-        │   ├── auth/              # Authentication components
-        │   │   ├── index.ts
-        │   │   ├── AuthCard.tsx
-        │   │   ├── AuthContainer.tsx
-        │   │   ├── FormInput.tsx
-        │   │   ├── PickerInput.tsx       # Custom modal picker
-        │   │   ├── PrimaryButton.tsx
-        │   │   ├── SecondaryButton.tsx
-        │   │   ├── PasswordStrengthIndicator.tsx
-        │   │   ├── ProgressBar.tsx
-        │   │   └── LogoPlaceholder.tsx
-        │   ├── gamification/      # Gamification components
-        │   │   ├── ProgressRings.tsx     # XP and level progress rings
-        │   │   ├── BadgesCard.tsx        # Badge display
-        │   │   ├── LeaderboardPreviewCard.tsx
-        │   │   ├── XpToast.tsx           # XP gain notification
-        │   │   ├── LevelUpModal.tsx      # Level up celebration
-        │   │   └── index.ts
-        │   ├── ui/
-        │   ├── haptic-tab.tsx
-        │   ├── ScreenWrapper.tsx
-        │   ├── themed-text.tsx
-        │   └── themed-view.tsx
-        │
-        ├── styles/                # Centralized styles
-        │   ├── auth/              # Authentication screen styles
-        │   │   ├── authCard.styles.ts
-        │   │   ├── authContainer.styles.ts
-        │   │   ├── formInput.styles.ts
-        │   │   ├── pickerInput.styles.ts
-        │   │   ├── primaryButton.styles.ts
-        │   │   ├── secondaryButton.styles.ts
-        │   │   ├── passwordStrengthIndicator.styles.ts
-        │   │   ├── progressBar.styles.ts
-        │   │   └── logoPlaceholder.styles.ts
-        │   ├── workout/           # Workout flow styles
-        │   │   ├── workoutStartScreen.styles.ts
-        │   │   ├── liveWorkoutScreen.styles.ts
-        │   │   └── workoutSummaryScreen.styles.ts
-        │   ├── gamification/      # Gamification component styles
-        │   ├── home/              # Home page styles
-        │   │   └── homePage.styles.ts
-        │   ├── auth.styles.ts     # Shared auth styles
-        │   └── README.md          # Style organization documentation
-        │
-        ├── services/              # API services
-        │   ├── auth.ts           # Authentication service (login, register, password reset)
-        │   ├── httpClient.ts     # Axios HTTP client configuration
-        │   ├── api.ts            # General API utilities
-        │   ├── gamification.ts   # Gamification service
-        │   ├── config/
-        │   │   └── api.config.ts # API configuration
-        │   ├── core/
-        │   │   ├── base.service.ts
-        │   │   └── supabase.ts   # Supabase client initialization
-        │   └── resources/
-        │       ├── user.service.ts     # User API service with email check
-        │       ├── workout.service.ts  # Workout CRUD and flow operations
-        │       ├── workoutType.service.ts # Workout type management
-        │       └── gamification.service.ts # Gamification data fetching
-        │
-        ├── models/                # TypeScript models and DTOs
-        │   ├── index.ts
-        │   └── dto/
-        │       ├── User.dto.ts    # User DTOs (authID, created_at)
-        │       ├── Workout.dto.ts # Workout DTOs with xpAwarded field
-        │       ├── WorkoutType.dto.ts
-        │       ├── Dashboard.dto.ts # Dashboard and Today's Progress
-        │       ├── UserAvatar.dto.ts
-        │       └── Gamification.dto.ts
-        │
-        ├── constants/             # Application constants
-        │   └── options.ts         # Country, unit system, language options
-        │
-        ├── locales/               # Internationalization
-        │   ├── en.json           # English translations
-        │   ├── fr.json           # French translations
-        │   └── i18n.ts           # i18n configuration
-        │
-        ├── hooks/                 # Custom React hooks
-        │   ├── use-color-scheme.ts
-        │   ├── useCurrentUser.ts  # Current user data fetching
-        │   ├── useDashboardData.ts # Dashboard data with Today's Progress
-        │   ├── useGamification.ts # Gamification data (badges, leaderboard)
-        │   ├── useTomiEffects.ts  # XP and level up effect detection
-        │   ├── usePastWorkouts.ts # Past workouts with XP data
-        │   └── useLanguage.ts     # Multi-language support
-        │
-        ├── app.json
-        ├── eslint.config.js
-        ├── expo-env.d.ts
-        ├── package.json
-        ├── tsconfig.json
-        └── README.md
+    └── TOMI/                       # Expo mobile app
+        ├── app/                    # Expo Router (tabs, auth, workout flows)
+        ├── pages/                  # main/, auth/, workout/, community/, etc.
+        ├── components/             # auth, gamification, BLE, community, ...
+        ├── contexts/               # e.g. Theme, WorkoutBle
+        ├── hooks/                  # useBLE, dashboard, gamification, ...
+        ├── services/               # httpClient, sync, local DB, BLE, resources/
+        ├── models/
+        ├── locales/
+        ├── styles/
+        └── app.config.js           # scheme, BLE plugin, maps keys
 ```
 
-## 🚀 Getting Started
+For backend and frontend specifics, see `src/Backend/README.md` and `src/TOMI/README.md` if present.
+
+## Getting Started
 
 ### Prerequisites
 
-- **Python**: 3.9 or higher
-- **Node.js**: 18.x or higher
-- **npm** or **yarn**: Latest version
-- **Expo CLI**: Install globally with `npm install -g expo-cli`
-- **Supabase Account**: Sign up at [supabase.com](https://supabase.com)
+- Python 3.9+
+- Node.js 18+
+- npm or yarn
+- Supabase project ([supabase.com](https://supabase.com))
+- For physical device testing: Expo Go or a dev build; BLE features require a **development build** (not plain Expo Go) where native BLE is included.
 
-### Backend Setup
+### Backend
 
-1. **Navigate to the project root:**
-   ```bash
-   cd TOMI-App
-   ```
+```bash
+cd TOMI-App
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install fastapi uvicorn supabase python-dotenv
+```
 
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv .venv
-   
-   # On macOS/Linux:
-   source .venv/bin/activate
-   
-   # On Windows:
-   .venv\Scripts\activate
-   ```
+Create a `.env` under `src/` (or as documented in your team’s setup) with at least:
 
-3. **Install Python dependencies:**
-   ```bash
-   pip install fastapi uvicorn supabase python-dotenv
-   ```
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_or_service_role_key
+```
 
-4. **Configure environment variables:**
-   
-   Create a `.env` file in the `src/` directory with the following:
-   ```env
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_KEY=your_supabase_anon_key
-   ```
+Run the API (from repo root, adjust path if your team uses a different entry):
 
-5. **Run the backend server:**
-   ```bash
-   cd src/Backend/Server
-   python -m uvicorn program:app --reload --host 127.0.0.1 --port 8000
-   ```
+```bash
+cd src/Backend/Server
+python -m uvicorn program:app --reload --host 0.0.0.0 --port 8000
+```
 
-   The API will be available at:
-   - **API Base**: http://127.0.0.1:8000
-   - **Swagger Docs**: http://127.0.0.1:8000/api/docs
-   - **ReDoc**: http://127.0.0.1:8000/api/redoc
+- **API base**: `http://127.0.0.1:8000` (use your machine’s LAN IP from a phone when testing on device)
+- **Swagger**: `http://127.0.0.1:8000/api/docs`
+- **ReDoc**: `http://127.0.0.1:8000/api/redoc`
 
-### Frontend Setup
+All registered routers use the **`/api/v1`** prefix (e.g. `/api/v1/workouts`).
 
-1. **Navigate to the TOMI directory:**
-   ```bash
-   cd src/TOMI
-   ```
+### Frontend
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```bash
+cd src/TOMI
+npm install
+```
 
-3. **Start the Expo development server:**
-   ```bash
-   npm start
-   ```
+Optional: copy or create `src/TOMI/.env` for `MAP_API_KEY` and any Expo public vars your team uses.
 
-4. **Run on specific platform:**
-   ```bash
-   # iOS
-   npm run ios
-   
-   # Android
-   npm run android
-   
-   # Web
-   npm run web
-   ```
+```bash
+npm start
+# then iOS / Android / web, or use the Expo CLI UI
+npm run ios
+npm run android
+npm run web
+```
 
-5. **Scan QR code:**
-   - Use the Expo Go app on your mobile device to scan the QR code displayed in the terminal
+Point the app’s API base URL at your running backend (see `src/TOMI/services/config/` — config may expect a dev machine IP for device testing).
 
-## ✨ Features
+## Features
 
-### User Management
-- User registration and authentication
-- Profile management
-- Avatar customization
-- User preferences and settings
+### Account and profile
 
-### Workout Tracking
-- **Complete Workout Flow**: Start → Live Tracking → Summary
-- Record workouts with details (type, duration, intensity)
-- Multiple workout types support (Running, Walking, Cycling, Swimming, Strength Training, Yoga)
-- Integration with wearable devices (Apple Watch, Fitbit, etc.)
-- Workout history with XP earned per workout
-- Real-time workout tracking with pause/resume functionality
+- Registration, login, password reset flows (deep link scheme `tomi`)
+- Profile and preferences
 
-### XP & Gamification System
-- **Randomized XP System**: Each workout earns 5-49 XP (generated on frontend, stored in backend)
-- XP preview on workout type selection cards
-- Level progression with visual feedback
-- Level up celebrations with modal notifications
-- XP gain notifications with toast messages
-- Progress rings showing XP and level progression
-- Avatar system with level-based progression
+### Workouts
 
-### Dashboard & Progress Tracking
-- **Today's Progress**: Real-time tracking of daily workouts, minutes, and XP earned
-- Past workouts carousel with XP badges
-- Streak tracking for consecutive activity days
-- Goal progress monitoring
-- Weekly, monthly, and all-time statistics
-
-### Goals & Achievements
-- Set and track fitness goals
-- Progress monitoring
-- Goal types: steps, calories, distance, workout frequency
-- Goal status tracking
-
-### Social Features
-- Friend connections and friend requests
-- Friend status management
-- Leaderboards (weekly, monthly, all-time)
-- Activity sharing
+- Start → live workout → summary flow with pause/resume where supported
+- Workout types and XP awarded per session (integrated with avatar progression)
+- Optional **BLE smartwatch** connection during workouts; local buffering and sync patterns in services layer
+- Workout detail views
 
 ### Gamification
-- Badge system for achievements
-- User avatars with customization
-- Streak tracking for consecutive activity days
-- Points and rewards system
 
-### Notifications
-- Push notifications for achievements
-- Friend activity updates
-- Goal reminders
-- Streak maintenance alerts
+- XP, levels, level-up and evolution-style milestones
+- Badges, streaks, leaderboard previews
+- Avatar progression tied to backend user-avatar and evolution APIs
+- Home **daily challenges** / quest-style goals
 
-## 📚 API Documentation
+### Social
 
-Once the backend is running, you can access the interactive API documentation:
+- Friends and community views
+- Visiting friend profiles
 
-- **Swagger UI**: http://127.0.0.1:8000/api/docs
-- **ReDoc**: http://127.0.0.1:8000/api/redoc
+### History and insights
 
-### Key API Endpoints
+- History with calendar-oriented navigation and XP trends (e.g. mini charts)
 
-```
-POST   /api/users              - Create new user
-GET    /api/users/{id}         - Get user by ID
-PUT    /api/users/{id}         - Update user
-DELETE /api/users/{id}         - Delete user
+### Platform
 
-POST   /api/workouts/start     - Start a new workout (returns XP)
-POST   /api/workouts/{id}/end  - End an active workout (awards XP to user)
-GET    /api/workouts           - List workouts
-GET    /api/workouts/{id}      - Get workout details (includes xpAwarded)
-GET    /api/workouts/user/{id} - Get user's workouts with XP data
-GET    /api/workouts/{id}/summary - Get workout summary
+- Theming (light/dark-aware patterns via app theme context)
+- iOS/Android permissions for location (maps) and Bluetooth as configured in `app.config.js`
 
-GET    /api/dashboard/{user_id} - Get dashboard data (includes Today's Progress)
-GET    /api/gamification/{user_id} - Get gamification data (badges, leaderboard)
+## API Documentation
 
-POST   /api/goals              - Create goal
-GET    /api/goals              - List user goals
-PUT    /api/goals/{id}         - Update goal
+Interactive docs are served when the backend is running:
 
-GET    /api/friends            - List friends
-POST   /api/friends            - Send friend request
-PUT    /api/friends/{id}       - Update friend status
+- Swagger: `http://127.0.0.1:8000/api/docs`
+- ReDoc: `http://127.0.0.1:8000/api/redoc`
 
-GET    /api/leaderboard        - Get leaderboard
-GET    /api/badges             - List available badges
-GET    /api/avatars            - List available avatars
-```
+Routers are grouped by tags, for example:
 
-## 🗄️ Database
+- `/api/v1/users`, `/api/v1/profiles`
+- `/api/v1/workouts`, `/api/v1/workoutTypes`
+- `/api/v1/dashboard`
+- `/api/v1/gamification`, `/api/v1/badges`, `/api/v1/leaderboards`
+- `/api/v1/goals`, `/api/v1/goalTypes`, `/api/v1/goalStatus`
+- `/api/v1/friends`, `/api/v1/friendStatus`
+- `/api/v1/community`
+- `/api/v1/history`
+- `/api/v1/userAvatars`, `/api/v1/avatars`, `/api/v1/evolution`
+- `/api/v1/streaks`, `/api/v1/notifications`, `/api/v1/watchDevices`
 
-The application uses **Supabase** (PostgreSQL) as the database with the following main tables:
+Use Swagger for exact methods and payloads.
 
-- **users** - User accounts and authentication
-- **profiles** - User profile information
-- **workouts** - Workout records with XP tracking (includes `xp_awarded` column)
-- **workout_types** - Types of workouts (cardio, strength, etc.)
-- **goals** - User fitness goals
-- **goal_types** - Types of goals (steps, calories, etc.)
-- **goal_status** - Goal completion status
-- **friends** - Friend relationships
-- **friend_status** - Friend request status
-- **badges** - Available badges
-- **user_badges** - Badges earned by users
-- **avatars** - Available avatar options
-- **user_avatars** - User's current avatar with XP and level tracking
-- **streaks** - Consecutive activity day tracking
-- **leaderboard** - Ranking and points
-- **notifications** - User notifications
-- **watch_devices** - Connected wearable devices
+## Database
 
-### Database Connection
+Supabase (PostgreSQL) holds users, profiles, workouts (including XP fields), goals, friends, badges, avatars, streaks, leaderboards, notifications, watch devices, and related capstone additions (e.g. evolution-related tables). Schema details live in your Supabase project and migration history.
 
-The backend uses a singleton pattern for database connections to ensure efficient resource management. The connection is established at startup and properly closed on shutdown.
+## Contributing
 
-### Recent Schema Updates
-- Added `xp_awarded` column to `workouts` table (INTEGER, nullable) for storing randomized XP per workout
-- XP values are generated on frontend (5-49 range) and stored when workout starts
-- XP is awarded to user avatar when workout ends
+The **capstone implementation is complete**. Further changes are maintenance or product iteration:
 
-## 🤝 Contributing
+1. Branch from `main` (or your team’s default) using a clear branch name.
+2. Match existing layout and naming in `src/Backend` and `src/TOMI`.
+3. Test backend and mobile paths you touch; verify BLE only on supported hardware/builds.
+4. Open a pull request with a short description of behavior and risk.
 
-This project is currently in active development. Please follow these guidelines:
-
-1. Create a new branch from `dev` for your feature: `git checkout -b feature/your-feature-name`
-2. Follow the existing code structure and naming conventions
-3. Write clear commit messages
-4. Test your changes thoroughly
-5. Create a pull request to the `dev` branch
-
-### Branch Strategy
-- `main` - Production-ready code
-- `dev` - Development branch (default)
-- `feature/*` - Feature branches
-- `bugfix/*` - Bug fix branches
-
-## 📝 License
+## License
 
 This project is private and proprietary. All rights reserved.
 
-## 👥 Team
+## Team
 
-TOMI-490 Development Team
+TOMI-490 capstone team.
 
----
-
-For questions or support, please contact the development team or open an issue in the repository.
+For questions, contact the project owners or use repository issues if enabled.
